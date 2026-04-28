@@ -2,7 +2,7 @@
 
 > Hücre biyologları için tarayıcıda çalışan, atıf-hazır wound healing analiz aracı.
 
-**Durum:** Lansman öncesi | **Son güncelleme:** 2026-04-26 | **Sürüm:** v0.2
+**Durum:** Lansman öncesi | **Son güncelleme:** 2026-04-28 | **Sürüm:** v0.3
 
 ---
 
@@ -42,13 +42,13 @@ Manuel ImageJ tabanlı scratch ölçüm iş akışını; yayına hazır figürle
 **Çıktılar:**
 - [x] Domain alındı: cytomove.com (Cloudflare Registrar, 2027-04-26'ya kadar, auto-renew aktif)
 - [ ] Cytomove.app ve cytomove.io savunma domainleri (opsiyonel, bütçeye göre)
-- [ ] GitHub private repo oluşturuldu
-- [ ] Cloudflare Pages üzerinde landing page yayında (cytomove.com)
-- [ ] E-posta waitlist formu (Formspree ücretsiz tier, ileride Supabase'e taşınır)
+- [x] GitHub public repo oluşturuldu: github.com/zduzgun/CytoMove
+- [x] Cloudflare Pages üzerinde landing page yayında (cytomove.pages.dev → cytomove.com propagation devam ediyor)
+- [x] E-posta waitlist formu (Formspree ücretsiz tier, ileride Supabase'e taşınır)
 - [ ] Marka kimliği (logo, renk paleti, tipografi)
 - [ ] X/Twitter + LinkedIn varlığı
 - [ ] İlk halka açık blog yazısı: "Neden Cytomove'u inşa ediyorum"
-- [ ] Bu yol haritası GitHub'da yayında
+- [x] Bu yol haritası GitHub'da yayında
 
 **Teknik öğrenme hedefleri:**
 - Next.js 14 temelleri
@@ -356,6 +356,8 @@ Her PDF rapora otomatik methods paragrafı + DOI + sürüm gömülecek. Akademis
 | 2026-04 | Trademark başvurusu Faz 5'e ertelendi | Önce traksiyon; CytoMotion (IonOptix) ile yakınlık var, gerekirse modifiye edilir |
 | 2026-04 | Akademik strateji: bioRxiv preprint Faz 3 → peer-reviewed Faz 4 | Atıf büyümesi erken başlasın, peer review ürün olgunlaştığında |
 | 2026-04 | Hosting: GitHub Pages değil Cloudflare Pages | Registrar zaten Cloudflare; private repo deploy ücretsiz; global CDN; ileride Workers entegrasyonu |
+| 2026-04-28 | Coming soon landing page yayına alındı | Wound healing animasyonlu, waitlist formlu; cytomove.pages.dev canlı, cytomove.com propagation bekliyor |
+| 2026-04-28 | Waitlist: Formspree ücretsiz tier | İlk 2 kayıt alındı; ileride Supabase'e taşınacak |
 
 ---
 
@@ -377,10 +379,4 @@ Her PDF rapora otomatik methods paragrafı + DOI + sürüm gömülecek. Akademis
 - [ ] İlk kullanıcı kazanım kanalı: X akademik biyoloji topluluğu, LinkedIn, doğrudan PI e-posta gönderimi?
 - [ ] Analiz kütüphanesi (npm paketi) SaaS'tan ayrı open-source verilsin mi?
 - [ ] Validation veri seti: kendi laboratuvar arşivi yeterli mi, iş birliği gerekir mi?
-- [ ] Preprint cross-listing (bioRxiv + arXiv cs.CV) yapılsın mı?
-- [ ] Modül 2 adayı (Faz 5): hangisi mevcut kullanıcılarla en hızlı doğrulanır?
-- [ ] Üst marka kararı: Cytomove tek ürün mü kalır, yoksa Faz 5'te yeni çatı marka mı seçilir?
-
----
-
-*Bu yol haritası yaşayan bir belgedir. Gerçek kullanıcılardan öğrendikçe planlar güncellenir.*
+- [ ] Preprint cross-
