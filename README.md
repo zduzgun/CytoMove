@@ -1,8 +1,8 @@
 # Cytomove
 
-> Hücre biyologları için tarayıcıda çalışan, atıf-hazır wound healing analiz aracı.
+> Hücre biyologları için tarayıcıda çalışan, gizlilik odaklı wound healing analiz aracı.
 
-Cytomove, scratch assay / wound healing görüntülerinde yara kapanmasını ölçmek için geliştirilen gizlilik odaklı bir web aracıdır. Amaç; manuel ImageJ tabanlı ölçüm iş akışını, yayına hazır figürler ve tekrarlanabilir methods metni üreten daha hızlı bir tarayıcı deneyimiyle değiştirmektir.
+Cytomove, scratch assay / wound healing görüntülerinde yara alanı ölçümünü daha tekrarlanabilir hale getirmek için geliştirilen gizlilik odaklı bir web aracıdır. Amaç; manuel ImageJ tabanlı ölçüm iş akışına, figure-ready export ve tekrarlanabilir methods metni üreten daha hızlı bir tarayıcı alternatifi sunmaktır.
 
 ## Mevcut Durum
 
@@ -18,7 +18,7 @@ Cytomove lansman öncesi geliştirme aşamasındadır.
 Hücre biyolojisi laboratuvarlarında wound healing analizi hâlâ çoğu zaman manuel, tekrarı zor ve makale çıktısına dönüştürmesi zahmetli iş akışlarıyla yapılıyor. Cytomove bu iş akışını üç noktada iyileştirmeyi hedefler:
 
 - **Tarayıcıda analiz:** Assay görüntüleri bilgisayardan ayrılmadan işlenir.
-- **Yayın hazır çıktı:** PNG figür, CSV veri ve methods metni üretir.
+- **Figure-ready çıktı:** PNG figür, CSV veri ve methods metni üretmeyi hedefler.
 - **Tekrarlanabilirlik:** Analiz sürümü ve ayarları atıf bloğuyla birlikte raporlanır.
 
 ## Planlanan MVP
@@ -27,7 +27,7 @@ Hücre biyolojisi laboratuvarlarında wound healing analizi hâlâ çoğu zaman 
 
 - Görüntü yükleme
 - Otomatik wound area segmentasyonu
-- `% wound closure` hesabı
+- Wound area ölçümü ve validation sonrası closure readout
 - Segmentasyon sonucunu gözden geçirme ve manuel düzeltme
 - PNG figür ve CSV veri dışa aktarma
 
@@ -39,7 +39,7 @@ Detaylı 18 aylık plan için: [ROADMAP.md](./ROADMAP.md)
 
 Kısa özet:
 
-- **Faz 1:** Landing page, waitlist, marka temeli
+- **Faz 1:** Minimum credible landing, waitlist, temel güven katmanı
 - **Faz 2:** Tek zaman noktası MVP ve validation veri seti
 - **Faz 3:** Time-lapse analiz, citation-ready raporlar, bioRxiv preprint
 - **Faz 4:** Kullanıcı hesapları, ücretli planlar, peer-reviewed yayın

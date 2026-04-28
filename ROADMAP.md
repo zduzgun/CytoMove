@@ -8,13 +8,13 @@
 
 ## Vizyon
 
-Cytomove, web tarayıcısında çalışan otomatik scratch assay (wound healing) analiz aracıdır. Hücre göçü ve yara kapanması ölçümlerini saniyeler içinde, yayına hazır figürler ve methods paragrafıyla birlikte üretir.
+Cytomove, web tarayıcısında çalışan otomatik scratch assay (wound healing) analiz aracıdır. Hedefi, hücre göçü ve yara alanı ölçümlerini temkinli, tekrarlanabilir ve dışa aktarılabilir bir araştırma iş akışına dönüştürmektir.
 
 **Uzun vadede:** Cytomove başarısı doğrulandıktan sonra, bir üst marka çatısı altında ek hücre biyolojisi analiz modülleri (koloni sayma, transwell migration, MTT viability, hücre sayma) eklenebilir. Üst marka kararı Faz 5'te alınacaktır; şu an tek ürüne odaklanılır.
 
 ## Misyon
 
-Manuel ImageJ tabanlı scratch ölçüm iş akışını; yayına hazır figürler, tekrarlanabilir methods metni ve Zenodo DOI ile sürümlenmiş atıf bloğu üreten tek tıklık bir web aracıyla değiştirmek.
+Manuel ImageJ tabanlı scratch ölçüm iş akışına; tarayıcıda çalışan ölçüm, gözden geçirilebilir segmentasyon, figure-ready export, tekrarlanabilir methods metni ve sürümlenmiş atıf bilgisiyle güçlü bir alternatif sunmak.
 
 ## Kuzey Yıldızı Metriği
 
@@ -53,7 +53,7 @@ Bu kriterler karşılanmadan Faz 3'e geçilmez.
 
 ### Faz 1: Temel Atma (Ay 1-2)
 
-**Hedef:** Yayında landing page, marka kimliği, ilk 50 waitlist kaydı.
+**Hedef:** Yayında ve güvenilir landing page, waitlist, temel marka zemini; tam marka/sosyal/blog işleri beta launch hazırlığına bırakılır.
 
 **Çıktılar:**
 - [x] Domain alındı: cytomove.com (Cloudflare Registrar, 2027-04-26'ya kadar, auto-renew aktif)
@@ -61,14 +61,15 @@ Bu kriterler karşılanmadan Faz 3'e geçilmez.
 - [x] GitHub public repo oluşturuldu: github.com/zduzgun/CytoMove
 - [x] Cloudflare Pages üzerinde landing page yayında (cytomove.pages.dev → cytomove.com propagation devam ediyor)
 - [x] E-posta waitlist formu (Formspree ücretsiz tier, ileride Supabase'e taşınır)
-- [ ] Marka kimliği (logo, renk paleti, tipografi)
-- [ ] X/Twitter + LinkedIn varlığı
-- [ ] İlk halka açık blog yazısı: "Neden Cytomove'u inşa ediyorum"
+- [ ] Marka kimliği (logo, renk paleti, tipografi) — beta launch hazırlığına ertelendi
+- [ ] X/Twitter + LinkedIn varlığı — beta launch hazırlığına ertelendi
+- [ ] İlk halka açık blog yazısı: "Neden Cytomove'u inşa ediyorum" — beta launch hazırlığına ertelendi
 - [x] Bu yol haritası GitHub'da yayında
-- [ ] Landing page'e "scientific trust layer" eklendi:
+- [x] Landing page'e "scientific trust layer" eklendi:
   - "Built by a cell biologist" kısa notu (kurucu biyografisi)
   - "Privacy-first: assay images stay in browser" güven notu
-  - Planned validation bölümü veya blog yazısında teknik niyet
+  - Planned validation / ImageJ-manual comparison niyeti
+- [x] Sosyal medya önizlemesi için `og:image` / `twitter:image` eklendi (`assets/og-image.png`)
 
 **Teknik öğrenme hedefleri:**
 - Next.js 14 temelleri
@@ -77,7 +78,7 @@ Bu kriterler karşılanmadan Faz 3'e geçilmez.
 - Cloudflare Pages + DNS (registrar zaten Cloudflare, otomatik bağlanır)
 
 **KPI'lar:**
-- Landing page yayında: evet/hayır
+- Landing page yayında: evet
 - Waitlist kaydı: 50+
 - Cytomove hakkında kişisel sosyal paylaşım: 5+
 
@@ -382,6 +383,7 @@ Her PDF rapora otomatik methods paragrafı + DOI + sürüm gömülecek. Akademis
 | 2026-04 | Hosting: GitHub Pages değil Cloudflare Pages | Registrar zaten Cloudflare; private repo deploy ücretsiz; global CDN; ileride Workers entegrasyonu |
 | 2026-04-28 | Coming soon landing page yayına alındı | Wound healing animasyonlu, waitlist formlu; cytomove.pages.dev canlı, cytomove.com propagation bekliyor |
 | 2026-04-28 | Waitlist: Formspree ücretsiz tier | İlk 2 kayıt alındı; ileride Supabase'e taşınacak |
+| 2026-04-28 | Faz 1 kapanışı: Minimum Credible Landing | OG image, scientific trust layer ve temkinli claim dili tamamlandı; logo/sosyal/blog beta launch hazırlığına ertelendi |
 
 ---
 
@@ -398,8 +400,8 @@ Her PDF rapora otomatik methods paragrafı + DOI + sürüm gömülecek. Akademis
 
 - [x] ~~Domain seçimi: cellverse.app vs .io vs .bio~~ → cytomove.com alındı
 - [ ] Cytomove.app ve cytomove.io savunma domainleri alınsın mı (toplam ~50 USD)
-- [ ] Landing page ilk dili: sadece İngilizce (global) yoksa Türkçe + İngilizce mi?
-- [ ] Marka tonu: klinik/ciddi mi, oyuncu/samimi mi?
+- [x] Landing page ilk dili: sadece İngilizce (global)
+- [x] Marka tonu: akademik SaaS; klinik/kurumsal değil, startup oyunculuğu da değil
 - [ ] İlk kullanıcı kazanım kanalı: X akademik biyoloji topluluğu, LinkedIn, doğrudan PI e-posta gönderimi?
 - [ ] Analiz kütüphanesi (npm paketi) SaaS'tan ayrı open-source verilsin mi?
 - [ ] Validation veri seti: kendi laboratuvar arşivi yeterli mi, iş birliği gerekir mi?
