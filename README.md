@@ -1,51 +1,71 @@
-# CellVerse
+# Cytomove
 
-> Hücre biyolojisi araştırmacıları için web tabanlı, atıf-hazır araştırma araçları.
+> Hücre biyologları için tarayıcıda çalışan, atıf-hazır wound healing analiz aracı.
 
-CellVerse, hücre biyologlarının her gün uzanacağı odaklı araçların bir araya geldiği bir SaaS platformu olmayı hedefliyor. İlk ürün **Wound Healing Analyzer**: tarayıcıda çalışan, gizlilik dostu, otomatik figür ve PDF rapor üreten bir scratch assay analiz aracı.
+Cytomove, scratch assay / wound healing görüntülerinde yara kapanmasını ölçmek için geliştirilen gizlilik odaklı bir web aracıdır. Amaç; manuel ImageJ tabanlı ölçüm iş akışını, yayına hazır figürler ve tekrarlanabilir methods metni üreten daha hızlı bir tarayıcı deneyimiyle değiştirmektir.
 
 ## Mevcut Durum
 
-🚧 **Lansman öncesi geliştirme aşamasındayız.**
+Cytomove lansman öncesi geliştirme aşamasındadır.
 
-Bu repo şu anda yol haritası ve stratejik kararları halka açık şekilde paylaşmak için kullanılıyor. Ürün kodu ayrı bir repoda geliştiriliyor ve MVP yayına çıktığında bağlantı buradan paylaşılacak.
+- Landing page yayında: [cytomove.com](https://cytomove.com) / [cytomove.pages.dev](https://cytomove.pages.dev)
+- Waitlist aktif.
+- MVP hedefi: tek zaman noktası scratch assay analizi.
+- Ürün kodu şimdilik private geliştiriliyor; yol haritası ve stratejik kararlar burada açık tutuluyor.
 
-## Kullanıcılar İçin
+## Neden Var?
 
-İlk yayına çıktığında haber almak için bekleme listesine kayıt olabilirsin: *(yakında)*
+Hücre biyolojisi laboratuvarlarında wound healing analizi hâlâ çoğu zaman manuel, tekrarı zor ve makale çıktısına dönüştürmesi zahmetli iş akışlarıyla yapılıyor. Cytomove bu iş akışını üç noktada iyileştirmeyi hedefler:
 
-## Vizyon
+- **Tarayıcıda analiz:** Assay görüntüleri bilgisayardan ayrılmadan işlenir.
+- **Yayın hazır çıktı:** PNG figür, CSV veri ve methods metni üretir.
+- **Tekrarlanabilirlik:** Analiz sürümü ve ayarları atıf bloğuyla birlikte raporlanır.
 
-Hücre biyolojisi laboratuvarlarındaki yaygın iş akışları (scratch assay, koloni sayma, viability testleri, transwell migrasyonu, vb.) hâlâ büyük ölçüde manuel veya parçalı yazılımlarla yürütülüyor. CellVerse'ün hedefi:
+## Planlanan MVP
 
-- **Tek tıkla analiz:** Görüntüyü yükle, gerisini araç hallesin.
-- **Yayın hazır çıktı:** Otomatik figür, methods paragrafı, atıf bilgisi.
-- **Gizlilik:** Görüntüler mümkün olduğunca tarayıcıda işlenir, sunucuya yüklenmez.
-- **Tekrarlanabilirlik:** Her sürüm DOI ile arşivlenir; analizler izlenebilir.
+İlk MVP, tek zaman noktası scratch assay görüntülerini analiz etmeye odaklanır:
+
+- Görüntü yükleme
+- Otomatik wound area segmentasyonu
+- `% wound closure` hesabı
+- Segmentasyon sonucunu gözden geçirme ve manuel düzeltme
+- PNG figür ve CSV veri dışa aktarma
+
+MVP başarı kriterleri `ROADMAP.md` içinde tanımlanmıştır. Temel doğrulama hedefi, Cytomove ölçümlerinin ImageJ manuel ölçümleriyle yüksek korelasyon göstermesidir.
 
 ## Yol Haritası
 
 Detaylı 18 aylık plan için: [ROADMAP.md](./ROADMAP.md)
 
 Kısa özet:
-- **Faz 1 (Ay 1-2):** Temel atma, landing page, waitlist
-- **Faz 2 (Ay 3-5):** Tek zaman noktası MVP
-- **Faz 3 (Ay 6-9):** Time-lapse + atıf-hazır PDF rapor
-- **Faz 4 (Ay 10-15):** Büyüme + ücretli planlar
-- **Faz 5 (Ay 16-18):** Şirketleşme + fonlama
+
+- **Faz 1:** Landing page, waitlist, marka temeli
+- **Faz 2:** Tek zaman noktası MVP ve validation veri seti
+- **Faz 3:** Time-lapse analiz, citation-ready raporlar, bioRxiv preprint
+- **Faz 4:** Kullanıcı hesapları, ücretli planlar, peer-reviewed yayın
+- **Faz 5:** Şirketleşme, fonlama, trademark ve üst marka kararı
+
+Uzun vadede Cytomove başarısı doğrulandıktan sonra ek hücre biyolojisi analiz modülleri düşünülebilir. Şu an odak yalnızca wound healing analizidir.
+
+## Araştırmacılar İçin
+
+Erken erişim ve beta duyuruları için waitlist'e katılabilirsin:
+
+[Join the waitlist](https://cytomove.com)
+
+Geri bildirim, veri seti önerileri veya akademik iş birliği fikirleri için GitHub Issues ya da e-posta kullanılabilir.
 
 ## Kurucu
 
-[Dr. Zekeriya Düzgün](https://github.com/zduzgun) - Giresun Üniversitesi Tıp Fakültesi Tıbbi Biyoloji Anabilim Dalı.
-
-## Geri Bildirim
-
-Bu yol haritası **yaşayan bir belge** ve halka açık olarak geliştiriliyor. Önerilerin, eleştirilerin, soruların varsa GitHub Issues üzerinden açabilirsin.
+[Dr. Zekeriya Düzgün](https://github.com/zduzgun)  
+Giresun Üniversitesi Tıp Fakültesi, Tıbbi Biyoloji Anabilim Dalı.
 
 ## Lisans
 
-Bu repo'daki dokümantasyon (yol haritası, kararlar) [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) lisansı altındadır. Ürün kodu ayrı bir lisans altında olacak.
+Bu repodaki dokümantasyon, yol haritası ve karar kayıtları [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) lisansı altındadır.
+
+Ürün kodunun lisansı ayrıca belirlenecektir.
 
 ---
 
-*Açıkta inşa ediyoruz çünkü en iyi geri bildirim erken gelir.*
+*Cytomove açıkta inşa ediliyor; çünkü araştırmacı geri bildirimi ürünün doğruluğu kadar önemlidir.*
