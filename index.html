@@ -468,4 +468,31 @@
     const note       = document.getElementById('formNote');
     const successMsg = document.getElementById('successMsg');
 
-    form.addEventListener('submit', async (e) 
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = form.querySelector('button');
+      btn.textContent = 'Sending…';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(form.action, {
+          method:  'POST',
+          body:    new FormData(form),
+          headers: { 'Accept': 'application/json' },
+        });
+        if (res.ok) {
+          form.style.display        = 'none';
+          note.style.display        = 'none';
+          successMsg.style.display  = 'block';
+        } else {
+          btn.textContent = 'Try again';
+          btn.disabled    = false;
+        }
+      } catch {
+        btn.textContent = 'Try again';
+        btn.disabled    = false;
+      }
+    });
+  </script>
+</body>
+</html>
