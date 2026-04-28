@@ -355,124 +355,117 @@
 
   <script>
     /* ── Wound healing animation ── */
-    const canvas = document.getElementById('woundCanvas');
-    const ctx    = canvas.getContext('2d');
-    const W = canvas.width, H = canvas.height;
+    (function () {
+      var canvas = document.getElementById('woundCanvas');
+      if (!canvas) return;
+      var ctx = canvas.getContext('2d');
+      if (!ctx) return;
 
-    const ROWS = 4, COLS = 9, SP = 27;
-    const CYCLE = 340;
+      var W = 580, H = 170;
+      canvas.width  = W;
+      canvas.height = H;
 
-    function rnd(a, b) { return a + Math.random() * (b - a); }
+      var ROWS = 4, COLS = 9, SP = 27, CYCLE = 340;
+      var BG = '#071220';
 
-    const cells = Array.from({ length: ROWS * COLS }, () => ({
-      dr:  rnd(-2, 2),
-      dc:  rnd(-2, 2),
-      s:   rnd(8.5, 13),
-      op:  rnd(0.55, 0.95),
-      nx:  rnd(-3, 3),
-      ny:  rnd(-3, 3),
-      ph:  Math.random() * Math.PI * 2,
-    }));
+      function rnd(a, b) { return a + Math.random() * (b - a); }
 
-    function ease(x) {
-      return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
-    }
-
-    function drawCell(x, y, s, op, nx, ny, shim) {
-      ctx.beginPath();
-      ctx.arc(x, y, s, 0, Math.PI * 2);
-      ctx.fillStyle   = `rgba(20,184,166,${op * 0.14})`;
-      ctx.fill();
-      ctx.strokeStyle = `rgba(45,212,191,${op * (0.42 + shim * 0.28)})`;
-      ctx.lineWidth   = 0.85;
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(x + nx, y + ny, s * 0.3, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(45,212,191,${op * 0.42})`;
-      ctx.fill();
-    }
-
-    let t = 0;
-    function frame() {
-      ctx.clearRect(0, 0, W, H);
-
-      const half = CYCLE * 0.63, rest = CYCLE - half;
-      const prog = t < half
-        ? ease(t / half)
-        : 1 - ease((t - half) / rest);
-
-      const startGap = 158, endGap = 10;
-      const gap = startGap - (startGap - endGap) * prog;
-      const cx  = W / 2;
-      const wL  = cx - gap / 2;
-      const wR  = cx + gap / 2;
-
-      for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-          const d    = cells[r * COLS + c];
-          const shim = Math.sin(t * 0.034 + d.ph) * 0.5 + 0.5;
-          const ry   = 18 + r * SP + (r % 2 ? SP * 0.44 : 0);
-
-          const lx = wL - (COLS - c) * SP + SP * 0.5 + d.dc;
-          drawCell(lx, ry + d.dr, d.s, d.op, d.nx, d.ny, shim);
-
-          const rx = wR + c * SP + SP * 0.5 + d.dc;
-          drawCell(rx, ry + d.dr, d.s, d.op, d.nx, d.ny, shim);
-        }
+      var cells = [];
+      for (var i = 0; i < ROWS * COLS; i++) {
+        cells.push({
+          dr: rnd(-2, 2), dc: rnd(-2, 2),
+          s:  rnd(9, 13),
+          op: rnd(0.6, 1.0),
+          nx: rnd(-3, 3), ny: rnd(-3, 3),
+          ph: Math.random() * Math.PI * 2
+        });
       }
 
-      /* wound label */
-      if (gap > 44) {
-        const a = Math.min(1, (gap - 34) / 55);
-        ctx.save();
-        ctx.font         = '10px system-ui, sans-serif';
-        ctx.fillStyle    = `rgba(148,163,184,${a * 0.65})`;
-        ctx.textAlign    = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('wound area', cx, H / 2);
-        ctx.strokeStyle = `rgba(148,163,184,${a * 0.2})`;
-        ctx.lineWidth   = 0.5;
-        ctx.setLineDash([3, 3]);
+      function ease(x) {
+        return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+      }
+
+      function drawCell(x, y, s, op, nx, ny, shim) {
         ctx.beginPath();
-        ctx.moveTo(wL + 4, H / 2 - 13);
-        ctx.lineTo(wR - 4, H / 2 - 13);
+        ctx.arc(x, y, s, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(20,184,166,' + (op * 0.18) + ')';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(45,212,191,' + (op * (0.5 + shim * 0.3)) + ')';
+        ctx.lineWidth = 1;
         ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.restore();
+        ctx.beginPath();
+        ctx.arc(x + nx, y + ny, s * 0.32, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(45,212,191,' + (op * 0.5) + ')';
+        ctx.fill();
       }
 
-      /* % closed counter */
-      const pct = Math.round(prog * 100);
-      ctx.save();
-      ctx.font         = '500 11px system-ui, sans-serif';
-      ctx.fillStyle    = 'rgba(45,212,191,0.82)';
-      ctx.textAlign    = 'right';
-      ctx.textBaseline = 'top';
-      ctx.fillText(pct + '% closed', W - 10, 9);
-      ctx.restore();
+      var t = 0;
+      var running = true;
 
-      t = (t + 1) % CYCLE;
-      if (!window._stopAnim) requestAnimationFrame(frame);
-    }
+      function frame() {
+        /* background */
+        ctx.fillStyle = BG;
+        ctx.fillRect(0, 0, W, H);
 
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      window._stopAnim = true;  // döngüyü durdur
-      t = Math.floor(CYCLE * 0.3); // yarı açık yara göster
-      frame();
-    } else {
-      window._stopAnim = false;
-      frame();
-    }
+        var half = CYCLE * 0.63, rest = CYCLE - half;
+        var prog = t < half ? ease(t / half) : 1 - ease((t - half) / rest);
+
+        var gap = 158 - (158 - 10) * prog;
+        var cx  = W / 2;
+        var wL  = cx - gap / 2;
+        var wR  = cx + gap / 2;
+
+        for (var r = 0; r < ROWS; r++) {
+          for (var c = 0; c < COLS; c++) {
+            var d   = cells[r * COLS + c];
+            var shim = Math.sin(t * 0.034 + d.ph) * 0.5 + 0.5;
+            var ry  = 18 + r * SP + (r % 2 ? SP * 0.44 : 0);
+            drawCell(wL - (COLS - c) * SP + SP * 0.5 + d.dc, ry + d.dr, d.s, d.op, d.nx, d.ny, shim);
+            drawCell(wR +           c  * SP + SP * 0.5 + d.dc, ry + d.dr, d.s, d.op, d.nx, d.ny, shim);
+          }
+        }
+
+        /* wound label */
+        if (gap > 44) {
+          var a = Math.min(1, (gap - 34) / 55);
+          ctx.save();
+          ctx.font = '10px system-ui,sans-serif';
+          ctx.fillStyle = 'rgba(148,163,184,' + (a * 0.7) + ')';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText('wound area', cx, H / 2);
+          ctx.strokeStyle = 'rgba(148,163,184,' + (a * 0.25) + ')';
+          ctx.lineWidth = 0.5;
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath(); ctx.moveTo(wL + 4, H / 2 - 13); ctx.lineTo(wR - 4, H / 2 - 13); ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.restore();
+        }
+
+        /* % counter */
+        ctx.save();
+        ctx.font = '500 11px system-ui,sans-serif';
+        ctx.fillStyle = 'rgba(45,212,191,0.85)';
+        ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+        ctx.fillText(Math.round(prog * 100) + '% closed', W - 10, 9);
+        ctx.restore();
+
+        t = (t + 1) % CYCLE;
+        if (running) requestAnimationFrame(frame);
+      }
+
+      /* reduced motion: tek statik kare */
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        running = false;
+        t = Math.floor(CYCLE * 0.28);
+        frame();
+      } else {
+        requestAnimationFrame(frame);
+      }
+    }());
 
     /* ── Waitlist form ── */
     const form       = document.getElementById('waitlistForm');
     const note       = document.getElementById('formNote');
     const successMsg = document.getElementById('successMsg');
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = form.querySelector('button');
-      btn.textContent = 'Sending…';
-      btn.disabled = true;
-
-    
+    form.addEventListener('submit', async (e) 
