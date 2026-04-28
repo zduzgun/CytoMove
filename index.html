@@ -4,9 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cytomove — Automated Wound Healing Analysis</title>
-  <meta name="description" content="Browser-based scratch assay quantification. Citation-ready output. No server uploads.">
+  <meta name="description" content="Browser-based scratch assay measurement for wound healing images. Assay images stay in the browser while validation work is underway.">
   <meta property="og:title" content="Cytomove — Automated Wound Healing Analysis">
-  <meta property="og:description" content="Scratch assay quantification in seconds. Upload images, get publication-ready figures and a DOI-citable methods paragraph — automatically.">
+  <meta property="og:description" content="A privacy-first browser workflow for scratch assay measurement, figure export, and validation-ready reporting.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://cytomove.com/assets/og-image.png">
+  <meta name="twitter:title" content="Cytomove — Automated Wound Healing Analysis">
+  <meta name="twitter:description" content="Browser-based scratch assay measurement with local assay images and validation in progress.">
+  <meta name="twitter:image" content="https://cytomove.com/assets/og-image.png">
   <meta property="og:url" content="https://cytomove.com">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' stroke='%2314b8a6' stroke-width='2' fill='none'/><circle cx='10' cy='16' r='4' fill='%2314b8a6' fill-opacity='0.3' stroke='%2314b8a6' stroke-width='1'/><circle cx='22' cy='16' r='4' fill='%2314b8a6' fill-opacity='0.3' stroke='%2314b8a6' stroke-width='1'/><path d='M17 13l3 3-3 3' stroke='%2314b8a6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
@@ -86,6 +91,11 @@
       gap: 58px;
       align-items: center;
       padding-bottom: 58px;
+    }
+
+    .hero-copy,
+    .product-card {
+      min-width: 0;
     }
 
     .eyebrow {
@@ -411,6 +421,44 @@
       font-size: 14px;
       line-height: 1.6;
     }
+    .evidence-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .evidence-item {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+    }
+
+    .evidence-item span {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: var(--teal-soft);
+      color: var(--teal-dark);
+      font-size: 11px;
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+
+    .evidence-item h3 {
+      font-size: 17px;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .evidence-item p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
 
     footer {
       display: flex;
@@ -442,15 +490,121 @@
       .hero { grid-template-columns: 1fr; gap: 34px; }
       .section-header { display: block; }
       .section-header p { margin-top: 12px; }
-      .steps { grid-template-columns: 1fr; }
+      .steps, .evidence-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 560px) {
-      body { padding: 16px; }
-      .form-wrap { flex-direction: column; }
-      button[type="submit"] { width: 100%; }
-      .metrics { grid-template-columns: 1fr; }
-      footer { flex-direction: column; }
+      html,
+      body {
+        width: 100%;
+        overflow-x: hidden;
+      }
+
+      body {
+        padding: 16px;
+      }
+
+      .page {
+        width: 100%;
+        max-width: 358px;
+        margin: 0;
+        overflow: hidden;
+      }
+
+      main,
+      .hero,
+      .hero-copy,
+      .product-card,
+      .section,
+      .section-header,
+      .section-header p,
+      .analysis-body,
+      .canvas-wrap,
+      .report-preview,
+      .steps,
+      .evidence-grid,
+      footer {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+      }
+
+      .hero {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 34px;
+      }
+
+      h1 {
+        font-size: 31px;
+        line-height: 1.1;
+        letter-spacing: -0.035em;
+        overflow-wrap: anywhere;
+      }
+
+      h1 em {
+        display: block;
+      }
+
+      .subtitle {
+        font-size: 16px;
+        line-height: 1.65;
+        overflow-wrap: break-word;
+      }
+
+      .subtitle strong,
+      .report-preview p {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .form-wrap {
+        flex-direction: column;
+      }
+
+      button[type="submit"] {
+        width: 100%;
+      }
+
+      .product-card {
+        border-radius: 22px;
+        overflow: hidden;
+      }
+
+      .product-bar {
+        gap: 8px;
+        padding: 13px 14px;
+        font-size: 12px;
+      }
+
+      .product-bar > span:not(.browser-pill) {
+        min-width: 0;
+      }
+
+      .browser-pill {
+        display: none;
+      }
+
+      .analysis-body {
+        padding: 12px;
+      }
+
+      canvas,
+      #woundCanvas {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        height: auto;
+      }
+
+      .metrics,
+      .steps,
+      .evidence-grid {
+        grid-template-columns: 1fr;
+      }
+
+      footer {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
@@ -482,10 +636,9 @@
           <h1>Automated scratch assay quantification, <em>in your browser.</em></h1>
 
           <p class="subtitle">
-            Upload wound healing assay images and get <strong>% wound closure</strong>,
-            publication-ready figures, and citation-ready methods text. Cytomove is
-            designed for reproducible cell migration analysis without sending assay
-            images to a server.
+            Upload wound healing assay images and get <strong>browser-based scratch assay measurements</strong>,
+            figure-ready exports, and methods text for reproducible reporting. Cytomove is
+            designed for cell migration analysis without sending assay images to a server.
           </p>
 
           <form class="form-wrap" id="waitlistForm"
@@ -509,7 +662,7 @@
                 <rect x="2" y="1.5" width="10" height="11" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
                 <path d="M4.5 5h5M4.5 7h4M4.5 9h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
               </svg>
-              Methods-ready output
+              Methods-oriented output
             </span>
             <span class="trust-chip">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -535,7 +688,7 @@
             <div class="metrics">
               <div class="metric">
                 <span class="metric-label">Measurement</span>
-                <span class="metric-value">% closure</span>
+                <span class="metric-value">Wound area</span>
               </div>
               <div class="metric">
                 <span class="metric-label">Export</span>
@@ -550,7 +703,7 @@
               <span>Methods text</span>
               <p>
                 Wound area was quantified using a browser-based Cytomove workflow,
-                with versioned analysis settings and publication-ready figures.
+                with versioned analysis settings and figure-ready exports.
               </p>
             </div>
           </div>
@@ -559,10 +712,10 @@
 
       <section class="section" aria-labelledby="workflow-title">
         <div class="section-header">
-          <h2 id="workflow-title">From image to manuscript-ready output.</h2>
+          <h2 id="workflow-title">From image to reproducible measurement.</h2>
           <p>
             Cytomove focuses on the narrow workflow researchers repeat often:
-            quantify wound closure, review the segmentation, and export results
+            measure wound area, review the segmentation, and export results
             that are easy to cite and reproduce.
           </p>
         </div>
@@ -581,6 +734,32 @@
             <div class="step-num">03</div>
             <h3>Export figures and methods</h3>
             <p>Generate figure-ready outputs and methods text for reproducible reporting.</p>
+          </article>
+        </div>
+      </section>
+      <section class="section evidence" aria-labelledby="evidence-title">
+        <div class="section-header">
+          <h2 id="evidence-title">Built for cautious scientific adoption.</h2>
+          <p>
+            Cytomove is being developed by a cell biologist for researchers who need
+            transparent, repeatable scratch assay measurements before they trust automation.
+          </p>
+        </div>
+        <div class="evidence-grid">
+          <article class="evidence-item">
+            <span>01</span>
+            <h3>Assay images stay in the browser</h3>
+            <p>Image analysis is designed to run client-side; waitlist emails are handled separately through Formspree.</p>
+          </article>
+          <article class="evidence-item">
+            <span>02</span>
+            <h3>Validation is in progress</h3>
+            <p>The current validation plan compares Cytomove measurements with ImageJ/manual reference measurements before beta claims are expanded.</p>
+          </article>
+          <article class="evidence-item">
+            <span>03</span>
+            <h3>Designed by a cell biologist</h3>
+            <p>Founded by Dr. Zekeriya Duzgun, Giresun University Faculty of Medicine, Medical Biology.</p>
           </article>
         </div>
       </section>
