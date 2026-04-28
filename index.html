@@ -242,7 +242,6 @@
     /* ── Reduced motion ── */
     @media (prefers-reduced-motion: reduce) {
       .badge-dot { animation: none; }
-      #woundCanvas { display: none; }
     }
 
     /* ── Responsive ── */
@@ -453,10 +452,17 @@
       ctx.restore();
 
       t = (t + 1) % CYCLE;
-      requestAnimationFrame(frame);
+      if (!window._stopAnim) requestAnimationFrame(frame);
     }
 
-    frame();
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      window._stopAnim = true;  // döngüyü durdur
+      t = Math.floor(CYCLE * 0.3); // yarı açık yara göster
+      frame();
+    } else {
+      window._stopAnim = false;
+      frame();
+    }
 
     /* ── Waitlist form ── */
     const form       = document.getElementById('waitlistForm');
@@ -469,11 +475,4 @@
       btn.textContent = 'Sending…';
       btn.disabled = true;
 
-      try {
-        const res = await fetch(form.action, {
-          method:  'POST',
-          body:    new FormData(form),
-          headers: { 'Accept': 'application/json' },
-        });
-        if (res.ok) {
-          form.style.display       
+    
