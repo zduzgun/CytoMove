@@ -2,7 +2,7 @@
 
 > Hücre biyologları için tarayıcıda çalışan, atıf-hazır wound healing analiz aracı.
 
-**Durum:** Lansman öncesi | **Son güncelleme:** 2026-04-28 | **Sürüm:** v0.3
+**Durum:** Lansman öncesi | **Son güncelleme:** 2026-04-28 | **Sürüm:** v0.4
 
 ---
 
@@ -14,7 +14,7 @@ Cytomove, web tarayıcısında çalışan otomatik scratch assay (wound healing)
 
 ## Misyon
 
-Manuel ImageJ tabanlı scratch ölçüm iş akışını; yayına hazır figürler, tekrarlanabilir methods metni ve DOI ile sürümlenmiş analizler üreten tek tıklık bir web aracıyla değiştirmek.
+Manuel ImageJ tabanlı scratch ölçüm iş akışını; yayına hazır figürler, tekrarlanabilir methods metni ve Zenodo DOI ile sürümlenmiş atıf bloğu üreten tek tıklık bir web aracıyla değiştirmek.
 
 ## Kuzey Yıldızı Metriği
 
@@ -30,6 +30,22 @@ Manuel ImageJ tabanlı scratch ölçüm iş akışını; yayına hazır figürle
 4. **Tek kurucu + YZ.** Mimari, kapsam ve takvim; modern YZ araçlarıyla çalışan tek bir geliştiriciye göre kurgulanmıştır.
 5. **Açıkta inşa.** Yol haritası açık, ürün kodu private kalır.
 6. **Araştırmacı öncelikli fiyatlama.** Ücretsiz katman tam analiz için kullanılabilir. Ücretli katmanlar iş akışı kolaylıkları (toplu analiz, geçmiş, ekip) açar; analiz kalitesi değişmez.
+
+---
+
+## MVP Başarı Tanımı
+
+MVP, kullanıcıların tek zaman noktası scratch assay görüntülerinde ImageJ'e yakın sonuç alabildiği, sonucu manuel düzeltebildiği ve PNG/CSV olarak dışa aktarabildiği sürümdür.
+
+**Başarı kriterleri:**
+- 5 beta kullanıcının en az 3'ü kendi verisiyle tekrar kullanmak istiyor
+- Validation setinde Cytomove vs ImageJ manuel ölçüm: **Pearson r > 0.9**
+- Ortalama alan ölçüm hatası: **< %10 wound area**
+- Kullanıcının manuel düzeltme yapmadan kabul ettiği analiz oranı: **%70+**
+- Manuel düzeltme sonrası kabul oranı: **%90+**
+- Ortalama analiz süresi: **< 30 saniye / görüntü**
+
+Bu kriterler karşılanmadan Faz 3'e geçilmez.
 
 ---
 
@@ -49,6 +65,10 @@ Manuel ImageJ tabanlı scratch ölçüm iş akışını; yayına hazır figürle
 - [ ] X/Twitter + LinkedIn varlığı
 - [ ] İlk halka açık blog yazısı: "Neden Cytomove'u inşa ediyorum"
 - [x] Bu yol haritası GitHub'da yayında
+- [ ] Landing page'e "scientific trust layer" eklendi:
+  - "Built by a cell biologist" kısa notu (kurucu biyografisi)
+  - "Privacy-first: assay images stay in browser" güven notu
+  - Planned validation bölümü veya blog yazısında teknik niyet
 
 **Teknik öğrenme hedefleri:**
 - Next.js 14 temelleri
@@ -85,6 +105,8 @@ Manuel ImageJ tabanlı scratch ölçüm iş akışını; yayına hazır figürle
 - [ ] Karşılaştırma analizi: TScratch, ImageJ MRI Wound Healing macro, Wimasis vs Cytomove
 - [ ] İstatistiksel doğrulama: Pearson r, Bland-Altman, intra-class correlation
 - [ ] Reproducibility testi: aynı görüntü farklı tarayıcılarda aynı sonuç verir mi
+- [ ] Validation dataset lisansı netleşti: CC BY 4.0 (sadece derived masks/measurements; ham görüntü hakları ayrıca değerlendirilir)
+- [ ] Validation dataset metadata formatı belirlendi (görüntü kaynağı, hücre tipi, mikroskop, kontrast bilgisi)
 
 **Tech stack eklemeleri:**
 - OpenCV.js
@@ -114,7 +136,7 @@ Manuel ImageJ tabanlı scratch ölçüm iş akışını; yayına hazır figürle
 - [ ] Zaman noktası karşılaştırma ızgarası
 - [ ] PDF rapor üretici:
   - Methods paragrafı (makaleye yapıştırmaya hazır)
-  - Atıf bloğu (DOI, sürüm, URL)
+  - Sürümlenmiş atıf bloğu (Zenodo DOI Cytomove yazılım sürümüne ait; her kullanıcı analizine ayrı DOI verilmez)
   - Görüntü başına nicelendirme tablosu
   - Kalite uyarıları (hizalama güveni, segmentasyon uyarıları)
 - [ ] Zenodo entegrasyonu (sürüm arşivleme)
@@ -153,11 +175,11 @@ Manuel ImageJ tabanlı scratch ölçüm iş akışını; yayına hazır figürle
 **Ürün çıktıları:**
 - [ ] Kullanıcı hesapları (Supabase Auth)
 - [ ] Proje geçmişi / kayıtlı analizler
-- [ ] Fiyatlama sayfası lansmanı:
+- [ ] Fiyatlama sayfası lansmanı (3 katman):
   - **Free:** sınırsız tek zaman noktası, ayda 3 time-lapse projesi
   - **Researcher ($9/ay):** sınırsız time-lapse, geçmiş, batch
   - **Lab ($29/ay):** ekip koltukları, paylaşılan projeler
-  - **Institution ($99/ay):** SSO, özel marka, öncelikli destek
+  - *(Institution/SSO katmanı Faz 5'e ertelendi — erken enterprise karmaşıklığı önlendi)*
 - [ ] Ödeme entegrasyonu: Paddle (uluslararası) + Iyzico (Türkiye)
 - [ ] E-posta bildirimleri (Resend)
 - [ ] Yardım dokümanları sitesi (Mintlify / Docusaurus)
@@ -336,6 +358,8 @@ Her PDF rapora otomatik methods paragrafı + DOI + sürüm gömülecek. Akademis
 | Türkiye ödeme sürtünmesi (global kullanıcı) | Orta | Orta | Paddle MoR uluslararası tarafı çözer; Iyzico TR için |
 | YZ hype döngüsü fiyatlama baskısı | Düşük | Orta | Atıf hendeği dayanıklı, YZ ile kolay yer değiştirilemez |
 | Validation veri yetersizliği (preprint için) | Orta | Orta | Faz 2'de validation veri toplama paralel yürütülür, kendi laboratuvar arşivi öncelikli |
+| Segmentasyon çeşitliliği riski (farklı mikroskop, kontrast, hücre tipi, scratch kalitesi) | Yüksek | Yüksek | Validation setini çeşitli koşulları kapsayacak şekilde topla; MVP başarı kriterlerinde farklı görüntü tiplerini test et |
+| Akademik iddia riski ("ImageJ alternative" dili validation öncesi güçlü algılanabilir) | Orta | Orta | Validation tamamlanana kadar "designed to complement ImageJ workflows" tonu koru; güçlü karşılaştırma iddialarını preprint'e ertele |
 
 ---
 
@@ -352,31 +376,4 @@ Her PDF rapora otomatik methods paragrafı + DOI + sürüm gömülecek. Akademis
 | 2026-04 | TÜSEB Cytomove için tercih edilmedi | Yanlış program (araştırma vs ürün); IP karışıklığı |
 | 2026-04 | Üst marka kararı Faz 5'e ertelendi | Tek ürün odak; çatı kararı erken; "önce kama, sonra genişleme" |
 | 2026-04 | Ürün adı: Cytomove | Cellova (Cellova Lifesciences + Cellova Group çakışma), Cellhane ("kerhane" çağrışımı) elendikten sonra; .com mevcut, fonksiyonel açıklayıcı |
-| 2026-04 | Domain: cytomove.com (Cloudflare Registrar) | Sıfır markup, ekosistem entegrasyonu, otomatik HTTPS, 2027 nisan'a kadar tescil edildi, auto-renew aktif |
-| 2026-04 | Trademark başvurusu Faz 5'e ertelendi | Önce traksiyon; CytoMotion (IonOptix) ile yakınlık var, gerekirse modifiye edilir |
-| 2026-04 | Akademik strateji: bioRxiv preprint Faz 3 → peer-reviewed Faz 4 | Atıf büyümesi erken başlasın, peer review ürün olgunlaştığında |
-| 2026-04 | Hosting: GitHub Pages değil Cloudflare Pages | Registrar zaten Cloudflare; private repo deploy ücretsiz; global CDN; ileride Workers entegrasyonu |
-| 2026-04-28 | Coming soon landing page yayına alındı | Wound healing animasyonlu, waitlist formlu; cytomove.pages.dev canlı, cytomove.com propagation bekliyor |
-| 2026-04-28 | Waitlist: Formspree ücretsiz tier | İlk 2 kayıt alındı; ileride Supabase'e taşınacak |
-
----
-
-## Tempo
-
-- **Haftalık:** Faz çıktılarına göre kişisel ilerleme gözden geçirme.
-- **Aylık:** Bu yol haritasını güncelle, kararları kaydet, KPI'ları gözden geçir.
-- **Üç aylık:** Stratejik gözden geçirme; doğru fazda mıyız, öncelikler kaymalı mı?
-- **Yıllık:** Bir yıllık birikmiş kullanıcı öğrenmesiyle yol haritasını sıfırdan yaz.
-
----
-
-## Açık Sorular
-
-- [x] ~~Domain seçimi: cellverse.app vs .io vs .bio~~ → cytomove.com alındı
-- [ ] Cytomove.app ve cytomove.io savunma domainleri alınsın mı (toplam ~50 USD)
-- [ ] Landing page ilk dili: sadece İngilizce (global) yoksa Türkçe + İngilizce mi?
-- [ ] Marka tonu: klinik/ciddi mi, oyuncu/samimi mi?
-- [ ] İlk kullanıcı kazanım kanalı: X akademik biyoloji topluluğu, LinkedIn, doğrudan PI e-posta gönderimi?
-- [ ] Analiz kütüphanesi (npm paketi) SaaS'tan ayrı open-source verilsin mi?
-- [ ] Validation veri seti: kendi laboratuvar arşivi yeterli mi, iş birliği gerekir mi?
-- [ ] Preprint cross-
+| 2026-04 | Domain: cytomove.com (Cloudflare Registrar) | Sıf
