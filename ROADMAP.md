@@ -376,4 +376,37 @@ Her PDF rapora otomatik methods paragrafı + DOI + sürüm gömülecek. Akademis
 | 2026-04 | TÜSEB Cytomove için tercih edilmedi | Yanlış program (araştırma vs ürün); IP karışıklığı |
 | 2026-04 | Üst marka kararı Faz 5'e ertelendi | Tek ürün odak; çatı kararı erken; "önce kama, sonra genişleme" |
 | 2026-04 | Ürün adı: Cytomove | Cellova (Cellova Lifesciences + Cellova Group çakışma), Cellhane ("kerhane" çağrışımı) elendikten sonra; .com mevcut, fonksiyonel açıklayıcı |
-| 2026-04 | Domain: cytomove.com (Cloudflare Registrar) | Sıf
+| 2026-04 | Domain: cytomove.com (Cloudflare Registrar) | Sıfır markup, ekosistem entegrasyonu, otomatik HTTPS, 2027 nisan'a kadar tescil edildi, auto-renew aktif |
+| 2026-04 | Trademark başvurusu Faz 5'e ertelendi | Önce traksiyon; CytoMotion (IonOptix) ile yakınlık var, gerekirse modifiye edilir |
+| 2026-04 | Akademik strateji: bioRxiv preprint Faz 3 → peer-reviewed Faz 4 | Atıf büyümesi erken başlasın, peer review ürün olgunlaştığında |
+| 2026-04 | Hosting: GitHub Pages değil Cloudflare Pages | Registrar zaten Cloudflare; private repo deploy ücretsiz; global CDN; ileride Workers entegrasyonu |
+| 2026-04-28 | Coming soon landing page yayına alındı | Wound healing animasyonlu, waitlist formlu; cytomove.pages.dev canlı, cytomove.com propagation bekliyor |
+| 2026-04-28 | Waitlist: Formspree ücretsiz tier | İlk 2 kayıt alındı; ileride Supabase'e taşınacak |
+
+---
+
+## Tempo
+
+- **Haftalık:** Faz çıktılarına göre kişisel ilerleme gözden geçirme.
+- **Aylık:** Bu yol haritasını güncelle, kararları kaydet, KPI'ları gözden geçir.
+- **Üç aylık:** Stratejik gözden geçirme; doğru fazda mıyız, öncelikler kaymalı mı?
+- **Yıllık:** Bir yıllık birikmiş kullanıcı öğrenmesiyle yol haritasını sıfırdan yaz.
+
+---
+
+## Açık Sorular
+
+- [x] ~~Domain seçimi: cellverse.app vs .io vs .bio~~ → cytomove.com alındı
+- [ ] Cytomove.app ve cytomove.io savunma domainleri alınsın mı (toplam ~50 USD)
+- [ ] Landing page ilk dili: sadece İngilizce (global) yoksa Türkçe + İngilizce mi?
+- [ ] Marka tonu: klinik/ciddi mi, oyuncu/samimi mi?
+- [ ] İlk kullanıcı kazanım kanalı: X akademik biyoloji topluluğu, LinkedIn, doğrudan PI e-posta gönderimi?
+- [ ] Analiz kütüphanesi (npm paketi) SaaS'tan ayrı open-source verilsin mi?
+- [ ] Validation veri seti: kendi laboratuvar arşivi yeterli mi, iş birliği gerekir mi?
+- [ ] Preprint cross-listing (bioRxiv + arXiv cs.CV) yapılsın mı?
+- [ ] Modül 2 adayı (Faz 5): hangisi mevcut kullanıcılarla en hızlı doğrulanır?
+- [ ] Üst marka kararı: Cytomove tek ürün mü kalır, yoksa Faz 5'te yeni çatı marka mı seçilir?
+
+---
+
+*Bu yol haritası yaşayan bir belgedir. Gerçek kullanıcılardan öğrendikçe planlar güncellenir.*
