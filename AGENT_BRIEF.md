@@ -2,7 +2,7 @@
 <!-- Her oturuma bu dosyayı okuyarak başla. README.md ve ROADMAP.md ile birlikte kullan. -->
 
 **Son güncelleme:** 2026-04-29
-**Versiyon:** 0.7
+**Versiyon:** 0.8
 
 ---
 
@@ -97,15 +97,18 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 | `index.html` | Canlı ✅ | Light theme, iki sütun hero, canvas animasyonu, trust layer, OG meta |
 | `ROADMAP.md` | v0.4 ✅ | 18 aylık 5 fazlı plan |
 | `README.md` | ✅ | GitHub ana sayfası |
-| `AGENT_BRIEF.md` | v0.7 ✅ | Bu dosya |
+| `AGENT_BRIEF.md` | v0.8 ✅ | Bu dosya |
 | `docs/validation-protocol.md` | v0.2 ✅ | Tier 1 onaylandı (CC BY 4.0); Düzgün-lab TBD'leri büyük ölçüde dolduruldu |
 | `docs/validation-inventory.csv` | Üretildi ✅ | 442 satır, otomatik metadata; envanter bu dosyada |
 | `docs/validation-inventory-summary.md` | Üretildi ✅ | Hücre × koşul × zaman crosstab; coverage assessment |
 | `scripts/build_inventory.py` | ✅ | Envanter generator; idempotent, tekrar çalıştırılabilir |
 | `scripts/build_ground_truth_sample.py` | ✅ | ImageJ ölçüm planı generator; resolved metadata, max 3/stratum |
+| `scripts/build_combine_ground_truth.py` | ✅ | COMBİNE Excel area/width/closure extractor; mapping confidence ayrımı var |
 | `docs/visual-sample-review.md` | Üretildi ✅ | 9 representative Tier 1 image için kalite sınıfları + preprocessing notları |
 | `docs/ground-truth-sampling-plan.csv` | Üretildi ✅ | ImageJ re-measurement için deterministik 60 imajlık çalışma listesi |
 | `docs/ground-truth-sampling-plan-summary.md` | Üretildi ✅ | Örnekleme rol/hücre/koşul/zaman özeti |
+| `docs/combine-ground-truth.csv` | Üretildi ✅ | COMBİNE Excel ölçümleri: 9 main-table + 12 aggregate ORT satırı |
+| `docs/combine-ground-truth-summary.md` | Üretildi ✅ | Explicit/inferred/aggregate ground-truth kullanım özeti |
 | `assets/og-image.png` | Canlı ✅ | Sosyal medya link önizleme görseli |
 
 ---
@@ -180,9 +183,9 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 - [x] Mikroskop markası: Olympus (model belirsiz, opsiyonel)
 - [ ] Protokolde kalan açık maddeler tamamlanmalı: Olympus model, ikinci rater, unpublished subset için co-author consent
 - [x] (a) Envanter scripti yazıldı + çalıştırıldı — 442 satır CSV + crosstab summary üretildi (2026-04-29)
-- [x] (b) xlsx ölçümleri parse edildi — 12 condition-level satır, 4'ü imaj-isim eşli; **caveat: xlsx'ler condition-level özet, per-image ground truth değil**
+- [x] (b) COMBİNE Excel ölçümleri ayrıntılı parse edildi — `docs/combine-ground-truth.csv`; 9 main-table satırı, 4 explicit label, 5 inferred timepoint, 12 aggregate ORT satırı. Area ana MVP metriği, width/distance ikinci metrik.
 - [x] (c) Örnek görüntü görsel inceleme yapıldı — `docs/visual-sample-review.md`; ana bulgu: circular FOV/handwritten labels preprocessing gerektiriyor, COMBINE crop subset erken prototip için en temiz başlangıç.
-- [ ] **Per-image ImageJ ground truth re-measurement** (Düzgün lab tarafı): `docs/ground-truth-sampling-plan.csv` ile 60 imajlık deterministik liste hazır; ImageJ + Wound Healing plugin ölçümleri hâlâ pending
+- [ ] **Per-image ImageJ ground truth re-measurement** (Düzgün lab tarafı): `docs/ground-truth-sampling-plan.csv` ile 60 imajlık deterministik liste hazır; COMBİNE Excel area/width değerleri seed calibration olarak çıkarıldı, kalan ImageJ ölçümleri hâlâ pending
 - [ ] Üçüncü hücre hattı kararı (HeLa / A549 / başka) — generalizability için
 - [ ] Gerçek mikroskop kamerası ile çekilmiş bir referans set (telefon-okül dışı)
 - [ ] Client-side segmentasyon algoritması prototip (validation set CSV'ye girdikten sonra)
