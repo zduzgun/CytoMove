@@ -449,7 +449,7 @@
         <div class="section">
           <div class="section-title">View</div>
           <div class="segmented" id="viewMode">
-            <button type="button" data-view="overlay" class="active">Overlay</button>
+            <button type="button" data-view="overlay" class="active">Contour</button>
             <button type="button" data-view="mask">Mask</button>
             <button type="button" data-view="source">Source</button>
           </div>
@@ -467,8 +467,8 @@
           <div class="control">
             <label for="minComponent">Min component area</label>
             <div class="range-row">
-              <input id="minComponent" type="range" min="0" max="50000" value="2200" step="100">
-              <div class="value-box" id="minComponentValue">2200</div>
+              <input id="minComponent" type="range" min="0" max="250000" value="20000" step="1000">
+              <div class="value-box" id="minComponentValue">20000</div>
             </div>
           </div>
           <div class="control">
@@ -653,10 +653,11 @@
       return threshold;
     }
 
-    function filterComponents(mask, width, height, minArea) {
+    function filterComponents(mask, width, height, minArea, maxComponents = 1) {
       const labels = new Int32Array(width * height);
       const queue = new Int32Array(width * height);
       const keep = new Uint8Array(width * height);
+      const components = [];
       let label = 1;
       const neighbors = [-1, 1, -width, width];
 
@@ -681,10 +682,17 @@
           }
         }
         if (area >= minArea) {
-          for (let i = 0; i < tail; i++) keep[queue[i]] = 1;
+          components.push({ area, pixels: Array.from(queue.slice(0, tail)) });
         }
         label++;
       }
+
+      components
+        .sort((a, b) => b.area - a.area)
+        .slice(0, maxComponents)
+        .forEach(component => {
+          component.pixels.forEach(idx => { keep[idx] = 1; });
+        });
       return keep;
     }
 
@@ -745,7 +753,7 @@
         if (!field[p]) continue;
         rawMask[p] = state.polarity === 'bright' ? (norm[p] >= threshold ? 1 : 0) : (norm[p] <= threshold ? 1 : 0);
       }
-      const mask = filterComponents(rawMask, canvas.width, canvas.height, Number(els.minComponent.value));
+      const mask = filterComponents(rawMask, canvas.width, canvas.height, Number(els.minComponent.value), 1);
       let area = 0;
       let fieldArea = 0;
       for (let p = 0; p < len; p++) {
@@ -763,6 +771,41 @@
       log(`<strong>Threshold ${threshold}</strong>. Field ${fmt(fieldArea)} px, mask ${fmt(area)} px. ${gt ? `Ground truth ${fmt(gt.area)} px.` : 'No ground truth attached.'}`);
     }
 
+    function isBoundary(mask, width, height, p) {
+      if (!mask[p]) return false;
+      const x = p % width;
+      const y = Math.floor(p / width);
+      if (x === 0 || y === 0 || x === width - 1 || y === height - 1) return true;
+      return !mask[p - 1] || !mask[p + 1] || !mask[p - width] || !mask[p + width];
+    }
+
+    function paintPixel(data, width, x, y, color, alpha = 1) {
+      const idx = (y * width + x) * 4;
+      data[idx] = Math.round(data[idx] * (1 - alpha) + color[0] * alpha);
+      data[idx + 1] = Math.round(data[idx + 1] * (1 - alpha) + color[1] * alpha);
+      data[idx + 2] = Math.round(data[idx + 2] * (1 - alpha) + color[2] * alpha);
+      data[idx + 3] = 255;
+    }
+
+    function drawContour(data, mask, width, height) {
+      const shadow = [18, 32, 39];
+      const line = [255, 255, 255];
+      for (let p = 0; p < mask.length; p++) {
+        if (!isBoundary(mask, width, height, p)) continue;
+        const x = p % width;
+        const y = Math.floor(p / width);
+        const dotted = ((x * 3 + y * 5) % 22) < 5;
+        if (!dotted) continue;
+        for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+          paintPixel(data, width, nx, ny, shadow, 0.34);
+        }
+        paintPixel(data, width, x, y, line, 1);
+      }
+    }
+
     function drawResult(source, mask, field) {
       const canvas = els.canvas;
       const ctx = canvas.getContext('2d');
@@ -776,16 +819,14 @@
           data[i + 1] = mask[p] ? 159 : v;
           data[i + 2] = mask[p] ? 143 : v;
           data[i + 3] = 255;
-        } else if (mask[p]) {
-          data[i] = Math.round(data[i] * 0.45 + 15 * 0.55);
-          data[i + 1] = Math.round(data[i + 1] * 0.45 + 159 * 0.55);
-          data[i + 2] = Math.round(data[i + 2] * 0.45 + 143 * 0.55);
-          data[i + 3] = 255;
         } else if (!field[p]) {
           data[i] = Math.round(data[i] * 0.35);
           data[i + 1] = Math.round(data[i + 1] * 0.35);
           data[i + 2] = Math.round(data[i + 2] * 0.35);
         }
+      }
+      if (state.view === 'overlay') {
+        drawContour(data, mask, source.width, source.height);
       }
       ctx.putImageData(out, 0, 0);
     }
