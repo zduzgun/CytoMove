@@ -1,0 +1,186 @@
+Compiler version: 4.8 (R2008a) 
+mcc -o 'TScratch' -W 'WinMain:TScratch' -d 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\TScratch_win\src' -T 'link:exe' -v 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\scratchassay.m' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\crvlt_getmagnitudeME.mexw32' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\cvwindow_mex.m' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\cvwindow_mex.mexw32' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\dlg_question.fig' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\dlg_question.m' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\ipticondir.m' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\makeanalimgfilename.m' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\makedatafilename.m' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\mecombine.m' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\mefcv2_variant.m' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\mescatter_mex.m' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\mescatter_mex.mexw32' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\scratch_applythresh.m' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\scratch_fillholes.m' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\scratch_getdefaultopts.m' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\scratch_removeislands.m' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\scratcharea_dir.m' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\scratcharea_multidir.m' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\scratcharea_one.m' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\scratcharea_reanalyze.m' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\scratchassay.fig' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\scratchopts.mat' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\scratchsettings.fig' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\scratchsettings.m' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\writemultidata.m' -a 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\crvlt_getmagnitudeME.m'  
+Processing C:\Program Files\MATLAB\R2008a\toolbox\matlab\mcc.enc 
+Processing C:\Program Files\MATLAB\R2008a\toolbox\images\mcc.enc 
+Processing C:\Program Files\MATLAB\R2008a\toolbox\shared\imageslib\mcc.enc 
+Processing C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\dlg_question.fig 
+Processing C:\Program Files\MATLAB\R2008a\toolbox\curvefit\mcc.enc 
+Processing C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\scratchassay.fig 
+Processing C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\scratchsettings.fig 
+Processing C:\Program Files\MATLAB\R2008a\toolbox\stats\mcc.enc 
+Processing C:\Program Files\MATLAB\R2008a\toolbox\matlab\guide\guideopts.fig 
+Processing C:\Program Files\MATLAB\R2008a\toolbox\matlab\winfun\actxcontrolselect.fig 
+Processing C:\Program Files\MATLAB\R2008a\toolbox\matlab\winfun\actxcontrolcreateproperty.fig 
+Processing include files... 
+2 item(s) added. 
+Processing directories installed with MCR... 
+The file C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\TScratch_win\src\mccExcludedFiles.log contains a list of functions excluded from the CTF archive. 
+2 item(s) added. 
+Generating MATLAB path for the compiled application... 
+Created 45 path items. 
+Begin validation of MEX files: Tue Jul 01 22:35:32 2008 
+Validating 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\crvlt_getmagnitudeME.mexw32'. 
+Found M-file 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\crvlt_getmagnitudeME.m'. 
+MEX file  
+    'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\crvlt_getmagnitudeME.mexw32'  
+ is valid. It contains 'mexFunction.' 
+Validating 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\cvwindow_mex.mexw32'. 
+Found M-file 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\cvwindow_mex.m'. 
+MEX file  
+    'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\cvwindow_mex.mexw32'  
+ is valid. It contains 'mexFunction.' 
+Validating 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\mescatter_mex.mexw32'. 
+Found M-file 'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\mescatter_mex.m'. 
+MEX file  
+    'C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\mescatter_mex.mexw32'  
+ is valid. It contains 'mexFunction.' 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\compiler\deploy\deploywhich.mexw32'. 
+No conflicting M-file found. 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\compiler\deploy\readline.mexw32'. 
+No conflicting M-file found. 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\images\private\applylutc.mexw32'. 
+No conflicting M-file found. 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\images\private\bwlabel1.mexw32'. 
+No conflicting M-file found. 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\images\private\bwlabel2.mexw32'. 
+No conflicting M-file found. 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\images\private\bwpackc.mexw32'. 
+No conflicting M-file found. 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\images\private\bwunpackc.mexw32'. 
+No conflicting M-file found. 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\images\private\cq.mexw32'. 
+No conflicting M-file found. 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\images\private\ditherc.mexw32'. 
+Found M-file 'C:\Program Files\MATLAB\R2008a\toolbox\images\images\private\ditherc.m'. 
+MEX file  
+    'C:\Program Files\MATLAB\R2008a\toolbox\images\images\private\ditherc.mexw32'  
+ is valid. It contains 'mexFunction.' 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\images\private\grayto8.mexw32'. 
+Found M-file 'C:\Program Files\MATLAB\R2008a\toolbox\images\images\private\grayto8.m'. 
+MEX file  
+    'C:\Program Files\MATLAB\R2008a\toolbox\images\images\private\grayto8.mexw32'  
+ is valid. It contains 'mexFunction.' 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\images\private\imhistc.mexw32'. 
+Found M-file 'C:\Program Files\MATLAB\R2008a\toolbox\images\images\private\imhistc.m'. 
+MEX file  
+    'C:\Program Files\MATLAB\R2008a\toolbox\images\images\private\imhistc.mexw32'  
+ is valid. It contains 'mexFunction.' 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\images\private\imlincombc.mexw32'. 
+No conflicting M-file found. 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\images\private\immultmex.mexw32'. 
+No conflicting M-file found. 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\images\private\ind2rgb8c.mexw32'. 
+No conflicting M-file found. 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\images\private\int16touint16.mexw32'. 
+No conflicting M-file found. 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\images\private\intlutc.mexw32'. 
+No conflicting M-file found. 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\images\private\morphmex.mexw32'. 
+No conflicting M-file found. 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\images\private\parityscan.mexw32'. 
+No conflicting M-file found. 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\images\private\resizeColumnsCore.mexw32'. 
+No conflicting M-file found. 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\iptutils\iptcheckinput.mexw32'. 
+Found M-file 'C:\Program Files\MATLAB\R2008a\toolbox\images\iptutils\iptcheckinput.m'. 
+MEX file  
+    'C:\Program Files\MATLAB\R2008a\toolbox\images\iptutils\iptcheckinput.mexw32'  
+ is valid. It contains 'mexFunction.' 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\iptutils\private\iptregistry.mexw32'. 
+Found M-file 'C:\Program Files\MATLAB\R2008a\toolbox\images\iptutils\private\iptregistry.m'. 
+MEX file  
+    'C:\Program Files\MATLAB\R2008a\toolbox\images\iptutils\private\iptregistry.mexw32'  
+ is valid. It contains 'mexFunction.' 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\medformats\private\bitparse.mexw32'. 
+No conflicting M-file found. 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\medformats\private\dicom_decode_rle_segment.mexw32'. 
+No conflicting M-file found. 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\medformats\private\dicomlookup_helper.mexw32'. 
+No conflicting M-file found. 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\medformats\private\dicomparse.mexw32'. 
+No conflicting M-file found. 
+Validating 'C:\Program Files\MATLAB\R2008a\toolbox\images\medformats\private\tobits.mexw32'. 
+No conflicting M-file found. 
+End validation of MEX files: Tue Jul 01 22:35:32 2008 
+Deleting 29 temporary MEX authorization files. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_24317_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_9163_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_14269_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_9602_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_11602_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_30899_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_11151_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_23474_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_6679_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_14249_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_17695_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_22761_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_23800_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_30393_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_19228_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_28338_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_20641_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_30699_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_16699_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_29816_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_1831_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_31767_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_16323_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_20727_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_32163_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_14330_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_25679_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_14320_5004.auth'. 
+Removing: 'C:\DOCUME~1\Tobias\LOCALS~1\Temp\mathworks_tmp_5004_13088_5004.auth'. 
+Parsing file "C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\scratchassay.m" 
+	(Referenced from: "Compiler Command Line"). 
+Parsing file "C:\Program Files\MATLAB\R2008a\toolbox\compiler\deploy\deployprint.m" 
+	(Referenced from: "Compiler Command Line"). 
+Parsing file "C:\Program Files\MATLAB\R2008a\toolbox\compiler\deploy\printdlg.m" 
+	(Referenced from: "Compiler Command Line"). 
+Generating file "C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\TScratch_win\src\TScratch_main.c". 
+Generating file "C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\TScratch_win\src\readme.txt". 
+Generating file "C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\TScratch_win\src\TScratch_mcc_component_data.c". 
+Executing command: mbuild  -O -v -output "TScratch" -I"C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\TScratch_win\src" "C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\TScratch_win\src\TScratch_main.c" "C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\TScratch_win\src\TScratch_mcc_component_data.c" -link exe -outdir "C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\TScratch_win\src" 
+ This is mbuild Copyright 1984-2006 The MathWorks, Inc. 
+ 
+-> Default options filename found in C:\Documents and Settings\Tobias\Application Data\MathWorks\MATLAB\R2008a 
+---------------------------------------------------------------- 
+->    Options file           = C:\Documents and Settings\Tobias\Application Data\MathWorks\MATLAB\R2008a\compopts.bat 
+->    COMPILER               = cl 
+->    Compiler flags: 
+         COMPFLAGS           = -c -Zp8 -G5 -GX -W3 -nologo 
+         OPTIMFLAGS          = -O2 -DNDEBUG 
+         DEBUGFLAGS          = -Z7 
+         arguments           =  "-IC:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\TScratch_win\src" 
+         Name switch         = /Fo 
+->    Pre-linking commands   =  
+->    LINKER                 = link 
+->    Link directives: 
+         LINKFLAGS           = kernel32.lib user32.lib gdi32.lib advapi32.lib oleaut32.lib ole32.lib /LIBPATH:"C:\PROGRA~1\MATLAB\R2008a\extern\lib\win32\microsoft" /nologo mclmcrrt.lib 
+         LINKFLAGSPOST       =  
+         Name directive      = "/out:C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\TScratch_win\src\TScratch.exe" 
+         File link directive =  
+         Lib. link directive =  
+         Rsp file indicator  = @ 
+->    Resource Compiler      = rc /fo "C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\TScratch_win\src\.res" 
+->    Resource Linker        =  
+---------------------------------------------------------------- 
+ 
+ 
+--> cl  "-IC:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\TScratch_win\src" -c -Zp8 -G5 -GX -W3 -nologo /FoC:\DOCUME~1\Tobias\LOCALS~1\Temp\mbuild_NBoetP\TScratch_main.obj -IC:\PROGRA~1\MATLAB\R2008a\extern\include -IC:\PROGRA~1\MATLAB\R2008a\simulink\include -O2 -DNDEBUG "C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\TScratch_win\src\TScratch_main.c" 
+ 
+TScratch_main.c 
+ 
+--> cl  "-IC:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\TScratch_win\src" -c -Zp8 -G5 -GX -W3 -nologo /FoC:\DOCUME~1\Tobias\LOCALS~1\Temp\mbuild_NBoetP\TScratch_mcc_component_data.obj -IC:\PROGRA~1\MATLAB\R2008a\extern\include -IC:\PROGRA~1\MATLAB\R2008a\simulink\include -O2 -DNDEBUG "C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\TScratch_win\src\TScratch_mcc_component_data.c" 
+ 
+TScratch_mcc_component_data.c 
+    Contents of C:\DOCUME~1\Tobias\LOCALS~1\Temp\mbuild_NBoetP\mbuild_tmp.rsp: 
+  C:\DOCUME~1\Tobias\LOCALS~1\Temp\mbuild_NBoetP\TScratch_main.obj  C:\DOCUME~1\Tobias\LOCALS~1\Temp\mbuild_NBoetP\TScratch_mcc_component_data.obj 
+ 
+ 
+--> link "/out:C:\Documents and Settings\Tobias\My Documents\MATLAB\ScratchAssay\TScratch_win\src\TScratch.exe" kernel32.lib user32.lib gdi32.lib advapi32.lib oleaut32.lib ole32.lib /LIBPATH:"C:\PROGRA~1\MATLAB\R2008a\extern\lib\win32\microsoft" /nologo mclmcrrt.lib  @C:\DOCUME~1\Tobias\LOCALS~1\Temp\mbuild_NBoetP\mbuild_tmp.rsp   
+ 
+ 
+--> if exist C:\DOCUME~1\Tobias\LOCALS~1\Temp\mbuild_NBoetP\templib.def del C:\DOCUME~1\Tobias\LOCALS~1\Temp\mbuild_NBoetP\templib.def 
+ 

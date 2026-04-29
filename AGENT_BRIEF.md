@@ -66,7 +66,7 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 
 ---
 
-## Canlı Durum (2026-04-28 itibarıyla)
+## Canlı Durum (2026-04-29 itibarıyla)
 
 - ✅ Cloudflare Pages deploy aktif
 - ✅ cytomove.com custom domain (propagasyon tamamlandı)
@@ -74,8 +74,8 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 - ✅ Canvas wound healing animasyonu çalışıyor
 - ✅ Formspree waitlist çalışıyor (inbox'a geliyor, spam değil)
 - ✅ GitHub repo public: `github.com/zduzgun/CytoMove`
-| `assets/og-image.png` | Canlı ✅ | Sosyal medya link önizleme görseli |
 - ✅ Scientific trust layer eklendi: cell biologist, browser-local assay images, validation in progress
+- 🔄 `prototype/index.html` tam yeniden yazımı devam ediyor (2026-04-29)
 
 ---
 
@@ -87,6 +87,7 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 - `2d85f03` Landing page bilimsel ürün tasarımına taşındı
 - `e3cb468` Canlı sayfada kesilen JS sonu tamamlandı
 - `77f4d93` Canvas animasyonu IIFE yapısına alındı, görsel güçlendirildi
+- *(bekliyor)* `prototype/index.html` tam yeniden yazımı — ImageJ pipeline, drag&drop, export
 
 ---
 
@@ -114,7 +115,7 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 | `docs/area-calibration-trends.csv` | Üretildi ✅ | 12 aggregate ORT trend satırı; per-image validation değil |
 | `docs/area-calibration-summary.md` | Üretildi ✅ | Calibration bağlantı özeti; 3 sampling-plan satırı seed edildi |
 | `assets/og-image.png` | Canlı ✅ | Sosyal medya link önizleme görseli |
-| `prototype/index.html` | İlk prototip ✅ | Area-first segmentation lab; local sample loader, mask overlay, GT comparison |
+| `prototype/index.html` | 🔄 Yeniden yazılıyor | ImageJ-matched pipeline: variance filter (integral image), fill holes, edge-span width, drag&drop, PNG+CSV export, zoom/pan, Inter font, presets |
 
 ---
 
@@ -193,8 +194,9 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 - [ ] **Per-image ImageJ ground truth re-measurement** (Düzgün lab tarafı): `docs/ground-truth-sampling-plan.csv` ile 60 imajlık deterministik liste hazır; COMBİNE Excel area/width değerleri seed calibration olarak çıkarıldı, kalan ImageJ ölçümleri hâlâ pending
 - [ ] Üçüncü hücre hattı kararı (HeLa / A549 / başka) — generalizability için
 - [ ] Gerçek mikroskop kamerası ile çekilmiş bir referans set (telefon-okül dışı)
-| `prototype/index.html` | İlk prototip ✅ | Area-first segmentation lab; local sample loader, mask overlay, GT comparison |
+| `prototype/index.html` | 🔄 Yeniden yazılıyor | ImageJ-matched pipeline: variance filter, fill holes, export |
 - [ ] Manuel düzeltme arayüzü tasarımı
+- [ ] Prototype git commit + Cloudflare Pages test
 
 ### Validation Veri Seti — Mevcut Arşiv Özeti (2026-04-28)
 
@@ -223,6 +225,37 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 ---
 
 ## Teknik Notlar
+
+### Prototype Algoritması (2026-04-29)
+
+**Seçilen yaklaşım: Pure JS, zero dependency (OpenCV.js yok)**
+- OpenCV.js 8 MB WASM indirimi + init gecikmesi → prototype için overkill
+- Typed array (Uint8Array, Float32Array, Int32Array) ile tüm ops yeterince hızlı
+- OpenCV.js → Faz 3'te gerekirse registration için değerlendirilebilir
+
+**ImageJ Wound Healing Size Tool pipeline'ı (JS'de):**
+1. `toGray()` — BT.601 luminance (0.2126R + 0.7152G + 0.0722B)
+2. `fovMask()` — FOV cutoff ile siyah köşe/dairesel alan maskeleme
+3. `enhanceContrast()` — P1/P99 percentile clip + normalize
+4. `varianceFilter()` — **integral image (summed area table)** ile O(1) per-pixel local variance; ImageJ `Variance... radius=R` ile eşdeğer
+5. `otsuOnMap()` — variance map üzerinde Otsu threshold
+6. `applyThreshold()` — polarity: smooth (gap=dark, düşük variance) veya bright (hücre=yüksek variance)
+7. `fillHoles()` — border flood-fill + invert; ImageJ `Fill Holes` eşdeğeri
+8. `filterComponents()` — BFS connected components, en büyük N bileşeni tut
+9. `estimateWidth()` — her satırda min/max span → mean ± SD; ImageJ edge-span yöntemi
+
+**Rendering:**
+- Contour: boundary pixel tespiti + dotted white line
+- Variance map görünümü: normalizasyon ile gri tonlamalı
+- Mask / Source / Overlay view modları
+
+**Export:**
+- PNG: canvas.toDataURL → anchor click
+- CSV: 24 alan; image ID, GT değerleri, tüm metrikler, parametreler, timestamp
+
+**⚠️ Geliştirme notu — PowerShell here-string tuzağı:**
+PowerShell `@'...'@` here-string içinde `</script>` veya HTML tag karakterleri bozulabiliyor.  
+Dosya yazımında: ya `write_to_file` aracını kullan, ya Python script ile yaz, ya da part*.html parçalarını `Get-Content | Set-Content` ile birleştir.
 
 ### Git / GitHub
 - Repo: `https://github.com/zduzgun/CytoMove`
