@@ -2,3 +2,6 @@ github_token.txt
 .env
 .env.*
 wound healing/
+wound_healing_self_articles/
+__pycache__/
+*.pyc

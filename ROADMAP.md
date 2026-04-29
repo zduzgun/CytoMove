@@ -106,8 +106,8 @@ Bu kriterler karşılanmadan Faz 3'e geçilmez.
 - [ ] Karşılaştırma analizi: TScratch, ImageJ MRI Wound Healing macro, Wimasis vs Cytomove
 - [ ] İstatistiksel doğrulama: Pearson r, Bland-Altman, intra-class correlation
 - [ ] Reproducibility testi: aynı görüntü farklı tarayıcılarda aynı sonuç verir mi
-- [ ] Validation dataset lisansı netleşti: CC BY 4.0 (sadece derived masks/measurements; ham görüntü hakları ayrıca değerlendirilir)
-- [ ] Validation dataset metadata formatı belirlendi (görüntü kaynağı, hücre tipi, mikroskop, kontrast bilgisi)
+- [x] Validation dataset lisansı netleşti: Tier 1 arşiv CC BY 4.0; raw image redistribution published subset için açık, unpublished subset için co-author consent bekliyor
+- [x] Validation dataset metadata formatı belirlendi ve `docs/validation-inventory.csv` üretildi (442 satır)
 
 **Tech stack eklemeleri:**
 - OpenCV.js
@@ -384,6 +384,7 @@ Her PDF rapora otomatik methods paragrafı + DOI + sürüm gömülecek. Akademis
 | 2026-04-28 | Coming soon landing page yayına alındı | Wound healing animasyonlu, waitlist formlu; cytomove.pages.dev canlı, cytomove.com propagation bekliyor |
 | 2026-04-28 | Waitlist: Formspree ücretsiz tier | İlk 2 kayıt alındı; ileride Supabase'e taşınacak |
 | 2026-04-28 | Faz 1 kapanışı: Minimum Credible Landing | OG image, scientific trust layer ve temkinli claim dili tamamlandı; logo/sosyal/blog beta launch hazırlığına ertelendi |
+| 2026-04-29 | Validation inventory generated | 442-image Tier 1 archive inventoried; metadata CSV + coverage summary produced; per-image ImageJ re-measurement remains required |
 
 ---
 
@@ -404,7 +405,7 @@ Her PDF rapora otomatik methods paragrafı + DOI + sürüm gömülecek. Akademis
 - [x] Marka tonu: akademik SaaS; klinik/kurumsal değil, startup oyunculuğu da değil
 - [ ] İlk kullanıcı kazanım kanalı: X akademik biyoloji topluluğu, LinkedIn, doğrudan PI e-posta gönderimi?
 - [ ] Analiz kütüphanesi (npm paketi) SaaS'tan ayrı open-source verilsin mi?
-- [ ] Validation veri seti: kendi laboratuvar arşivi yeterli mi, iş birliği gerekir mi?
+- [x] Validation veri seti: Tier 1 Düzgün lab arşivi initial set için yeterli; üçüncü hücre hattı / formal kamera için public dataset opsiyonel
 - [ ] Preprint cross-listing (bioRxiv + arXiv cs.CV) yapılsın mı?
 - [ ] Modül 2 adayı (Faz 5): hangisi mevcut kullanıcılarla en hızlı doğrulanır?
 - [ ] Üst marka kararı: Cytomove tek ürün mü kalır, yoksa Faz 5'te yeni çatı marka mı seçilir?

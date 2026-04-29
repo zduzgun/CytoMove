@@ -1,8 +1,8 @@
 # AGENT_BRIEF.md — Cytomove Operasyonel Hafıza
 <!-- Her oturuma bu dosyayı okuyarak başla. README.md ve ROADMAP.md ile birlikte kullan. -->
 
-**Son güncelleme:** 2026-04-28  
-**Versiyon:** 0.4
+**Son güncelleme:** 2026-04-29
+**Versiyon:** 0.5
 
 ---
 
@@ -97,8 +97,11 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 | `index.html` | Canlı ✅ | Light theme, iki sütun hero, canvas animasyonu, trust layer, OG meta |
 | `ROADMAP.md` | v0.4 ✅ | 18 aylık 5 fazlı plan |
 | `README.md` | ✅ | GitHub ana sayfası |
-| `AGENT_BRIEF.md` | v0.4 ✅ | Bu dosya |
-| `docs/validation-protocol.md` | v0.1 ✅ | Preprint Methods bölümüne taşınacak IMRAD protokol; İngilizce; 11 bölüm; 5 TBD açık madde |
+| `AGENT_BRIEF.md` | v0.5 ✅ | Bu dosya |
+| `docs/validation-protocol.md` | v0.2 ✅ | Tier 1 onaylandı (CC BY 4.0); Düzgün-lab TBD'leri büyük ölçüde dolduruldu |
+| `docs/validation-inventory.csv` | Üretildi ✅ | 442 satır, otomatik metadata; envanter bu dosyada |
+| `docs/validation-inventory-summary.md` | Üretildi ✅ | Hücre × koşul × zaman crosstab; coverage assessment |
+| `scripts/build_inventory.py` | ✅ | Envanter generator; idempotent, tekrar çalıştırılabilir |
 | `assets/og-image.png` | Canlı ✅ | Sosyal medya link önizleme görseli |
 
 ---
@@ -131,6 +134,7 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 | Validation protokolü İngilizce yazıldı (2026-04-28) | bioRxiv preprint Methods bölümüne çeviri sürtüşmesi olmadan taşınacak |
 | Tier 1 birincil kaynak: Düzgün lab arşivi (2026-04-28) | 442 görüntü keşfedildi; n = 50 hedefi katlanarak aşılıyor |
 | Faz 1 kapanış tanımı: Minimum Credible Landing (2026-04-28) | OG image + scientific trust layer + temkinli claim dili tamamlandı; logo/sosyal/blog beta launch hazırlığına bırakıldı |
+| Tier 1 görüntülerinin lisansı: CC BY 4.0 onaylandı (2026-04-29) | Mol Divers 2024 yayını CC BY 4.0; Zenodo deposit serbest; H/M hücre hatları + ×10 objektif + MRI macro ground-truth makaleyle uyumlu |
 
 ---
 
@@ -166,15 +170,15 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 ### Faz 2 — Validation İş Kolu (Devam Ediyor)
 - [x] Validation protokolü v0.1 yazıldı (`docs/validation-protocol.md`)
 - [x] Mevcut laboratuvar arşivi keşfedildi (`wound healing/` — 442 görüntü)
-- [ ] **3 kritik soru cevaplanmalı** (sonraki oturum için):
-  1. `wound healing/29.06.22/COMBİNE/` görüntüleri Molecules 2022, 27, 635 makalesinde mi yayımlandı? Yayıncı CC BY 4.0 verir mi?
-  2. `H` = HUVEC, `M` = MDA-MB-231 doğrulansın
-  3. `LC` koşul kısaltması ne anlama geliyor (K, 8F, 64F, CİS, LUT açık)
-- [ ] Protokoldeki 5 "TBD — Düzgün lab" maddesi doldurulmalı (hücre hatları, mikroskoplar, ikinci rater, yayın geçmişi)
-- [ ] Önerilen 3 işlem (kullanıcı onayı bekliyor):
-  - (a) 442 görüntüyü tarayan envanter scripti → `validation-set-metadata.csv`
-  - (b) `COMBİNE/*.xlsx` ölçümlerini görüntü dosyalarıyla otomatik eşleştir; kaç görüntü için ground-truth tam belirle
-  - (c) Klasör başına 1-2 örnek görüntüyü görsel olarak inceleyip scratch kalitesi/kontrast varyasyonunu raporla
+- [x] Yayın durumu çözüldü (2026-04-29): Düzgün Z, Korkmaz FD, Akgün E. *Mol Divers* 2024;29(2):1069-1078. DOI: [10.1007/s11030-024-10891-z](https://doi.org/10.1007/s11030-024-10891-z) — **CC BY 4.0** lisansı ile yayımlandı, TÜBİTAK OA fonlu, redistribution serbest.
+- [x] H = HUVEC, M = MDA-MB-231 doğrulandı (makalenin Methods bölümü)
+- [x] LC = Luteolin + Sisplatin kombinasyonu (2026-04-29 onaylandı). Tüm altı koşul kapalı: K, 8F (FDI-6 8μM), 64F (FDI-6 64μM), CİS (sisplatin), LUT (luteolin), LC (luteolin+sisplatin).
+- [x] Mikroskop markası: Olympus (model belirsiz, opsiyonel)
+- [ ] Protokolde kalan açık maddeler tamamlanmalı: Olympus model, ikinci rater, unpublished subset için co-author consent
+- [x] (a) Envanter scripti yazıldı + çalıştırıldı — 442 satır CSV + crosstab summary üretildi (2026-04-29)
+- [x] (b) xlsx ölçümleri parse edildi — 12 condition-level satır, 4'ü imaj-isim eşli; **caveat: xlsx'ler condition-level özet, per-image ground truth değil**
+- [ ] (c) Klasör başına örnek görüntüyü görsel inceleme — yapılmadı; istenirse şimdi
+- [ ] **Per-image ImageJ ground truth re-measurement** (Düzgün lab tarafı): n ≈ 50-80 imaj seçilip stratified rasgele örnekleme ile ImageJ + Wound Healing plugin ile ölçülecek
 - [ ] Üçüncü hücre hattı kararı (HeLa / A549 / başka) — generalizability için
 - [ ] Gerçek mikroskop kamerası ile çekilmiş bir referans set (telefon-okül dışı)
 - [ ] Client-side segmentasyon algoritması prototip (validation set CSV'ye girdikten sonra)
@@ -196,12 +200,13 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 - Dosyalar Temmuz 2022 tarihli; `Supplementary_Data.pdf` + `Grafikler.pptx` + Molecules 2022 referansı yayımlanmış makaleyi düşündürüyor
 
 **Çeşitlilik değerlendirmesi:**
-- Hücre tipi: 2 hat (3 hedef) — bir tane daha eklemek gerek
-- Görüntüleme modu: tek mod (telefon-okül brightfield) — hedef kullanıcı kitlesiyle hizalı, ama formal mikroskop set'i de eklenmeli
-- Büyütme: tek (bilgisi yok)
-- Hacim: ROADMAP'teki n=50 hedefini fazlasıyla karşılıyor
+- Hücre tipi: 2 hat doğrulanmış (HUVEC + MDA-MB-231); 3 hedef için bir tane daha eklemek güçlendirici (zorunlu değil)
+- Görüntüleme modu: tek mod (telefon-okül brightfield) — hedef kullanıcı kitlesiyle hizalı; formal mikroskop set'i opsiyonel takviye
+- Büyütme: ×10 objektif (makaleden onaylandı)
+- Ground-truth aracı: ImageJ + MRI Wound Healing plugin (Suarez-Arnedo 2020)
+- Hacim: ROADMAP'teki n=50 hedefini fazlasıyla karşılıyor (442 görüntü)
 
-**Kritik uyarı:** Yayımlanmış makaleye ait görüntülerse redistribution hakkı yayıncıya geçmiş olabilir. CC BY 4.0 altında Zenodo deposit'ten önce yayıncı politikası kontrol edilmeli (MDPI tipik olarak CC BY 4.0).
+**Lisans durumu — onaylandı (2026-04-29):** Tier 1 görüntüleri CC BY 4.0 altında. Mol Divers 2024 yayını ([10.1007/s11030-024-10891-z](https://doi.org/10.1007/s11030-024-10891-z)) açık erişim, Düzgün birinci+sorumlu yazar; Zenodo deposit serbest, sadece atıf gerekli.
 
 ---
 

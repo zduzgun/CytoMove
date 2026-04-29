@@ -1,8 +1,8 @@
 # Cytomove Validation Dataset Protocol
 
-**Document version:** 0.1 (draft)
-**Status:** Pre-registered — collection not yet started
-**Last updated:** 2026-04-28
+**Document version:** 0.2 (draft)
+**Status:** Pre-registered — Tier 1 archive identified and licence-cleared; collection workflow not yet started
+**Last updated:** 2026-04-29
 **Owner:** Z. Düzgün, Giresun University Faculty of Medicine, Department of Medical Biology
 **Intended use:** This protocol is pre-registered prior to data collection. The text is written in IMRAD style so that the *Methods* and *Validation Dataset* sections of the planned bioRxiv preprint (Phase 3) can be excerpted from this document with minimal rewriting.
 
@@ -50,12 +50,12 @@ The primary set will be stratified across the following axes. Empty cells are ac
 
 | Axis | Target levels |
 |------|---------------|
-| Cell type | At least 3 distinct lines spanning epithelial, fibroblast, and endothelial origins. Candidate set: HeLa, MCF-7, A549, HUVEC, NIH/3T3, HaCaT. **TBD — Düzgün lab availability.** |
-| Imaging modality | Phase contrast (mandatory, ≥ 60 % of set); brightfield; fluorescence (cell-membrane or nuclear stain). |
-| Magnification | 4×, 10×, 20× (at least two of three represented). |
-| Scratch quality | Clean (sharp linear edge); ragged (uneven edge); partially detached (cells lifted at edge). |
-| Time point relative to wounding | t = 0 h (baseline); t = 6–12 h (mid-closure); t = 18–24 h (late closure). |
-| Microscope vendor / model | At least 2 distinct optical systems represented. **TBD — Düzgün lab inventory.** |
+| Cell type | Tier 1 confirmed: HUVEC (endothelial) + MDA-MB-231 (epithelial breast cancer). Stretch: add a third line (HeLa, MCF-7, A549, NIH/3T3, or HaCaT) from a public dataset (Tier 2) to broaden coverage. |
+| Imaging modality | Tier 1 confirmed: brightfield via smartphone-through-eyepiece. This reflects Cytomove's primary target user. Stretch: add a phase-contrast set captured with a dedicated microscope camera (Tier 2/3) for generalisability. |
+| Magnification | Tier 1 confirmed: ×10 objective throughout (per Düzgün et al. 2024, *Mol Divers* 29:1069). Stretch: add ×4 and/or ×20 from public sets. |
+| Scratch quality | Clean (sharp linear edge); ragged (uneven edge); partially detached (cells lifted at edge). To be classified per image during inventory pass. |
+| Time point relative to wounding | Tier 1 covers t = 0 h, 24 h, 48 h. Mid-closure (6–12 h) absent in Tier 1; deferred to public-dataset supplementation if a strong case for it emerges. |
+| Microscope vendor / model | Tier 1: smartphone camera (iPhone, 2022 campaign; Samsung Galaxy, 2021 campaign) coupled to lab microscope eyepiece, ×10 objective. Specific microscope model **TBD — Düzgün lab inventory**. Tier 2 supplementation expected to add at least one dedicated-camera optical system. |
 
 Each image is tagged with all axis values in the metadata schema (§7).
 
@@ -63,8 +63,8 @@ Each image is tagged with all axis values in the metadata schema (§7).
 
 A four-tier sourcing strategy will be followed, in priority order. Provenance and licence are recorded per image.
 
-### Tier 1 — Düzgün laboratory archive (target: 15–25 images)
-Retrospective images from prior experiments and current ongoing assays in the Department of Medical Biology, Giresun University Faculty of Medicine. This tier provides the highest provenance certainty, full metadata access, and an unambiguous redistribution licence (CC BY 4.0 by founder authority, subject to co-author agreements where applicable). Images already published in peer-reviewed papers will require checking with the publisher for redistribution rights; unpublished images carry no such restriction.
+### Tier 1 — Düzgün laboratory archive (target: 50–80 images, ample headroom from 442 raw)
+Retrospective images from a wound-healing experimental campaign in the Department of Medical Biology, Giresun University Faculty of Medicine, conducted in 2021–2022. Two cell lines (HUVEC and MDA-MB-231), six conditions (untreated control; FDI-6 at 8 µM and 64 µM; cisplatin; luteolin; luteolin + cisplatin combination), three time points (0, 24, 48 h), ×10 objective throughout. Acquired by smartphone camera through the microscope eyepiece — a setup that mirrors the actual hardware profile of Cytomove's primary target users (under-resourced cell-biology labs). A subset of these images was published in Düzgün Z, Korkmaz FD, Akgün E. *Mol Divers* 2024;29(2):1069–1078, [10.1007/s11030-024-10891-z](https://doi.org/10.1007/s11030-024-10891-z), under a Creative Commons Attribution 4.0 International licence. The published subset is therefore redistributable under CC BY 4.0 by the licence terms; unpublished images in the archive are released under the same licence by author authority. Pre-existing manual ground-truth measurements obtained with the ImageJ Wound Healing plugin (Suarez-Arnedo et al. 2020) are available for the curated `COMBİNE/` subset, eliminating a substantial portion of the ground-truth re-measurement burden.
 
 ### Tier 2 — Public bioimage repositories (target: 10–20 images)
 - **Image Data Resource (IDR)** — `idr.openmicroscopy.org`. Search terms: *scratch assay*, *wound healing assay*, *cell migration*. Filter for studies with permissive licensing.
@@ -182,15 +182,16 @@ This document is versioned in lock-step with the dataset Zenodo record. Material
 ### Changelog
 
 - **v0.1 (2026-04-28)** — Initial draft. Pre-registered before any image collection.
+- **v0.2 (2026-04-29)** — Tier 1 archive identified (442 images, two campaigns 2021–2022). Cell lines confirmed (HUVEC, MDA-MB-231). Magnification confirmed (×10). Ground-truth tool confirmed (ImageJ Wound Healing plugin, Suarez-Arnedo 2020). Licence confirmed (CC BY 4.0 via Düzgün et al. 2024, *Mol Divers* 29:1069). Diversity matrix updated with confirmed Tier 1 values and documented stretch goals.
 
 ---
 
 ## Open items requiring Düzgün-lab input
 
-The following parameters cannot be set without information about local lab capacity. Each is marked above as *TBD*.
+Most parameters previously marked TBD have now been resolved by reference to the published 2024 *Mol Divers* article and the recovered laboratory archive. The remaining open items are:
 
-- Available cell lines (Tier 1 candidates).
-- Available microscope(s) and objective(s).
-- Existing archive of usable scratch assay images (rough count, date range).
-- Availability of a second rater for ICC.
-- Whether any prior images have already appeared in published papers (affects redistribution).
+- **Specific Olympus microscope model** used for the 2021 and 2022 campaigns (brand confirmed: Olympus). Required only for completeness of the metadata field; does not block validation work.
+- **Availability of a second rater** for inter-rater ICC. Acceptable fallback: intra-rater reliability only, declared as a limitation.
+- **Co-author consent** for releasing the unpublished subset of the archive under CC BY 4.0 (Korkmaz, Akgün). Published subset already CC BY 4.0 by virtue of journal licence.
+
+Resolved on 2026-04-29: `LC` = combined luteolin + cisplatin treatment.
