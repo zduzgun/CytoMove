@@ -2,7 +2,7 @@
 <!-- Her oturuma bu dosyayı okuyarak başla. README.md ve ROADMAP.md ile birlikte kullan. -->
 
 **Son güncelleme:** 2026-04-29
-**Versiyon:** 0.5
+**Versiyon:** 0.7
 
 ---
 
@@ -97,11 +97,15 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 | `index.html` | Canlı ✅ | Light theme, iki sütun hero, canvas animasyonu, trust layer, OG meta |
 | `ROADMAP.md` | v0.4 ✅ | 18 aylık 5 fazlı plan |
 | `README.md` | ✅ | GitHub ana sayfası |
-| `AGENT_BRIEF.md` | v0.5 ✅ | Bu dosya |
+| `AGENT_BRIEF.md` | v0.7 ✅ | Bu dosya |
 | `docs/validation-protocol.md` | v0.2 ✅ | Tier 1 onaylandı (CC BY 4.0); Düzgün-lab TBD'leri büyük ölçüde dolduruldu |
 | `docs/validation-inventory.csv` | Üretildi ✅ | 442 satır, otomatik metadata; envanter bu dosyada |
 | `docs/validation-inventory-summary.md` | Üretildi ✅ | Hücre × koşul × zaman crosstab; coverage assessment |
 | `scripts/build_inventory.py` | ✅ | Envanter generator; idempotent, tekrar çalıştırılabilir |
+| `scripts/build_ground_truth_sample.py` | ✅ | ImageJ ölçüm planı generator; resolved metadata, max 3/stratum |
+| `docs/visual-sample-review.md` | Üretildi ✅ | 9 representative Tier 1 image için kalite sınıfları + preprocessing notları |
+| `docs/ground-truth-sampling-plan.csv` | Üretildi ✅ | ImageJ re-measurement için deterministik 60 imajlık çalışma listesi |
+| `docs/ground-truth-sampling-plan-summary.md` | Üretildi ✅ | Örnekleme rol/hücre/koşul/zaman özeti |
 | `assets/og-image.png` | Canlı ✅ | Sosyal medya link önizleme görseli |
 
 ---
@@ -177,8 +181,8 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 - [ ] Protokolde kalan açık maddeler tamamlanmalı: Olympus model, ikinci rater, unpublished subset için co-author consent
 - [x] (a) Envanter scripti yazıldı + çalıştırıldı — 442 satır CSV + crosstab summary üretildi (2026-04-29)
 - [x] (b) xlsx ölçümleri parse edildi — 12 condition-level satır, 4'ü imaj-isim eşli; **caveat: xlsx'ler condition-level özet, per-image ground truth değil**
-- [ ] (c) Klasör başına örnek görüntüyü görsel inceleme — yapılmadı; istenirse şimdi
-- [ ] **Per-image ImageJ ground truth re-measurement** (Düzgün lab tarafı): n ≈ 50-80 imaj seçilip stratified rasgele örnekleme ile ImageJ + Wound Healing plugin ile ölçülecek
+- [x] (c) Örnek görüntü görsel inceleme yapıldı — `docs/visual-sample-review.md`; ana bulgu: circular FOV/handwritten labels preprocessing gerektiriyor, COMBINE crop subset erken prototip için en temiz başlangıç.
+- [ ] **Per-image ImageJ ground truth re-measurement** (Düzgün lab tarafı): `docs/ground-truth-sampling-plan.csv` ile 60 imajlık deterministik liste hazır; ImageJ + Wound Healing plugin ölçümleri hâlâ pending
 - [ ] Üçüncü hücre hattı kararı (HeLa / A549 / başka) — generalizability için
 - [ ] Gerçek mikroskop kamerası ile çekilmiş bir referans set (telefon-okül dışı)
 - [ ] Client-side segmentasyon algoritması prototip (validation set CSV'ye girdikten sonra)
