@@ -1,0 +1,13 @@
+trend_id,cell_line,condition,time_point_h,aggregate_area_pixels2,aggregate_area_percent,aggregate_wound_closure_percent,replicate_count,source_xlsx,notes
+trend-001,HUVEC,FDI-6 8 uM,0,1908851.5,,,2,29.06.22/COMBİNE/H-8F-0H-0-24-48/H8F.xlsx,"Aggregate ORT row; use for trend calibration, not one-to-one image validation."
+trend-002,HUVEC,FDI-6 8 uM,24,1441423.5,24.483649007047156,24.483649007047156,2,29.06.22/COMBİNE/H-8F-0H-0-24-48/H8F.xlsx,"Aggregate ORT row; use for trend calibration, not one-to-one image validation."
+trend-003,HUVEC,FDI-6 8 uM,48,1067801,49.3042118978584,49.3042118978584,2,29.06.22/COMBİNE/H-8F-0H-0-24-48/H8F.xlsx,"Aggregate ORT row; use for trend calibration, not one-to-one image validation."
+trend-004,HUVEC,Control,0,1767745,,,2,29.06.22/COMBİNE/H-K-0-24-48/ResultsHK.xls.xlsx,"Aggregate ORT row; use for trend calibration, not one-to-one image validation."
+trend-005,HUVEC,Control,24,841558,51.79827061294573,51.79827061294573,2,29.06.22/COMBİNE/H-K-0-24-48/ResultsHK.xls.xlsx,"Aggregate ORT row; use for trend calibration, not one-to-one image validation."
+trend-006,HUVEC,Control,48,368601.5,78.88788723235825,78.88788723235825,2,29.06.22/COMBİNE/H-K-0-24-48/ResultsHK.xls.xlsx,"Aggregate ORT row; use for trend calibration, not one-to-one image validation."
+trend-007,MDA-MB-231,FDI-6 8 uM,0,1684472.5,,,2,29.06.22/COMBİNE/M-8F-0H-24-48/ResultsM8F.xls.xlsx,"Aggregate ORT row; use for trend calibration, not one-to-one image validation."
+trend-008,MDA-MB-231,FDI-6 8 uM,24,1045499.5,37.93666085636644,37.93666085636644,2,29.06.22/COMBİNE/M-8F-0H-24-48/ResultsM8F.xls.xlsx,"Aggregate ORT row; use for trend calibration, not one-to-one image validation."
+trend-009,MDA-MB-231,FDI-6 8 uM,48,794595,52.820387163885066,52.820387163885066,2,29.06.22/COMBİNE/M-8F-0H-24-48/ResultsM8F.xls.xlsx,"Aggregate ORT row; use for trend calibration, not one-to-one image validation."
+trend-010,MDA-MB-231,Control,0,1435595.5,,,2,29.06.22/COMBİNE/M-K-0-24-48/ResultsMK.xlsx,"Aggregate ORT row; use for trend calibration, not one-to-one image validation."
+trend-011,MDA-MB-231,Control,24,503153,64.98342015882533,64.98342015882533,2,29.06.22/COMBİNE/M-K-0-24-48/ResultsMK.xlsx,"Aggregate ORT row; use for trend calibration, not one-to-one image validation."
+trend-012,MDA-MB-231,Control,48,3899.5,99.73030905091032,99.73030905091032,2,29.06.22/COMBİNE/M-K-0-24-48/ResultsMK.xlsx,"Aggregate ORT row; use for trend calibration, not one-to-one image validation."

@@ -12,7 +12,7 @@ gt-010,cytv-0429,fdi/HUVEC/Huvec fdı6 48h kontrol/20211223_131546.jpg,HUVEC,Con
 gt-011,cytv-0435,fdi/HUVEC/Huvec fdı6 48h kontrol/20211223_131606.jpg,HUVEC,Control,48,fdi-huvec-2021,False,4032,3024,hard_case_candidate,,,,,,pending,
 gt-012,cytv-0442,fdi/HUVEC/Huvec fdı6 48h kontrol/20211223_131719.jpg,HUVEC,Control,48,fdi-huvec-2021,False,4032,3024,hard_case_candidate,,,,,,pending,
 gt-013,cytv-0258,29.06.22/COMBİNE/H-K-0-24-48/HK-0H-2.jpg,HUVEC,Control,multi,29.06.22,True,1800,1800,primary_clean_crop,,,,,,pending,
-gt-014,cytv-0266,29.06.22/COMBİNE/H-K-0-24-48/HK-48H.jpg,HUVEC,Control,multi,29.06.22,True,1800,1800,primary_clean_crop,,,,,,pending,
+gt-014,cytv-0266,29.06.22/COMBİNE/H-K-0-24-48/HK-48H.jpg,HUVEC,Control,multi,29.06.22,True,1800,1800,primary_clean_crop,372060,23.171,78.01050833633768,,,seeded_from_combine_excel,Seeded from 29.06.22/COMBİNE/H-K-0-24-48/ResultsHK.xls.xlsx (explicit_label); use=primary_one_to_one
 gt-015,cytv-0275,29.06.22/COMBİNE/H-K-0-24-48/IMG_3033.jpg,HUVEC,Control,multi,29.06.22,True,4032,3024,primary_curated_preprocess,,,,,,pending,
 gt-016,cytv-0351,fdi/HUVEC/Huvec fdı 6 24 h/20211222_132757.jpg,HUVEC,FDI-6,24,fdi-huvec-2021,False,4032,3024,hard_case_candidate,,,,,,pending,
 gt-017,cytv-0371,fdi/HUVEC/Huvec fdı 6 24 h/20211222_133202.jpg,HUVEC,FDI-6,24,fdi-huvec-2021,False,4032,3024,hard_case_candidate,,,,,,pending,
@@ -43,7 +43,7 @@ gt-041,cytv-0321,29.06.22/M-K-0H/IMG_2896.jpg,MDA-MB-231,Control,0,29.06.22,Fals
 gt-042,cytv-0323,29.06.22/M-K-0H/IMG_2898.jpg,MDA-MB-231,Control,0,29.06.22,False,1574,2100,primary_preprocess_required,,,,,,pending,
 gt-043,cytv-0324,29.06.22/COMBİNE/M-K-0-24-48/IMG_2894.jpg,MDA-MB-231,Control,multi,29.06.22,True,1574,2100,primary_curated_preprocess,,,,,,pending,
 gt-044,cytv-0332,29.06.22/COMBİNE/M-K-0-24-48/IMG_3058.jpg,MDA-MB-231,Control,multi,29.06.22,True,4032,3024,primary_curated_preprocess,,,,,,pending,
-gt-045,cytv-0340,29.06.22/COMBİNE/M-K-0-24-48/MK-48H.jpg,MDA-MB-231,Control,multi,29.06.22,True,1800,1800,primary_clean_crop,,,,,,pending,
+gt-045,cytv-0340,29.06.22/COMBİNE/M-K-0-24-48/MK-48H.jpg,MDA-MB-231,Control,multi,29.06.22,True,1800,1800,primary_clean_crop,13844,79.667,99.1801880758936,,,seeded_from_combine_excel,Seeded from 29.06.22/COMBİNE/M-K-0-24-48/ResultsMK.xlsx (explicit_label); use=primary_one_to_one
 gt-046,cytv-0286,29.06.22/M-64F-0H/IMG_2905.jpg,MDA-MB-231,FDI-6 64 uM,0,29.06.22,False,1574,2100,primary_preprocess_required,,,,,,pending,
 gt-047,cytv-0288,29.06.22/M-64F-0H/IMG_2907.jpg,MDA-MB-231,FDI-6 64 uM,0,29.06.22,False,4032,3024,primary_preprocess_required,,,,,,pending,
 gt-048,cytv-0290,29.06.22/M-64F-0H/IMG_2909.jpg,MDA-MB-231,FDI-6 64 uM,0,29.06.22,False,1574,2100,primary_preprocess_required,,,,,,pending,
@@ -52,7 +52,7 @@ gt-050,cytv-0293,29.06.22/M-8F-0H/IMG_2901.jpg,MDA-MB-231,FDI-6 8 uM,0,29.06.22,
 gt-051,cytv-0296,29.06.22/M-8F-0H/IMG_2904.jpg,MDA-MB-231,FDI-6 8 uM,0,29.06.22,False,1574,2100,primary_preprocess_required,,,,,,pending,
 gt-052,cytv-0297,29.06.22/COMBİNE/M-8F-0H-24-48/IMG_2899.jpg,MDA-MB-231,FDI-6 8 uM,multi,29.06.22,True,1574,2100,primary_curated_preprocess,,,,,,pending,
 gt-053,cytv-0305,29.06.22/COMBİNE/M-8F-0H-24-48/IMG_3068.jpg,MDA-MB-231,FDI-6 8 uM,multi,29.06.22,True,4032,3024,primary_curated_preprocess,,,,,,pending,
-gt-054,cytv-0314,29.06.22/COMBİNE/M-8F-0H-24-48/M8F-48H.jpg,MDA-MB-231,FDI-6 8 uM,multi,29.06.22,True,1800,1800,primary_clean_crop,,,,,,pending,
+gt-054,cytv-0314,29.06.22/COMBİNE/M-8F-0H-24-48/M8F-48H.jpg,MDA-MB-231,FDI-6 8 uM,multi,29.06.22,True,1800,1800,primary_clean_crop,301709,0.531,45.146411260558594,,,seeded_from_combine_excel,Seeded from 29.06.22/COMBİNE/M-8F-0H-24-48/ResultsM8F.xls.xlsx (explicit_label); use=primary_one_to_one
 gt-055,cytv-0347,29.06.22/M-LUT-0H/IMG_2910.jpg,MDA-MB-231,Luteolin,0,29.06.22,False,1574,2100,primary_preprocess_required,,,,,,pending,
 gt-056,cytv-0349,29.06.22/M-LUT-0H/IMG_2912.jpg,MDA-MB-231,Luteolin,0,29.06.22,False,4032,3024,primary_preprocess_required,,,,,,pending,
 gt-057,cytv-0350,29.06.22/M-LUT-0H/IMG_2913.jpg,MDA-MB-231,Luteolin,0,29.06.22,False,1574,2100,primary_preprocess_required,,,,,,pending,
