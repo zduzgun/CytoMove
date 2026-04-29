@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cytomove Area-First Segmentation Lab</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    :root {
+      --bg: #f6faf9;
+      --panel: #ffffff;
+      --panel-soft: #eef6f4;
+      --ink: #102027;
+      --muted: #5b7370;
+      --dim: #7f918f;
+      --line: #d9e7e4;
+      --teal: #0f9f8f;
+      --teal-dark: #08766c;
+      --amber: #b7791f;
+      --rose: #b42336;
+      --blue: #2f6f9f;
+      --shadow: 0 20px 50px rgba(18, 51, 48, 0.10);
+    }
+
+    html, body {
+      min-height: 100%;
+      margin: 0;
+      background: linear-gradient(180deg, #fbfdfc 0%, var(--bg) 72%, #eef6f4 100%);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body { padding: 22px; }
+
+    button, input, select { font: inherit; }
+
+    .app {
+      width: min(1440px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .mark {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      flex: 0 0 auto;
+    }
+
+    .mark svg { width: 22px; height: 22px; }
+
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .subline {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .status-strip {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 30px;
+      padding: 5px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .pill strong { color: var(--ink); font-weight: 700; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .sidebar, .workspace-panel {
+      background: rgba(255,255,255,0.86);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .sidebar {
+      border-radius: 8px;
+      padding: 16px;
+      position: sticky;
+      top: 18px;
+    }
+
+    .workspace-panel {
+      border-radius: 8px;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .section + .section {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    select, input[type="file"] {
+      width: 100%;
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+      color: var(--ink);
+      padding: 8px 10px;
+    }
+
+    .control { margin-top: 12px; }
+
+    .range-row {
+      display: grid;
+      grid-template-columns: 1fr 56px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input[type="range"] { width: 100%; accent-color: var(--teal); }
+
+    .value-box {
+      min-height: 30px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel-soft);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .segmented button, .action-row button {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+      color: var(--muted);
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    .segmented button.active {
+      border-color: rgba(15,159,143,0.45);
+      background: var(--teal);
+      color: white;
+    }
+
+    .action-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .action-row button.primary {
+      background: var(--ink);
+      color: white;
+      border-color: var(--ink);
+    }
+
+    .sample-meta {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .meta-row {
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      gap: 8px;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .meta-row span:first-child { color: var(--dim); }
+    .meta-row span:last-child { color: var(--ink); font-weight: 650; word-break: break-word; }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 10px;
+      background: var(--panel);
+      min-height: 76px;
+    }
+
+    .metric .label {
+      color: var(--dim);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .metric .number {
+      margin-top: 7px;
+      font-size: 20px;
+      line-height: 1.1;
+      font-weight: 850;
+      color: var(--ink);
+      overflow-wrap: anywhere;
+    }
+
+    .metric .hint {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.3;
+    }
+
+    .metric.warn .number { color: var(--amber); }
+    .metric.bad .number { color: var(--rose); }
+    .metric.good .number { color: var(--teal-dark); }
+
+    .canvas-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(238,246,244,0.62);
+    }
+
+    .canvas-title {
+      min-width: 0;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--ink);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .canvas-tools {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .tool-button {
+      min-height: 32px;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .tool-button.active {
+      border-color: rgba(15,159,143,0.45);
+      color: var(--teal-dark);
+      background: #e6f7f4;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      min-height: 560px;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(45deg, rgba(16,32,39,0.035) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(16,32,39,0.035) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(16,32,39,0.035) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(16,32,39,0.035) 75%);
+      background-size: 28px 28px;
+      background-position: 0 0, 0 14px, 14px -14px, -14px 0;
+      overflow: auto;
+      padding: 18px;
+    }
+
+    canvas {
+      max-width: 100%;
+      max-height: 76vh;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      box-shadow: 0 12px 36px rgba(16,32,39,0.14);
+    }
+
+    .empty-state {
+      width: min(520px, 100%);
+      border: 1px dashed #b9cbc8;
+      border-radius: 8px;
+      padding: 28px;
+      text-align: center;
+      background: rgba(255,255,255,0.72);
+      color: var(--muted);
+    }
+
+    .empty-state strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--ink);
+      font-size: 16px;
+    }
+
+    .log {
+      min-height: 52px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .log strong { color: var(--ink); }
+
+    @media (max-width: 1000px) {
+      body { padding: 14px; }
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; }
+      .canvas-wrap { min-height: 420px; }
+    }
+
+    @media (max-width: 620px) {
+      .topbar, .canvas-head { align-items: stretch; flex-direction: column; }
+      .status-strip, .canvas-tools { justify-content: flex-start; }
+      .metrics { grid-template-columns: 1fr; }
+      .meta-row { grid-template-columns: 1fr; gap: 2px; }
+      .action-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="16" cy="16" r="13" stroke="#0f9f8f" stroke-width="2"/>
+            <circle cx="10.5" cy="16" r="4" fill="#bdeee8" stroke="#0f9f8f" stroke-width="1.5"/>
+            <circle cx="21.5" cy="16" r="4" fill="#bdeee8" stroke="#0f9f8f" stroke-width="1.5"/>
+            <path d="M16.5 12.5L20 16l-3.5 3.5" stroke="#08766c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Cytomove Area-First Segmentation Lab</h1>
+          <p class="subline">Local prototype for wound mask area, Excel ground-truth comparison, and width-ready preprocessing.</p>
+        </div>
+      </div>
+      <div class="status-strip">
+        <span class="pill"><strong>Area</strong> MVP metric</span>
+        <span class="pill"><strong>Width</strong> secondary</span>
+        <span class="pill"><strong>Images</strong> local only</span>
+      </div>
+    </header>
+
+    <section class="layout">
+      <aside class="sidebar">
+        <div class="section">
+          <div class="section-title">Sample</div>
+          <label for="sampleSelect">Calibration row</label>
+          <select id="sampleSelect"></select>
+          <div class="sample-meta" id="sampleMeta"></div>
+          <div class="control">
+            <label for="fileInput">Open another local image</label>
+            <input id="fileInput" type="file" accept="image/*">
+          </div>
+          <div class="action-row">
+            <button id="loadSample" class="primary" type="button">Load Sample</button>
+            <button id="rerun" type="button">Run</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">View</div>
+          <div class="segmented" id="viewMode">
+            <button type="button" data-view="overlay" class="active">Overlay</button>
+            <button type="button" data-view="mask">Mask</button>
+            <button type="button" data-view="source">Source</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Segmentation</div>
+          <div class="control">
+            <label for="thresholdOffset">Threshold offset</label>
+            <div class="range-row">
+              <input id="thresholdOffset" type="range" min="-80" max="80" value="0" step="1">
+              <div class="value-box" id="thresholdOffsetValue">0</div>
+            </div>
+          </div>
+          <div class="control">
+            <label for="minComponent">Min component area</label>
+            <div class="range-row">
+              <input id="minComponent" type="range" min="0" max="50000" value="2200" step="100">
+              <div class="value-box" id="minComponentValue">2200</div>
+            </div>
+          </div>
+          <div class="control">
+            <label for="fovCutoff">Field cutoff</label>
+            <div class="range-row">
+              <input id="fovCutoff" type="range" min="0" max="70" value="18" step="1">
+              <div class="value-box" id="fovCutoffValue">18</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Metrics</div>
+          <div class="metrics" id="metrics"></div>
+        </div>
+      </aside>
+
+      <section class="workspace-panel">
+        <div class="canvas-head">
+          <div class="canvas-title" id="canvasTitle">No image loaded</div>
+          <div class="canvas-tools">
+            <button class="tool-button active" id="maskBright" type="button">Bright wound</button>
+            <button class="tool-button" id="maskDark" type="button">Dark wound</button>
+          </div>
+        </div>
+        <div class="canvas-wrap" id="canvasWrap">
+          <div class="empty-state" id="emptyState">
+            <strong>Load a calibration image</strong>
+            Select an explicit or provisional COMBINE row, or open a local assay image from disk.
+          </div>
+          <canvas id="canvas" hidden></canvas>
+        </div>
+        <div class="log" id="log">Ready.</div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const CALIBRATION = [
+      { id: 'cal-001', imageId: 'cytv-0260', path: 'wound healing/29.06.22/COMBİNE/H-K-0-24-48/HK-0H.jpg', cell: 'HUVEC', condition: 'Control', time: '0h', area: 1691990, areaPct: 52.222, width: 40.332, widthSd: 346.768, closure: null, confidence: 'provisional_one_to_one_verify_visually' },
+      { id: 'cal-002', imageId: 'cytv-0263', path: 'wound healing/29.06.22/COMBİNE/H-K-0-24-48/HK-24H.jpg', cell: 'HUVEC', condition: 'Control', time: '24h', area: 926740, areaPct: 28.603, width: 12.787, widthSd: 424.536, closure: 45.2278, confidence: 'provisional_one_to_one_verify_visually' },
+      { id: 'cal-003', imageId: 'cytv-0266', path: 'wound healing/29.06.22/COMBİNE/H-K-0-24-48/HK-48H.jpg', cell: 'HUVEC', condition: 'Control', time: '48h', area: 372060, areaPct: 11.483, width: 23.171, widthSd: 669.311, closure: 78.0105, confidence: 'primary_one_to_one' },
+      { id: 'cal-004', imageId: 'cytv-0308', path: 'wound healing/29.06.22/COMBİNE/M-8F-0H-24-48/M8F-0H.jpg', cell: 'MDA-MB-231', condition: 'FDI-6 8 uM', time: '0h', area: 550026, areaPct: 57.271, width: 6.911, widthSd: 138.032, closure: null, confidence: 'provisional_one_to_one_verify_visually' },
+      { id: 'cal-005', imageId: 'cytv-0311', path: 'wound healing/29.06.22/COMBİNE/M-8F-0H-24-48/M8F-24H.jpg', cell: 'MDA-MB-231', condition: 'FDI-6 8 uM', time: '24h', area: 245294, areaPct: 25.541, width: 24.087, widthSd: 302.592, closure: 55.4032, confidence: 'primary_one_to_one' },
+      { id: 'cal-006', imageId: 'cytv-0314', path: 'wound healing/29.06.22/COMBİNE/M-8F-0H-24-48/M8F-48H.jpg', cell: 'MDA-MB-231', condition: 'FDI-6 8 uM', time: '48h', area: 301709, areaPct: 31.415, width: 0.531, widthSd: 317.824, closure: 45.1464, confidence: 'primary_one_to_one' },
+      { id: 'cal-007', imageId: 'cytv-0335', path: 'wound healing/29.06.22/COMBİNE/M-K-0-24-48/MK-0H.jpg', cell: 'MDA-MB-231', condition: 'Control', time: '0h', area: 1688680, areaPct: 52.12, width: 35.685, widthSd: 346.33, closure: null, confidence: 'provisional_one_to_one_verify_visually' },
+      { id: 'cal-008', imageId: 'cytv-0338', path: 'wound healing/29.06.22/COMBİNE/M-K-0-24-48/MK-24H.jpg', cell: 'MDA-MB-231', condition: 'Control', time: '24h', area: 992658, areaPct: 30.638, width: 99.413, widthSd: 664.399, closure: 41.2169, confidence: 'provisional_one_to_one_verify_visually' },
+      { id: 'cal-009', imageId: 'cytv-0340', path: 'wound healing/29.06.22/COMBİNE/M-K-0-24-48/MK-48H.jpg', cell: 'MDA-MB-231', condition: 'Control', time: '48h', area: 13844, areaPct: 0.427, width: 79.667, widthSd: 52.636, closure: 99.1802, confidence: 'primary_one_to_one' }
+    ];
+
+    const els = {
+      sampleSelect: document.getElementById('sampleSelect'),
+      sampleMeta: document.getElementById('sampleMeta'),
+      fileInput: document.getElementById('fileInput'),
+      loadSample: document.getElementById('loadSample'),
+      rerun: document.getElementById('rerun'),
+      viewMode: document.getElementById('viewMode'),
+      canvas: document.getElementById('canvas'),
+      canvasTitle: document.getElementById('canvasTitle'),
+      emptyState: document.getElementById('emptyState'),
+      log: document.getElementById('log'),
+      metrics: document.getElementById('metrics'),
+      thresholdOffset: document.getElementById('thresholdOffset'),
+      thresholdOffsetValue: document.getElementById('thresholdOffsetValue'),
+      minComponent: document.getElementById('minComponent'),
+      minComponentValue: document.getElementById('minComponentValue'),
+      fovCutoff: document.getElementById('fovCutoff'),
+      fovCutoffValue: document.getElementById('fovCutoffValue'),
+      maskBright: document.getElementById('maskBright'),
+      maskDark: document.getElementById('maskDark')
+    };
+
+    const state = {
+      image: null,
+      imageName: '',
+      sample: null,
+      view: 'overlay',
+      polarity: 'bright',
+      result: null
+    };
+
+    function fmt(value, digits = 0) {
+      if (value === null || value === undefined || Number.isNaN(value) || value === '') return 'n/a';
+      return Number(value).toLocaleString(undefined, { maximumFractionDigits: digits });
+    }
+
+    function metric(label, number, hint, kind = '') {
+      return `<div class="metric ${kind}"><div class="label">${label}</div><div class="number">${number}</div><div class="hint">${hint}</div></div>`;
+    }
+
+    function log(message) {
+      els.log.innerHTML = message;
+    }
+
+    function sampleUrl(sample) {
+      return '../' + sample.path.split('/').map(encodeURIComponent).join('/');
+    }
+
+    function populateSamples() {
+      els.sampleSelect.innerHTML = '';
+      CALIBRATION.forEach(sample => {
+        const option = document.createElement('option');
+        option.value = sample.id;
+        option.textContent = `${sample.id} · ${sample.cell} · ${sample.condition} · ${sample.time} · ${sample.confidence === 'primary_one_to_one' ? 'explicit' : 'verify'}`;
+        els.sampleSelect.appendChild(option);
+      });
+      els.sampleSelect.value = 'cal-003';
+      updateSampleMeta();
+    }
+
+    function selectedSample() {
+      return CALIBRATION.find(sample => sample.id === els.sampleSelect.value) || CALIBRATION[0];
+    }
+
+    function updateSampleMeta() {
+      const sample = selectedSample();
+      const rows = [
+        ['Image ID', sample.imageId],
+        ['Group', `${sample.cell} / ${sample.condition} / ${sample.time}`],
+        ['GT area', `${fmt(sample.area)} px²`],
+        ['GT width', `${fmt(sample.width, 3)} px`],
+        ['Confidence', sample.confidence],
+        ['Path', sample.path]
+      ];
+      els.sampleMeta.innerHTML = rows.map(([k, v]) => `<div class="meta-row"><span>${k}</span><span>${v}</span></div>`).join('');
+    }
+
+    function setRangeLabels() {
+      els.thresholdOffsetValue.textContent = els.thresholdOffset.value;
+      els.minComponentValue.textContent = els.minComponent.value;
+      els.fovCutoffValue.textContent = els.fovCutoff.value;
+    }
+
+    async function loadImage(src, sample = null, name = '') {
+      const img = new Image();
+      img.decoding = 'async';
+      img.onload = () => {
+        state.image = img;
+        state.sample = sample;
+        state.imageName = name || sample?.path || 'local image';
+        els.canvas.hidden = false;
+        els.emptyState.hidden = true;
+        els.canvasTitle.textContent = state.imageName;
+        runSegmentation();
+      };
+      img.onerror = () => {
+        log(`<strong>Image load failed.</strong> For sample rows, run a local server from the repo root so the ignored wound healing archive can be served locally.`);
+      };
+      img.src = src;
+    }
+
+    function percentile(sorted, p) {
+      if (!sorted.length) return 0;
+      const idx = Math.max(0, Math.min(sorted.length - 1, Math.floor((sorted.length - 1) * p)));
+      return sorted[idx];
+    }
+
+    function otsu(values) {
+      const hist = new Uint32Array(256);
+      values.forEach(v => { hist[v]++; });
+      const total = values.length;
+      let sum = 0;
+      for (let i = 0; i < 256; i++) sum += i * hist[i];
+      let sumB = 0;
+      let wB = 0;
+      let maxVariance = -1;
+      let threshold = 128;
+      for (let i = 0; i < 256; i++) {
+        wB += hist[i];
+        if (!wB) continue;
+        const wF = total - wB;
+        if (!wF) break;
+        sumB += i * hist[i];
+        const mB = sumB / wB;
+        const mF = (sum - sumB) / wF;
+        const variance = wB * wF * (mB - mF) * (mB - mF);
+        if (variance > maxVariance) {
+          maxVariance = variance;
+          threshold = i;
+        }
+      }
+      return threshold;
+    }
+
+    function filterComponents(mask, width, height, minArea) {
+      const labels = new Int32Array(width * height);
+      const queue = new Int32Array(width * height);
+      const keep = new Uint8Array(width * height);
+      let label = 1;
+      const neighbors = [-1, 1, -width, width];
+
+      for (let start = 0; start < mask.length; start++) {
+        if (!mask[start] || labels[start]) continue;
+        let head = 0;
+        let tail = 0;
+        let area = 0;
+        queue[tail++] = start;
+        labels[start] = label;
+        while (head < tail) {
+          const idx = queue[head++];
+          area++;
+          const x = idx % width;
+          for (const n of neighbors) {
+            const ni = idx + n;
+            if (ni < 0 || ni >= mask.length || labels[ni] || !mask[ni]) continue;
+            if (n === -1 && x === 0) continue;
+            if (n === 1 && x === width - 1) continue;
+            labels[ni] = label;
+            queue[tail++] = ni;
+          }
+        }
+        if (area >= minArea) {
+          for (let i = 0; i < tail; i++) keep[queue[i]] = 1;
+        }
+        label++;
+      }
+      return keep;
+    }
+
+    function estimateWidth(mask, width, height) {
+      const widths = [];
+      for (let y = 0; y < height; y++) {
+        let rowCount = 0;
+        for (let x = 0; x < width; x++) rowCount += mask[y * width + x];
+        if (rowCount > 0) widths.push(rowCount);
+      }
+      if (!widths.length) return { mean: 0, sd: 0 };
+      const mean = widths.reduce((a, b) => a + b, 0) / widths.length;
+      const variance = widths.reduce((a, b) => a + (b - mean) * (b - mean), 0) / widths.length;
+      return { mean, sd: Math.sqrt(variance) };
+    }
+
+    function runSegmentation() {
+      if (!state.image) return;
+      setRangeLabels();
+      const img = state.image;
+      const canvas = els.canvas;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      ctx.drawImage(img, 0, 0);
+      const source = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = source.data;
+      const len = canvas.width * canvas.height;
+      const gray = new Uint8Array(len);
+      const field = new Uint8Array(len);
+      const fovCutoff = Number(els.fovCutoff.value);
+      const values = [];
+
+      for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+        const g = Math.round(0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]);
+        gray[p] = g;
+        if (g > fovCutoff) {
+          field[p] = 1;
+          values.push(g);
+        }
+      }
+
+      values.sort((a, b) => a - b);
+      const low = percentile(values, 0.02);
+      const high = Math.max(low + 1, percentile(values, 0.98));
+      const normalizedValues = [];
+      const norm = new Uint8Array(len);
+      for (let p = 0; p < len; p++) {
+        if (!field[p]) continue;
+        const v = Math.max(0, Math.min(255, Math.round((gray[p] - low) * 255 / (high - low))));
+        norm[p] = v;
+        normalizedValues.push(v);
+      }
+
+      const threshold = Math.max(0, Math.min(255, otsu(normalizedValues) + Number(els.thresholdOffset.value)));
+      const rawMask = new Uint8Array(len);
+      for (let p = 0; p < len; p++) {
+        if (!field[p]) continue;
+        rawMask[p] = state.polarity === 'bright' ? (norm[p] >= threshold ? 1 : 0) : (norm[p] <= threshold ? 1 : 0);
+      }
+      const mask = filterComponents(rawMask, canvas.width, canvas.height, Number(els.minComponent.value));
+      let area = 0;
+      let fieldArea = 0;
+      for (let p = 0; p < len; p++) {
+        fieldArea += field[p];
+        area += mask[p];
+      }
+      const width = estimateWidth(mask, canvas.width, canvas.height);
+      const areaPct = fieldArea ? area * 100 / fieldArea : 0;
+      const gt = state.sample;
+      const areaErrorPct = gt?.area ? Math.abs(area - gt.area) * 100 / gt.area : null;
+      const signedAreaErrorPct = gt?.area ? (area - gt.area) * 100 / gt.area : null;
+      state.result = { area, areaPct, widthMean: width.mean, widthSd: width.sd, threshold, fieldArea, areaErrorPct, signedAreaErrorPct };
+      drawResult(source, mask, field);
+      renderMetrics();
+      log(`<strong>Threshold ${threshold}</strong>. Field ${fmt(fieldArea)} px, mask ${fmt(area)} px. ${gt ? `Ground truth ${fmt(gt.area)} px.` : 'No ground truth attached.'}`);
+    }
+
+    function drawResult(source, mask, field) {
+      const canvas = els.canvas;
+      const ctx = canvas.getContext('2d');
+      const out = new ImageData(new Uint8ClampedArray(source.data), source.width, source.height);
+      const data = out.data;
+      for (let p = 0, i = 0; p < mask.length; p++, i += 4) {
+        if (state.view === 'source') continue;
+        if (state.view === 'mask') {
+          const v = mask[p] ? 255 : field[p] ? 30 : 0;
+          data[i] = mask[p] ? 15 : v;
+          data[i + 1] = mask[p] ? 159 : v;
+          data[i + 2] = mask[p] ? 143 : v;
+          data[i + 3] = 255;
+        } else if (mask[p]) {
+          data[i] = Math.round(data[i] * 0.45 + 15 * 0.55);
+          data[i + 1] = Math.round(data[i + 1] * 0.45 + 159 * 0.55);
+          data[i + 2] = Math.round(data[i + 2] * 0.45 + 143 * 0.55);
+          data[i + 3] = 255;
+        } else if (!field[p]) {
+          data[i] = Math.round(data[i] * 0.35);
+          data[i + 1] = Math.round(data[i + 1] * 0.35);
+          data[i + 2] = Math.round(data[i + 2] * 0.35);
+        }
+      }
+      ctx.putImageData(out, 0, 0);
+    }
+
+    function renderMetrics() {
+      const result = state.result;
+      const gt = state.sample;
+      if (!result) {
+        els.metrics.innerHTML = '';
+        return;
+      }
+      const err = result.areaErrorPct;
+      const errKind = err === null ? '' : err <= 10 ? 'good' : err <= 25 ? 'warn' : 'bad';
+      els.metrics.innerHTML = [
+        metric('Mask area', `${fmt(result.area)} px²`, `${fmt(result.areaPct, 2)}% of field`),
+        metric('GT area', gt ? `${fmt(gt.area)} px²` : 'n/a', gt ? `${gt.confidence}` : 'manual image'),
+        metric('Area error', err === null ? 'n/a' : `${fmt(err, 2)}%`, err === null ? 'load a calibration row' : `${fmt(result.signedAreaErrorPct, 2)}% signed`, errKind),
+        metric('Width estimate', `${fmt(result.widthMean, 2)} px`, `row-wise SD ${fmt(result.widthSd, 2)} px`)
+      ].join('');
+    }
+
+    function bindEvents() {
+      els.sampleSelect.addEventListener('change', updateSampleMeta);
+      els.loadSample.addEventListener('click', () => {
+        const sample = selectedSample();
+        loadImage(sampleUrl(sample), sample, sample.path);
+      });
+      els.rerun.addEventListener('click', runSegmentation);
+      els.fileInput.addEventListener('change', event => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        const url = URL.createObjectURL(file);
+        loadImage(url, null, file.name);
+      });
+      [els.thresholdOffset, els.minComponent, els.fovCutoff].forEach(input => {
+        input.addEventListener('input', () => {
+          setRangeLabels();
+          runSegmentation();
+        });
+      });
+      els.viewMode.addEventListener('click', event => {
+        const button = event.target.closest('button[data-view]');
+        if (!button) return;
+        state.view = button.dataset.view;
+        [...els.viewMode.querySelectorAll('button')].forEach(btn => btn.classList.toggle('active', btn === button));
+        runSegmentation();
+      });
+      els.maskBright.addEventListener('click', () => {
+        state.polarity = 'bright';
+        els.maskBright.classList.add('active');
+        els.maskDark.classList.remove('active');
+        runSegmentation();
+      });
+      els.maskDark.addEventListener('click', () => {
+        state.polarity = 'dark';
+        els.maskDark.classList.add('active');
+        els.maskBright.classList.remove('active');
+        runSegmentation();
+      });
+    }
+
+    populateSamples();
+    setRangeLabels();
+    bindEvents();
+    window.addEventListener('load', () => {
+      const sample = selectedSample();
+      loadImage(sampleUrl(sample), sample, sample.path);
+    });
+  </script>
+</body>
+</html>

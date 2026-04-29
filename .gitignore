@@ -5,3 +5,5 @@ wound healing/
 wound_healing_self_articles/
 __pycache__/
 *.pyc
+validation_ref_sets/
+validation_sets/

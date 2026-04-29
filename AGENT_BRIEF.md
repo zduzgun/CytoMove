@@ -2,7 +2,7 @@
 <!-- Her oturuma bu dosyayı okuyarak başla. README.md ve ROADMAP.md ile birlikte kullan. -->
 
 **Son güncelleme:** 2026-04-29
-**Versiyon:** 0.9
+**Versiyon:** 1.0
 
 ---
 
@@ -74,7 +74,7 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 - ✅ Canvas wound healing animasyonu çalışıyor
 - ✅ Formspree waitlist çalışıyor (inbox'a geliyor, spam değil)
 - ✅ GitHub repo public: `github.com/zduzgun/CytoMove`
-- ✅ `og:image` / `twitter:image` sosyal önizleme görseli eklendi (`assets/og-image.png`)
+| `assets/og-image.png` | Canlı ✅ | Sosyal medya link önizleme görseli |
 - ✅ Scientific trust layer eklendi: cell biologist, browser-local assay images, validation in progress
 
 ---
@@ -97,7 +97,7 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 | `index.html` | Canlı ✅ | Light theme, iki sütun hero, canvas animasyonu, trust layer, OG meta |
 | `ROADMAP.md` | v0.4 ✅ | 18 aylık 5 fazlı plan |
 | `README.md` | ✅ | GitHub ana sayfası |
-| `AGENT_BRIEF.md` | v0.9 ✅ | Bu dosya |
+| `AGENT_BRIEF.md` | v1.0 ✅ | Bu dosya |
 | `docs/validation-protocol.md` | v0.2 ✅ | Tier 1 onaylandı (CC BY 4.0); Düzgün-lab TBD'leri büyük ölçüde dolduruldu |
 | `docs/validation-inventory.csv` | Üretildi ✅ | 442 satır, otomatik metadata; envanter bu dosyada |
 | `docs/validation-inventory-summary.md` | Üretildi ✅ | Hücre × koşul × zaman crosstab; coverage assessment |
@@ -114,6 +114,7 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 | `docs/area-calibration-trends.csv` | Üretildi ✅ | 12 aggregate ORT trend satırı; per-image validation değil |
 | `docs/area-calibration-summary.md` | Üretildi ✅ | Calibration bağlantı özeti; 3 sampling-plan satırı seed edildi |
 | `assets/og-image.png` | Canlı ✅ | Sosyal medya link önizleme görseli |
+| `prototype/index.html` | İlk prototip ✅ | Area-first segmentation lab; local sample loader, mask overlay, GT comparison |
 
 ---
 
@@ -125,7 +126,7 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 - **İddia dili dikkat:** "Tüm veriler local" → sadece assay görüntüleri için doğru (waitlist email Formspree'ye gider).
 - **ImageJ referansı:** "Replacement" deme, "alternative" de.
 - **Landing claim dili:** MVP/validation tamamlanmadan `% closure`, "publication-ready" ve mutlak doğruluk iddialarını hero/meta dilinde kullanma; "scratch assay measurements", "figure-ready exports", "validation in progress" tonu korunur.
-- **Sosyal önizleme:** `assets/og-image.png` kullanılıyor; SVG yerine PNG tercih edildi.
+| `assets/og-image.png` | Canlı ✅ | Sosyal medya link önizleme görseli |
 
 ---
 
@@ -172,7 +173,7 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 ## Bekleyen Görevler
 
 ### Faz 1 — Tamamlanmamış Kalanlar
-- [x] `og:image` meta tag ekle (`assets/og-image.png`)
+| `assets/og-image.png` | Canlı ✅ | Sosyal medya link önizleme görseli |
 - [x] Landing page'e scientific trust layer ekle
 - [ ] Logo / marka kimliği oluştur (beta launch hazırlığı)
 - [ ] Twitter/X ve LinkedIn hesabı aç (beta launch hazırlığı)
@@ -192,7 +193,7 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 - [ ] **Per-image ImageJ ground truth re-measurement** (Düzgün lab tarafı): `docs/ground-truth-sampling-plan.csv` ile 60 imajlık deterministik liste hazır; COMBİNE Excel area/width değerleri seed calibration olarak çıkarıldı, kalan ImageJ ölçümleri hâlâ pending
 - [ ] Üçüncü hücre hattı kararı (HeLa / A549 / başka) — generalizability için
 - [ ] Gerçek mikroskop kamerası ile çekilmiş bir referans set (telefon-okül dışı)
-- [ ] Client-side segmentasyon algoritması prototip (validation set CSV'ye girdikten sonra)
+| `prototype/index.html` | İlk prototip ✅ | Area-first segmentation lab; local sample loader, mask overlay, GT comparison |
 - [ ] Manuel düzeltme arayüzü tasarımı
 
 ### Validation Veri Seti — Mevcut Arşiv Özeti (2026-04-28)
