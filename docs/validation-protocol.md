@@ -1,8 +1,8 @@
 # Cytomove Validation Dataset Protocol
 
-**Document version:** 0.2 (draft)
+**Document version:** 0.3 (draft)
 **Status:** Pre-registered — Tier 1 archive identified and licence-cleared; collection workflow not yet started
-**Last updated:** 2026-04-29
+**Last updated:** 2026-04-30
 **Owner:** Z. Düzgün, Giresun University Faculty of Medicine, Department of Medical Biology
 **Intended use:** This protocol is pre-registered prior to data collection. The text is written in IMRAD style so that the *Methods* and *Validation Dataset* sections of the planned bioRxiv preprint (Phase 3) can be excerpted from this document with minimal rewriting.
 
@@ -12,7 +12,7 @@
 
 To define, in advance of any image acquisition or algorithm tuning, the dataset that will be used to evaluate the analytical performance of Cytomove against the established manual ground truth (ImageJ-based measurement). Pre-registration of the protocol is intended to eliminate post-hoc selection of inclusion criteria, sample size, or evaluation metrics.
 
-The dataset will support three downstream goals: (i) the Phase 2 MVP success criteria defined in `ROADMAP.md` (Pearson r > 0.9, mean wound-area error < 10 %, unedited acceptance rate ≥ 70 %); (ii) the comparative analysis against TScratch, the ImageJ MRI Wound Healing macro, and Wimasis planned for Phase 2; and (iii) the bioRxiv preprint planned for Phase 3.
+The dataset will support three downstream goals: (i) the Phase 2 MVP success criteria defined in `ROADMAP.md` (Pearson r > 0.9, mean wound-area error < 10 %, unedited acceptance rate ≥ 70 %); (ii) the comparative analysis against manual/consensus masks and established scratch-assay tools, prioritising the Wound Healing Size Tool (WHST), TScratch, PyScratch, and CSMA where technically feasible; and (iii) the bioRxiv preprint planned for Phase 3.
 
 ## 2. Sample Size and Statistical Justification
 
@@ -114,6 +114,39 @@ If a second rater is unavailable, intra-rater reliability is reported alone, and
 
 Where the source image carries a calibration scale bar or pixel-size metadata, area is also reported in µm². Where calibration is unavailable, area is reported only in pixels and the image is flagged as *uncalibrated*. Cytomove's primary metric, percentage wound closure, is dimensionless and unaffected by calibration.
 
+### 6.4 Comparator tools
+
+The comparator set is defined from the literature review in `docs/literature/tool-comparison-matrix.md`. Tools are prioritised by scientific relevance, metric compatibility, and practical ability to run on the validation images.
+
+| Priority | Comparator | Role in validation | Required output |
+|----------|------------|--------------------|-----------------|
+| 1 | Manual or consensus wound masks | Primary ground truth for mask-level and area-level accuracy. If feasible, three independent manual masks are combined into a consensus mask; otherwise the protocol falls back to the rater procedure in §6.2. | Binary wound mask; wound area in pixels; rater ID |
+| 2 | Wound Healing Size Tool (WHST; Suarez-Arnedo et al. 2020) | Primary tool comparator because its variance-filter, threshold, fill-hole, and wound-width workflow is closest to the current Cytomove algorithm. | Wound area; wound area fraction; average wound width; width SD; parameter settings |
+| 3 | TScratch (Gebäck et al. 2009) | Classic high-citation comparator and precedent for reviewable segmentation, threshold adjustment, image exclusion, and manual correction. | Open area; 0 h / follow-up ratios where available; exported table; excluded-image flags |
+| 4 | PyScratch (Garcia-Fossa et al. 2020) | Usability, time-course, and batch-analysis comparator if installation is stable. | Area/time table; normalized area; velocity if calibration metadata are available |
+| 5 | CSMA (Pham et al. 2025 preprint) | Emerging comparator for difficult images with cells or cell islets inside the wound. Treated as an exploratory comparator rather than an MVP gate. | Wound area or width per time point; output boundary images; CSV/graph output |
+| 6 | WimScratch / Wimasis | Product-landscape comparator for privacy and workflow positioning. Quantitative comparison is optional because it requires uploading images to a third-party service. | Vendor output if access and data-sharing permissions allow |
+
+Comparator runs must record software version, operating system, parameter values, preprocessing, runtime, and any images excluded or manually corrected. Where a comparator cannot be installed or run reliably, this is recorded as a protocol deviation rather than silently omitted.
+
+### 6.5 Metric rationale
+
+The minimum metric set follows WHST because it is the closest ImageJ/Fiji reference for Cytomove's current explainable segmentation pipeline.
+
+| Metric | Status | Rationale |
+|--------|--------|-----------|
+| Wound area | Required | Core metric across TScratch, WHST, MRI Wound Healing Tool, PyScratch, and CSMA. Primary MVP validation target. |
+| Wound area percentage | Required | Normalises wound area to field/ROI area and supports comparison across crop sizes. |
+| Average wound width | Required | WHST reports average wound width and corrects for inclination; Cytomove should support comparable width reporting. |
+| Width standard deviation | Required | Captures wound-edge irregularity and scratch heterogeneity; WHST shows that width SD is not equivalent to sparse manual line measurements. |
+| Closure percentage | Conditional | Report only when a valid 0 h baseline is linked to the follow-up image. Formula: `(area_0h - area_t) / area_0h * 100`. Do not report as a single-image metric. |
+| Migration rate | Conditional | Report only when both elapsed time and pixel-to-physical calibration are available. Uncalibrated images may report pixel-based slope for internal analysis, but not µm/h or mm²/h. |
+| Mask Dice / IoU | Required when masks exist | Required for mask-level validation against manual or consensus masks; area correlation alone cannot detect shape errors. |
+| Runtime per image | Required | Needed to compare practical workflow burden against ImageJ/Fiji, TScratch, and PyScratch. |
+| Manual correction / acceptance status | Required for user-facing evaluation | Operationalises the reviewable segmentation claim and the unedited acceptance criterion in `ROADMAP.md`. |
+
+Correlation is reported but is not treated as sufficient evidence of agreement. Bland-Altman bias, MAE, MAPE, RMSE, and mask overlap metrics are required because two methods can correlate strongly while showing systematic bias.
+
 ## 7. Metadata Schema
 
 A single CSV (`validation-set-metadata.csv`) accompanies the image set. One row per image. Field list:
@@ -139,6 +172,20 @@ A single CSV (`validation-set-metadata.csv`) accompanies the image set. One row 
 | ground_truth_method | enum | `mri_macro` \| `manual_roi` |
 | ground_truth_wound_area_px | integer | Primary reference measurement |
 | ground_truth_wound_area_um2 | numeric or null | Secondary, only if calibrated |
+| ground_truth_wound_area_pct | numeric | Wound area divided by analysed field/ROI area |
+| ground_truth_width_mean_px | numeric or null | Required when width measurement is available |
+| ground_truth_width_sd_px | numeric or null | Required when width measurement is available |
+| ground_truth_mask_filename | string or null | Binary wound mask used for Dice/IoU analysis |
+| baseline_image_id | string or null | Required for closure percentage; points to the 0 h image in the same series |
+| replicate_id | string or null | Biological/technical replicate identifier where known |
+| comparator_whst_area_px | integer or null | Optional comparator output |
+| comparator_tscratch_area_px | integer or null | Optional comparator output |
+| comparator_pyscratch_area_px | integer or null | Optional comparator output |
+| comparator_csma_area_px | integer or null | Optional exploratory comparator output |
+| cytomove_algorithm_version | string or null | Filled during Cytomove evaluation runs |
+| cytomove_parameter_json | string or null | Serialized crop, threshold, radius, FOV, component, resolution, and contour settings |
+| cytomove_runtime_ms | integer or null | Runtime per image for the final analysis pass |
+| cytomove_manual_correction_status | enum or null | `none` \| `accepted_unedited` \| `edited` \| `rejected` |
 | primary_rater | string | Initials |
 | second_rater | string or null | Initials, if measured |
 | measurement_date | ISO date | YYYY-MM-DD |
@@ -166,10 +213,14 @@ The Zenodo record cross-links to the GitHub repository and to the bioRxiv prepri
 For each evaluation run of Cytomove against this dataset, the following will be reported:
 
 - n (primary set), n (edge-case set).
-- Pearson r with 95 % CI, on percentage wound closure, Cytomove vs ground truth.
+- Pearson and Spearman correlation with 95 % CI, on wound area percentage and, where available, percentage wound closure.
 - Bland–Altman analysis: mean bias, 95 % limits of agreement, with CI on the limits.
 - Intra-class correlation coefficient (two-way mixed, absolute agreement).
-- Mean absolute error and root-mean-square error in percentage wound area.
+- Mean absolute error, mean absolute percentage error, and root-mean-square error in wound area.
+- Dice coefficient and intersection-over-union (IoU) against manual or consensus masks where binary masks exist.
+- Average wound width error and width SD error where comparator width measurements are available.
+- Runtime per image for Cytomove and any comparator tools run locally.
+- Full-resolution versus downsampled-analysis agreement, reported as area error and Bland–Altman bias. This is required because Cytomove uses a browser-first preview/final-analysis architecture.
 - Fraction of images on which Cytomove output was accepted by a user without manual correction (operationalised by a separate user-study protocol, not this document).
 - Stratified results by cell type, modality, and magnification to expose subgroup performance.
 
@@ -183,6 +234,7 @@ This document is versioned in lock-step with the dataset Zenodo record. Material
 
 - **v0.1 (2026-04-28)** — Initial draft. Pre-registered before any image collection.
 - **v0.2 (2026-04-29)** — Tier 1 archive identified (442 images, two campaigns 2021–2022). Cell lines confirmed (HUVEC, MDA-MB-231). Magnification confirmed (×10). Ground-truth tool confirmed (ImageJ Wound Healing plugin, Suarez-Arnedo 2020). Licence confirmed (CC BY 4.0 via Düzgün et al. 2024, *Mol Divers* 29:1069). Diversity matrix updated with confirmed Tier 1 values and documented stretch goals.
+- **v0.3 (2026-04-30)** — Literature review integrated. Comparator priority defined (manual/consensus masks, WHST, TScratch, PyScratch, CSMA, WimScratch). Metric rationale added for wound area, area percentage, width mean/SD, conditional closure percentage, conditional migration rate, Dice/IoU, runtime, and manual-correction status. Metadata schema and reporting template expanded to support comparator outputs, Cytomove analysis logs, full-resolution vs downsampled agreement, and mask-level validation.
 
 ---
 

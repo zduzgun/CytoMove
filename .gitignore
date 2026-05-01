@@ -7,3 +7,7 @@ __pycache__/
 *.pyc
 validation_ref_sets/
 validation_sets/
+docs/literature/papers/
+docs/literature/extracted/
+docs/comparator-benchmark/images/
+.server-*.log

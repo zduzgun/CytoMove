@@ -93,7 +93,12 @@ Bu kriterler karşılanmadan Faz 3'e geçilmez.
 **Ürün çıktıları:**
 - [ ] Görüntü yükleme bileşeni (sürükle-bırak, çoklu dosya)
 - [ ] OpenCV.js scratch tespiti (segmentasyon)
-- [ ] Yara kapanma yüzdesi hesabı
+- [ ] Binary wound mask üzerinden area metrics: wound area, area fraction, field area
+- [ ] Horizontal width profile extraction: mean/median/SD/CV/min/max width, valid row count/fraction
+- [ ] Yara kapanma yüzdesi hesabı: area-based closure ve width-based closure birlikte
+- [ ] Basic QC warnings: image dimension/FOV mismatch, crop-dependent area fraction, low valid row fraction, area-vs-width discordance
+- [ ] CSV/JSON report schema update: per-image area + width metrics, warnings, recommended primary metric
+- [ ] Preview/export resolution strategy: UI ve auto-calibration icin optimize edilmis working-resolution kullan; bilimsel PNG/CSV export sirasinda ayni ayarlari original full-resolution goruntuye yeniden uygula. Rapor alanlari: `working_resolution_px`, `export_resolution_px`, `resolution_scale`, `metrics_computed_at`.
 - [ ] Segmentasyon manuel düzeltme arayüzü
 - [ ] Yan yana görselleştirme (orijinal vs algılanan maske)
 - [ ] Dışa aktarma: PNG figür + CSV veri
@@ -131,8 +136,12 @@ Bu kriterler karşılanmadan Faz 3'e geçilmez.
 **Ürün çıktıları:**
 - [ ] Çoklu zaman noktası yükleme + kronolojik sıralama arayüzü
 - [ ] Görüntü registration (zaman noktaları arası hizalama)
-- [ ] Kapanma hızı hesabı (μm/saat, μm²/saat)
+- [ ] Kapanma hızı hesabı: width-based (μm/saat) ve area-based (μm²/saat) birlikte
 - [ ] Kapanma eğrisi grafiği (zamana göre % kapanma)
+- [ ] Local width profile plot
+- [ ] Region-wise closure analysis (üst/orta/alt segmentler)
+- [ ] Better handling of fragmented masks and robust outlier trimming for scanline widths
+- [ ] Recommended primary metric logic: crop/FOV tutarsızsa width-based closure öner
 - [ ] Önce/sonra overlay figürü
 - [ ] Zaman noktası karşılaştırma ızgarası
 - [ ] PDF rapor üretici:
@@ -140,6 +149,8 @@ Bu kriterler karşılanmadan Faz 3'e geçilmez.
   - Sürümlenmiş atıf bloğu (Zenodo DOI Cytomove yazılım sürümüne ait; her kullanıcı analizine ayrı DOI verilmez)
   - Görüntü başına nicelendirme tablosu
   - Kalite uyarıları (hizalama güveni, segmentasyon uyarıları)
+- [ ] Faz 3+ algoritma: wound axis detection ve tilted/curved scratches için axis'e dik width measurement
+- [ ] Validation experiment: aynı wound mask üzerinde yapay crop perturbation ile area fraction vs mean width robustness karşılaştırması
 - [ ] Zenodo entegrasyonu (sürüm arşivleme)
 - [ ] İlk DOI alındı (v1.0.0)
 

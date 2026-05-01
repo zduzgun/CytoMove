@@ -1,7 +1,7 @@
 # AGENT_BRIEF.md — Cytomove Operasyonel Hafıza
 <!-- Her oturuma bu dosyayı okuyarak başla. README.md ve ROADMAP.md ile birlikte kullan. -->
 
-**Son güncelleme:** 2026-04-29
+**Son güncelleme:** 2026-04-30
 **Versiyon:** 1.0
 
 ---
@@ -77,6 +77,29 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 - ✅ Scientific trust layer eklendi: cell biologist, browser-local assay images, validation in progress
 - 🔄 `prototype/index.html` tam yeniden yazımı devam ediyor (2026-04-29)
 
+### 2026-05-01 Resolution / Export Karari
+
+- UI ve auto-calibration hizli kalmasi icin ileride optimize edilmis working-resolution kullanilacak.
+- Final PNG/CSV export sirasinda ayni ayarlar original full-resolution goruntuye yeniden uygulanacak.
+- CSV/report alanlari: `working_resolution_px`, `export_resolution_px`, `resolution_scale`, `metrics_computed_at`.
+- Parametre olcekleme notu: `varianceRadius` lineer scale, `minComponent` area scale (`scale^2`), `thresholdOffset` ve `fovCutoff` olceklenmez.
+- Urun davranisi: preview hizli olabilir ama bilimsel cikti full-resolution olmalidir.
+
+---
+
+## 2026-04-30 Oturum Güncellemesi
+
+- `docs/literature/tool-comparison-matrix.md` oluşturuldu. TScratch, WHST, PyScratch, CSMA, MRI Wound Healing Tool ve WimScratch konumlandırması sistematik olarak özetlendi.
+- PDF kaynakları local olarak `docs/literature/papers/` altında tutuluyor, extracted text `docs/literature/extracted/` altında. İkisi de `.gitignore` içinde; commit edilmemeli.
+- `docs/validation-protocol.md` v0.3'e yükseltildi. Comparator önceliği: manual/consensus masks → WHST → TScratch → PyScratch → CSMA → WimScratch.
+- v0.3 metrik gerekçesi netleşti: wound area, wound area %, width mean/SD zorunlu; closure % sadece 0h baseline varsa; migration rate sadece time + pixel calibration varsa.
+- `prototype/index.html` CSV export'u validation v0.3 şemasına hizalandı: `schema_version`, `cytomove_algorithm_version`, `cytomove_parameter_json`, comparator placeholder'ları, runtime, crop/rotation/deskew alanları.
+- Prototype'a dosya açma fix'i eklendi: file input doğrudan ikon içinde native input olarak çalışıyor.
+- Prototype'a threshold fallback eklendi: Otsu çok düşükse percentile fallback kullanılıyor; `threshold_fallback_used` CSV/log alanına yazılıyor.
+- Prototype'a ince açı düzeltme eklendi: `Angle correction (deg)` slider/number input, -20° ile +20°, step 0.5°. `deskew_angle_deg` ve `deskew_applied` export ediliyor.
+- 90° rotate kaba yön düzeltme için kalır; angle correction küçük mikroskop/telefon eksen eğiklikleri için kullanılır.
+- Prototype'a `Group review` modu eklendi: HK Control, M8F FDI-6 8uM ve MK Control grupları 0h/24h/48h olarak yan yana gösterilir. Kartlarda downsampled kontur preview çizilir; karta tıklanınca ilgili sample üstteki ana analiz canvas'ına yüklenir. Preview ölçüm yerine hızlı review amaçlıdır; ana canvas mevcut full pipeline ile çalışır.
+
 ---
 
 ## Son Commitler
@@ -99,7 +122,8 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 | `ROADMAP.md` | v0.4 ✅ | 18 aylık 5 fazlı plan |
 | `README.md` | ✅ | GitHub ana sayfası |
 | `AGENT_BRIEF.md` | v1.0 ✅ | Bu dosya |
-| `docs/validation-protocol.md` | v0.2 ✅ | Tier 1 onaylandı (CC BY 4.0); Düzgün-lab TBD'leri büyük ölçüde dolduruldu |
+| `docs/validation-protocol.md` | v0.3 ✅ | Literatür destekli comparator + metric rationale eklendi; WHST primary comparator; CSV/analysis-log şeması genişledi |
+| `docs/literature/tool-comparison-matrix.md` | Yeni ✅ | TScratch, WHST, PyScratch, CSMA, MRI tool, WimScratch karşılaştırması; ürün/validasyon kararları |
 | `docs/validation-inventory.csv` | Üretildi ✅ | 442 satır, otomatik metadata; envanter bu dosyada |
 | `docs/validation-inventory-summary.md` | Üretildi ✅ | Hücre × koşul × zaman crosstab; coverage assessment |
 | `scripts/build_inventory.py` | ✅ | Envanter generator; idempotent, tekrar çalıştırılabilir |
@@ -115,7 +139,7 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 | `docs/area-calibration-trends.csv` | Üretildi ✅ | 12 aggregate ORT trend satırı; per-image validation değil |
 | `docs/area-calibration-summary.md` | Üretildi ✅ | Calibration bağlantı özeti; 3 sampling-plan satırı seed edildi |
 | `assets/og-image.png` | Canlı ✅ | Sosyal medya link önizleme görseli |
-| `prototype/index.html` | 🔄 Yeniden yazılıyor | ImageJ-matched pipeline: variance filter (integral image), fill holes, edge-span width, drag&drop, PNG+CSV export, zoom/pan, Inter font, presets |
+| `prototype/index.html` | 🔄 Yeniden yazılıyor | WHST-aligned browser lab: crop, 90° rotate, fine deskew, threshold fallback, v0.3 CSV export, PNG export, zoom/pan |
 
 ---
 
@@ -256,6 +280,39 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 **⚠️ Geliştirme notu — PowerShell here-string tuzağı:**
 PowerShell `@'...'@` here-string içinde `</script>` veya HTML tag karakterleri bozulabiliyor.  
 Dosya yazımında: ya `write_to_file` aracını kullan, ya Python script ile yaz, ya da part*.html parçalarını `Get-Content | Set-Content` ile birleştir.
+
+### Prototype UI / Algorithm Update (2026-04-29 evening)
+
+`prototype/index.html` current working version has moved from a raw algorithm demo toward an interactive browser lab. Current important decisions:
+
+- Segmentation polarity toggle was removed. The prototype always segments the wound/gap as low-variance area; no `Cell (high var)` user option.
+- View controls were simplified to `Contour` and `Mask` only. `Variance` and `Source` are not exposed in the UI.
+- Threshold offset range is now `-50` to `+50`; presets are centered around the useful observed band: Quick `-30`, Standard `-35`, Fine `-40`.
+- `Min component (px)` range is now `0` to `100,000`, step `1,000`, default `20,000`.
+- `Min component` is applied before `fillHoles()` as an island/noise filter: `threshold -> min component island filter -> fill holes -> final measurement`. Do not move it back after fill-holes; that made it behave like a single on/off threshold.
+- FOV cutoff should not move the crop box. It only affects the segmentation/FOV mask after a crop has been chosen. Crop recalculation happens on new image load, `Reset auto crop`, auto-crop toggle change, or rotation.
+- Auto FOV crop is enabled by default. It detects non-black microscope field and proposes a center square inside it.
+- User-adjustable crop is required because auto crop may be imperfect. `Adjust crop` shows the full image with a crop square; mouse drag moves the square, mouse wheel resizes it, `Apply crop` runs analysis on the selected square, `Reset auto crop` returns to the automatic suggestion.
+- Image rotation is available as a 90-degree rotate button. Rotation resets crop and reruns analysis; CSV stores `rotation_deg`.
+- Contour style is user-controlled: color includes Black/Amber/Cyan/Rose/White/Teal; default is black dashed. Thickness is adjustable by slider and number input.
+- Slider value boxes are editable number inputs. Keyboard edits and slider edits are synchronized.
+- `file://` mode can block canvas pixel reads for linked calibration images. Preferred local run is from repo root: `py -3 -m http.server 8765`, then open `http://127.0.0.1:8765/prototype/index.html`. Drag/drop or Open local image usually works in `file://` because Blob URLs are used.
+- Calibration paths in `prototype/index.html` must use the real folder name `COMBİNE` (Turkish dotted capital I), not plain `COMBINE`.
+
+Current CSV export includes analysis parameters, crop coordinates, rotation, island/component counts, contour settings, and timestamp.
+
+### Prototype UI / Algorithm Update (2026-04-30)
+
+- CSV export `docs/validation-protocol.md` v0.3 ile hizalandı: `schema_version=validation-protocol-v0.3`, `cytomove_algorithm_version=prototype-whst-variance-v0.3`, `cytomove_parameter_json`, runtime, comparator placeholder'ları, crop/rotation/deskew parametreleri.
+- File picker fix: open icon içinde native invisible `input[type=file]` var; JS `showPicker()` bağımlılığı yok.
+- Otsu threshold 0'a düştüğünde mask 0 px sorunu için percentile fallback eklendi. Log/CSV: `fallback_threshold`, `threshold_fallback_used`.
+- Fine deskew eklendi: `Angle correction (deg)` -20°..+20°, step 0.5°. Transform `imageOriginal + 90° rotation + deskew angle` üzerinden yeniden üretilir; crop sıfırlanır ve analiz tekrar çalışır.
+- Export alanları: `deskew_angle_deg`, `deskew_applied`; analysis log JSON içinde de yer alır.
+- 2026-05-01 methodological update: Cytomove should not position itself as only a wound-area calculator. Area metrics stay, but width-based metrics are first-class outputs because area fraction is crop/FOV dependent.
+- `estimateWidth()` now needs/report full horizontal scanline profile metrics: mean, median, SD, CV, min/max width, valid row count, valid row fraction, and area-per-valid-row. Width is the recommended primary metric when crop/FOV is inconsistent.
+- Per-image QC now includes `segmentation_quality_score`, warning list, and `recommended_primary_metric` (`area_and_width`, `width_preferred`, or `review_required`). Warnings include crop/FOV-dependent area fraction, manual crop, low valid row fraction, high width CV, fragmented final mask, no contour, and GT/crop mismatch.
+- CSV export includes width profile metrics, QC warnings, and recommended primary metric. Time-series area-vs-width closure comparison remains a next step.
+- Validation experiment to add: create artificial crop perturbations from the same wound mask and compare sensitivity of area fraction vs mean/median width.
 
 ### Git / GitHub
 - Repo: `https://github.com/zduzgun/CytoMove`
