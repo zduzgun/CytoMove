@@ -270,12 +270,20 @@
               </div>
             </div>
             <div class="control">
-              <label for="deskewAngle">Angle correction (deg)</label>
+              <label for="scratchOrientation">Scratch orientation</label>
+              <select id="scratchOrientation">
+                <option value="vertical">Vertical scratch</option>
+                <option value="horizontal">Horizontal scratch</option>
+              </select>
+            </div>
+            <div class="control">
+              <label for="deskewAngle">Fine rotation (deg)</label>
               <div class="range-row">
                 <input id="deskewAngle" type="range" min="-20" max="20" value="0" step="0.5">
                 <input class="value-input" id="deskewAngleVal" type="number" min="-20" max="20" value="0" step="0.5">
               </div>
             </div>
+            <button class="btn" id="angleRulerToggle" type="button" style="width:100%;margin-bottom:10px;">Show angle ruler</button>
             <div class="control">
               <label class="check-row" for="autoCropFov">
                 <input id="autoCropFov" type="checkbox">
@@ -433,11 +441,12 @@
   const state = {
     mode:'single',
     image:null, imageOriginal:null, imageName:'', sample:null, rotation:0,
-    view:'overlay', result:null,
+    view:'overlay', result:null, rulerVisible:false,
     groupResults:{},
     calibrationReport:null,
     varMap:null, maskData:null, fieldData:null, sourceData:null,
     crop:null, cropManual:false, cropEditing:false, cropDragging:false, cropDragStart:null, cropDragMode:'move',
+    rulerOffsetX:0, rulerOffsetY:0, rulerDragging:false, rulerDragStart:null,
     zoom:1, panX:0, panY:0, panning:false, panStart:null
   };
 
@@ -458,6 +467,7 @@
     minComponentVal:    document.getElementById('minComponentVal'),
     fovCutoff:          document.getElementById('fovCutoff'),
     fovCutoffVal:       document.getElementById('fovCutoffVal'),
+    scratchOrientation: document.getElementById('scratchOrientation'),
     deskewAngle:        document.getElementById('deskewAngle'),
     deskewAngleVal:     document.getElementById('deskewAngleVal'),
     autoCropFov:        document.getElementById('autoCropFov'),
@@ -469,6 +479,7 @@
     contourThicknessVal:document.getElementById('contourThicknessVal'),
     contourColor:       document.getElementById('contourColor'),
     contourStyle:       document.getElementById('contourStyle'),
+    angleRulerToggle:   document.getElementById('angleRulerToggle'),
     viewToggle:         document.getElementById('viewToggle'),
     metricsPanel:       document.getElementById('metricsPanel'),
     exportPng:          document.getElementById('exportPng'),
@@ -727,6 +738,14 @@
     return c.toDataURL('image/png');
   }
 
+  function orientationRotationDeg(orientation=el.scratchOrientation.value) {
+    return orientation==='horizontal'?90:0;
+  }
+
+  function effectiveRotationDeg() {
+    return (state.rotation+orientationRotationDeg())%360;
+  }
+
   function applyImageTransform() {
     if(!state.imageOriginal) return;
     const transformed=new Image();
@@ -736,7 +755,7 @@
       resetCropAndZoom();
       runSegmentation();
     };
-    transformed.src=transformImage(state.imageOriginal,state.rotation,angle);
+    transformed.src=transformImage(state.imageOriginal,effectiveRotationDeg(),angle);
   }
 
   function rotateCurrentImage() {
@@ -1057,7 +1076,8 @@
       const boundaryCount=boundaryPixels(mask,W,H).length;
       drawCanvas(src,mask,field,varMap,W,H,maxV);
       const ms=Math.round(performance.now()-t0);
-      const partialResult={area,areaPct,wMean:width.mean,wMedian:width.median,wSd:width.sd,widthCv:width.cv,wMin:width.min,wMax:width.max,validRows:width.validRows,validRowFraction:width.validRowFraction,areaPerValidRow:width.areaPerValidRow,minValidWidth:width.minValidWidth,threshold:finalTh,otsuThreshold:otsuTh,baseThreshold:baseTh,fallbackThreshold:fallbackTh,thresholdFallbackUsed:otsuTh<3,maxV,fieldArea,gtComparable,areaErr,areaErrS,boundaryCount,totalComponents:islandFilter.totalComponents,keptComponents:islandFilter.keptComponents,largestArea:islandFilter.largestArea,finalComponents:finalComponents.totalComponents,internalIslandCount:holeResult.holeCount,internalIslandArea:holeResult.holeArea,largestInternalIslandArea:holeResult.largestHoleArea,filledSmallIslandCount:holeResult.filledHoleCount,filledSmallIslandArea:holeResult.filledHoleArea,holeFillMaxArea:holeResult.maxHoleArea,crop,runtimeMs:ms};
+      const fineRotationDeg=Number(el.deskewAngle.value)||0;
+      const partialResult={area,areaPct,wMean:width.mean,wMedian:width.median,wSd:width.sd,widthCv:width.cv,wMin:width.min,wMax:width.max,validRows:width.validRows,validRowFraction:width.validRowFraction,areaPerValidRow:width.areaPerValidRow,minValidWidth:width.minValidWidth,threshold:finalTh,otsuThreshold:otsuTh,baseThreshold:baseTh,fallbackThreshold:fallbackTh,thresholdFallbackUsed:otsuTh<3,maxV,fieldArea,gtComparable,areaErr,areaErrS,boundaryCount,totalComponents:islandFilter.totalComponents,keptComponents:islandFilter.keptComponents,largestArea:islandFilter.largestArea,finalComponents:finalComponents.totalComponents,internalIslandCount:holeResult.holeCount,internalIslandArea:holeResult.holeArea,largestInternalIslandArea:holeResult.largestHoleArea,filledSmallIslandCount:holeResult.filledHoleCount,filledSmallIslandArea:holeResult.filledHoleArea,holeFillMaxArea:holeResult.maxHoleArea,crop,runtimeMs:ms,scratchOrientation:el.scratchOrientation.value,manualRotationDeg:state.rotation,orientationRotationDeg:orientationRotationDeg(),effectiveRotationDeg:effectiveRotationDeg(),fineRotationDeg};
       const qc=buildQc(partialResult,crop,W,H);
       state.result={...partialResult,segmentationQualityScore:qc.score,warnings:qc.warnings,recommendedPrimaryMetric:qc.recommendedPrimaryMetric};
       renderMetrics();
@@ -1068,7 +1088,8 @@
       setLog(`<strong>Threshold ${finalTh}</strong> (${thNote}) &middot; radius ${radius}${cropNote} &middot; FOV ${fmt(fieldArea)} px &middot; wound comps ${islandFilter.keptComponents}/${islandFilter.totalComponents} &middot; internal islands ${holeResult.holeCount} &middot; mask ${fmt(area)} px &middot; width ${fmt(width.mean,1)} px &middot; contour ${fmt(boundaryCount)} px${warningNote}${gtNote}`, `${ms} ms`);
       el.rerun.disabled=false; el.exportPng.disabled=false; el.exportCsv.disabled=false;
       const deskew=Number(el.deskewAngle.value)||0;
-      el.canvasMeta.textContent=`${W}x${H} px${state.rotation?` rotated ${state.rotation}deg`:''}${deskew?` deskew ${deskew}deg`:''}${crop.active?` cropped from ${img.naturalWidth}x${img.naturalHeight}`:''}  variance radius ${radius}  Otsu ${finalTh}`;
+      const orientation=el.scratchOrientation.value==='horizontal'?'horizontal scratch -> 90deg':'vertical scratch';
+      el.canvasMeta.textContent=`${W}x${H} px ${orientation}${state.rotation?` + manual rotate ${state.rotation}deg`:''}${deskew?` fine rotation ${deskew}deg`:''}${crop.active?` cropped from ${img.naturalWidth}x${img.naturalHeight}`:''}  variance radius ${radius}  Otsu ${finalTh}`;
     } catch(err) {
       console.error(err);
       state.result=null;
@@ -1137,6 +1158,90 @@
     return boundary.length;
   }
 
+  function rulerCenter(W,H) {
+    return {
+      x:W/2+(state.rulerOffsetX||0),
+      y:H/2+(state.rulerOffsetY||0)
+    };
+  }
+
+  function rulerHitTest(pt,W,H) {
+    if(!state.rulerVisible) return false;
+    const theta=0;
+    const c=rulerCenter(W,H);
+    const ux=Math.sin(theta), uy=Math.cos(theta);
+    const nx=Math.cos(theta), ny=-Math.sin(theta);
+    const dx=pt.x-c.x, dy=pt.y-c.y;
+    const along=dx*ux+dy*uy;
+    const across=dx*nx+dy*ny;
+    const half=Math.max(W,H)*0.45;
+    const band=Math.max(28,Math.min(W,H)*0.045);
+    return Math.abs(along)<=half&&Math.abs(across)<=band;
+  }
+
+  function redrawCurrentCanvas() {
+    if(state.image&&state.sourceData) {
+      drawCanvas(state.sourceData,state.maskData,state.fieldData,state.varMap,el.canvas.width,el.canvas.height,state.result?.maxV||1);
+    }
+  }
+
+  function drawAngleRuler(ctx,W,H) {
+    const angle=0;
+    const theta=0;
+    const center=rulerCenter(W,H);
+    const cx=center.x, cy=center.y;
+    const ux=Math.sin(theta), uy=Math.cos(theta);
+    const nx=Math.cos(theta), ny=-Math.sin(theta);
+    const length=Math.max(W,H)*0.9;
+    const half=length/2;
+    const band=22;
+    ctx.save();
+    ctx.lineCap='round';
+    ctx.lineJoin='round';
+    ctx.globalAlpha=0.72;
+    ctx.beginPath();
+    ctx.moveTo(cx-ux*half-nx*band,cy-uy*half-ny*band);
+    ctx.lineTo(cx+ux*half-nx*band,cy+uy*half-ny*band);
+    ctx.lineTo(cx+ux*half+nx*band,cy+uy*half+ny*band);
+    ctx.lineTo(cx-ux*half+nx*band,cy-uy*half+ny*band);
+    ctx.closePath();
+    ctx.fillStyle='rgba(255,255,255,0.16)';
+    ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,0.38)';
+    ctx.lineWidth=Math.max(1,Math.min(3,Math.round(Math.min(W,H)/450)));
+    ctx.stroke();
+
+    ctx.globalAlpha=0.92;
+    ctx.strokeStyle='rgba(255,255,255,0.9)';
+    ctx.lineWidth=Math.max(1,Math.min(4,Math.round(Math.min(W,H)/350)));
+    ctx.beginPath();
+    ctx.moveTo(cx-ux*half,cy-uy*half);
+    ctx.lineTo(cx+ux*half,cy+uy*half);
+    ctx.stroke();
+
+    const tickStep=Math.max(40,Math.round(Math.min(W,H)/12));
+    ctx.strokeStyle='rgba(16,32,39,0.72)';
+    ctx.lineWidth=1;
+    for(let t=-half;t<=half;t+=tickStep) {
+      const tickLen=Math.abs(t)<1?band*1.4:band*0.9;
+      const x=cx+ux*t, y=cy+uy*t;
+      ctx.beginPath();
+      ctx.moveTo(x-nx*tickLen,y-ny*tickLen);
+      ctx.lineTo(x+nx*tickLen,y+ny*tickLen);
+      ctx.stroke();
+    }
+
+    ctx.globalAlpha=0.96;
+    ctx.fillStyle='rgba(16,32,39,0.82)';
+    ctx.fillRect(Math.max(8,cx-46),Math.max(8,cy-half-30),92,22);
+    ctx.fillStyle='white';
+    ctx.font='700 12px Inter, sans-serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText('ruler',Math.max(54,cx),Math.max(19,cy-half-19));
+    ctx.restore();
+  }
+
   function drawCanvas(source,mask,field,varMap,W,H,maxV) {
     const ctx=el.canvas.getContext('2d');
     const len=W*H;
@@ -1160,6 +1265,7 @@
       boundaryCount=drawContour(d,mask,W,H);
     }
     ctx.putImageData(out,0,0);
+    if(state.rulerVisible) drawAngleRuler(ctx,W,H);
     return boundaryCount;
   }
 
@@ -1211,7 +1317,10 @@
       source_height_px:state.image?.naturalHeight||'',
       analysis_width_px:el.canvas.width,
       analysis_height_px:el.canvas.height,
-      rotation_deg:state.rotation,
+      scratch_orientation:el.scratchOrientation.value,
+      manual_rotation_deg:state.rotation,
+      orientation_rotation_deg:orientationRotationDeg(),
+      rotation_deg:effectiveRotationDeg(),
       deskew_angle_deg:Number(el.deskewAngle.value)||0,
       deskew_applied:(Number(el.deskewAngle.value)||0)!==0,
       auto_crop_fov:el.autoCropFov.checked,
@@ -1231,6 +1340,9 @@
       contour_thickness:Number(el.contourThickness.value),
       contour_color:el.contourColor.value,
       contour_style:el.contourStyle.value,
+      angle_ruler_visible:state.rulerVisible,
+      angle_ruler_offset_x_px:Math.round(state.rulerOffsetX||0),
+      angle_ruler_offset_y_px:Math.round(state.rulerOffsetY||0),
       width_min_valid_width_px:state.result?.minValidWidth||'',
       recommended_primary_metric:state.result?.recommendedPrimaryMetric||'',
       warnings:state.result?.warnings||[]
@@ -1246,7 +1358,9 @@
       ['baseline_image_id',''],['replicate_id',''],
       ['image_width_px',state.image?.naturalWidth||''],['image_height_px',state.image?.naturalHeight||''],
       ['analysis_width_px',el.canvas.width],['analysis_height_px',el.canvas.height],
-      ['rotation_deg',state.rotation],['deskew_angle_deg',Number(el.deskewAngle.value)||0],['deskew_applied',(Number(el.deskewAngle.value)||0)!==0?'yes':'no'],
+      ['scratch_orientation',el.scratchOrientation.value],
+      ['manual_rotation_deg',state.rotation],['orientation_rotation_deg',orientationRotationDeg()],
+      ['rotation_deg',effectiveRotationDeg()],['deskew_angle_deg',Number(el.deskewAngle.value)||0],['deskew_applied',(Number(el.deskewAngle.value)||0)!==0?'yes':'no'],
       ['ground_truth_method',gt?'whst_seed_calibration':'manual_image'],
       ['ground_truth_comparable',r.gtComparable?'yes':'no'],
       ['ground_truth_wound_area_px',gt?.area||''],['ground_truth_wound_area_pct',gt?.areaPct||''],
@@ -1285,6 +1399,8 @@
       ['filled_small_internal_island_area_px',r.filledSmallIslandArea??''],
       ['small_hole_fill_max_area_px',r.holeFillMaxArea??''],
       ['contour_thickness',el.contourThickness.value],['contour_color',el.contourColor.value],['contour_style',el.contourStyle.value],
+      ['angle_ruler_visible',state.rulerVisible?'yes':'no'],
+      ['angle_ruler_offset_x_px',Math.round(state.rulerOffsetX||0)],['angle_ruler_offset_y_px',Math.round(state.rulerOffsetY||0)],
       ['confidence',gt?.confidence||'manual'],['timestamp',new Date().toISOString()]
     ];
     const a=document.createElement('a');
@@ -1336,9 +1452,10 @@
   function currentGroupSettingsSummary() {
     const cropMode=state.cropManual&&state.crop?'manual crop':el.autoCropFov.checked?'auto FOV crop':'full image';
     const groupCrop=el.applyCropRatioGroup.checked&&state.cropManual&&state.crop?'same crop ratio':'per-image crop';
-    const rotation=state.rotation?`${state.rotation}deg rotation`:'no rotation';
+    const orientation=el.scratchOrientation.value==='horizontal'?'horizontal scratch':'vertical scratch';
+    const rotation=effectiveRotationDeg()?`${effectiveRotationDeg()}deg effective rotation`:'no rotation';
     const deskew=Number(el.deskewAngle.value)||0;
-    return `R${el.varianceRadius.value}, T${el.thresholdOffset.value}, min ${el.minComponent.value}, FOV ${el.fovCutoff.value}, ${cropMode}, ${groupCrop}, ${rotation}, deskew ${deskew}deg`;
+    return `R${el.varianceRadius.value}, T${el.thresholdOffset.value}, min ${el.minComponent.value}, FOV ${el.fovCutoff.value}, ${orientation}, ${cropMode}, ${groupCrop}, ${rotation}, fine rotation ${deskew}deg`;
   }
 
   function parseTimeHours(time) {
@@ -1476,7 +1593,10 @@
       fovCutoff:Number(el.fovCutoff.value),
       autoCrop:el.autoCropFov.checked,
       cropRatio:el.applyCropRatioGroup.checked&&state.cropManual&&state.crop?normalizedCropRatio(state.crop):null,
-      rotation:state.rotation||0,
+      scratchOrientation:el.scratchOrientation.value,
+      rotation:effectiveRotationDeg()||0,
+      manualRotation:state.rotation||0,
+      orientationRotation:orientationRotationDeg(),
       deskew:Number(el.deskewAngle.value)||0
     };
   }
@@ -1545,6 +1665,11 @@
       sampleId:sample.id,time:sample.time,timeHours:parseTimeHours(sample.time),
       sourceW:workImg.naturalWidth,sourceH:workImg.naturalHeight,
       cropW:crop.w,cropH:crop.h,analysisW:W,analysisH:H,
+      scratchOrientation:settings.scratchOrientation||'vertical',
+      manualRotationDeg:settings.manualRotation||0,
+      orientationRotationDeg:settings.orientationRotation||0,
+      effectiveRotationDeg:settings.rotation||0,
+      fineRotationDeg:settings.deskew||0,
       area,areaPct,wMean:width.mean,wMedian:width.median,wSd:width.sd,widthCv:width.cv,
       wMin:width.min,wMax:width.max,validRows:width.validRows,validRowFraction:width.validRowFraction,
       areaPerValidRow:width.areaPerValidRow,minValidWidth:width.minValidWidth,
@@ -1748,8 +1873,9 @@
             failPreview();
           }
         };
-        const rotation=state.rotation||0;
-        const deskew=Number(el.deskewAngle.value)||0;
+        const settings=currentSegmentationSettings();
+        const rotation=settings.rotation||0;
+        const deskew=settings.deskew||0;
         if(rotation||deskew) {
           const transformed=new Image();
           transformed.onload=()=>processImage(transformed);
@@ -1796,6 +1922,9 @@
     el.deskewAngleVal.value=el.deskewAngle.value;
     el.deskewBadge.textContent=`${Number(el.deskewAngle.value).toFixed(1).replace('.0','')}°`;
     el.contourThicknessVal.value=el.contourThickness.value;
+    el.angleRulerToggle.textContent=state.rulerVisible?'Hide angle ruler':'Show angle ruler';
+    el.angleRulerToggle.classList.toggle('primary',state.rulerVisible);
+    el.canvas.style.cursor=state.rulerVisible&&!state.cropEditing?'grab':'';
   }
 
   function nudgeDeskew(delta) {
@@ -1832,6 +1961,7 @@
     img.onload=()=>{
       state.image=img; state.imageOriginal=img; state.sample=sample; state.rotation=0;
       el.deskewAngle.value=0; el.deskewAngleVal.value=0;
+      state.rulerOffsetX=0; state.rulerOffsetY=0; state.rulerDragging=false; state.rulerDragStart=null;
       state.imageName=name||sample?.path||'local image';
       resetCropAndZoom();
       state.zoom=1; state.panX=0; state.panY=0;
@@ -1874,19 +2004,27 @@
     bindNumberPair(el.minComponent,el.minComponentVal,rerunFromSegmentation);
     bindNumberPair(el.fovCutoff,el.fovCutoffVal,rerunFromSegmentation);
     bindNumberPair(el.deskewAngle,el.deskewAngleVal,deskewCurrentImage);
+    el.angleRulerToggle.addEventListener('click',()=>{
+      state.rulerVisible=!state.rulerVisible;
+      syncLabels();
+      redrawCurrentCanvas();
+    });
+    el.scratchOrientation.addEventListener('change',()=>{
+      if(state.imageOriginal&&!state.cropEditing) applyImageTransform();
+    });
     el.autoCropFov.addEventListener('change',resetAutoCrop);
     el.adjustCrop.addEventListener('click',enterCropEdit);
     el.applyCrop.addEventListener('click',()=>leaveCropEdit(true));
     el.resetCrop.addEventListener('click',resetAutoCrop);
     bindNumberPair(el.contourThickness,el.contourThicknessVal,()=>{
-      if(state.image&&state.sourceData) drawCanvas(state.sourceData,state.maskData,state.fieldData,state.varMap,el.canvas.width,el.canvas.height,state.result?.maxV||1);
+      redrawCurrentCanvas();
     });
     [el.contourColor,el.contourStyle].forEach(inp=>{
       inp.addEventListener('input',()=>{
-        if(state.image&&state.sourceData) drawCanvas(state.sourceData,state.maskData,state.fieldData,state.varMap,el.canvas.width,el.canvas.height,state.result?.maxV||1);
+        redrawCurrentCanvas();
       });
       inp.addEventListener('change',()=>{
-        if(state.image&&state.sourceData) drawCanvas(state.sourceData,state.maskData,state.fieldData,state.varMap,el.canvas.width,el.canvas.height,state.result?.maxV||1);
+        redrawCurrentCanvas();
       });
     });
 
@@ -1894,7 +2032,7 @@
       const btn=e.target.closest('.view-btn');if(!btn)return;
       state.view=btn.dataset.view;
       el.viewToggle.querySelectorAll('.view-btn').forEach(b=>b.classList.toggle('active',b===btn));
-      if(state.image&&state.sourceData) drawCanvas(state.sourceData,state.maskData,state.fieldData,state.varMap,el.canvas.width,el.canvas.height,state.result?.maxV||1);
+      redrawCurrentCanvas();
     });
 
     document.querySelectorAll('.preset-btn').forEach(btn=>{
@@ -1949,6 +2087,15 @@
         }
         return;
       }
+      const pt=canvasPoint(e);
+      if(rulerHitTest(pt,el.canvas.width,el.canvas.height)) {
+        state.rulerDragging=true;
+        state.rulerDragStart={x:pt.x,y:pt.y,offsetX:state.rulerOffsetX||0,offsetY:state.rulerOffsetY||0};
+        el.canvas.classList.add('grabbing');
+        el.canvas.style.cursor='grabbing';
+        e.preventDefault();
+        return;
+      }
       if(state.zoom<=1)return;state.panning=true;state.panStart={x:e.clientX-state.panX,y:e.clientY-state.panY};el.canvas.classList.add('grabbing');
     });
     window.addEventListener('mousemove',e=>{
@@ -1971,9 +2118,22 @@
         drawCropEditor();
         return;
       }
+      if(state.rulerDragging) {
+        const pt=canvasPoint(e), start=state.rulerDragStart;
+        state.rulerOffsetX=start.offsetX+(pt.x-start.x);
+        state.rulerOffsetY=start.offsetY+(pt.y-start.y);
+        redrawCurrentCanvas();
+        return;
+      }
       if(!state.panning)return;state.panX=e.clientX-state.panStart.x;state.panY=e.clientY-state.panStart.y;applyZoom();
     });
-    window.addEventListener('mouseup',()=>{state.cropDragging=false;state.cropDragMode='move';state.panning=false;if(!state.cropEditing)el.canvas.classList.remove('grabbing');});
+    window.addEventListener('mouseup',()=>{
+      state.cropDragging=false;state.cropDragMode='move';state.rulerDragging=false;state.rulerDragStart=null;state.panning=false;
+      if(!state.cropEditing) {
+        el.canvas.classList.remove('grabbing');
+        el.canvas.style.cursor=state.rulerVisible?'grab':'';
+      }
+    });
 
     el.dropZone.addEventListener('dragover',e=>{e.preventDefault();el.dropZone.classList.add('dragging');});
     el.dropZone.addEventListener('dragleave',()=>el.dropZone.classList.remove('dragging'));

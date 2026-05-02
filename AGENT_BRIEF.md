@@ -96,8 +96,10 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 - `prototype/index.html` CSV export'u validation v0.3 şemasına hizalandı: `schema_version`, `cytomove_algorithm_version`, `cytomove_parameter_json`, comparator placeholder'ları, runtime, crop/rotation/deskew alanları.
 - Prototype'a dosya açma fix'i eklendi: file input doğrudan ikon içinde native input olarak çalışıyor.
 - Prototype'a threshold fallback eklendi: Otsu çok düşükse percentile fallback kullanılıyor; `threshold_fallback_used` CSV/log alanına yazılıyor.
-- Prototype'a ince açı düzeltme eklendi: `Angle correction (deg)` slider/number input, -20° ile +20°, step 0.5°. `deskew_angle_deg` ve `deskew_applied` export ediliyor.
-- 90° rotate kaba yön düzeltme için kalır; angle correction küçük mikroskop/telefon eksen eğiklikleri için kullanılır.
+- Prototype'a ince açı düzeltme eklendi: `Fine rotation (deg)` slider/number input, -20° ile +20°, step 0.5°. `deskew_angle_deg` ve `deskew_applied` export ediliyor.
+- Orientation/width model update (2026-05-02): blind auto-angle was avoided because it can rotate correct vertical scratches into worse positions. User chooses `Scratch orientation` as vertical or horizontal; horizontal applies a controlled 90-degree transform. Fine rotation remains a manual small-angle visual correction.
+- Width inclination correction disabled/removed for now because it confused the user and changed metrics without an obvious visual effect. Width metrics currently use raw horizontal scanline width after the selected scratch orientation/fine rotation.
+- Angle ruler overlay added: View section has a `Show angle ruler` toggle. The semi-transparent ruler can be dragged with the mouse as a visual alignment guide. It does not change segmentation or width metrics.
 - Prototype'a `Group review` modu eklendi: HK Control, M8F FDI-6 8uM ve MK Control grupları 0h/24h/48h olarak yan yana gösterilir. Kartlarda downsampled kontur preview çizilir; karta tıklanınca ilgili sample üstteki ana analiz canvas'ına yüklenir. Preview ölçüm yerine hızlı review amaçlıdır; ana canvas mevcut full pipeline ile çalışır.
 
 ---
@@ -306,8 +308,9 @@ Current CSV export includes analysis parameters, crop coordinates, rotation, isl
 - CSV export `docs/validation-protocol.md` v0.3 ile hizalandı: `schema_version=validation-protocol-v0.3`, `cytomove_algorithm_version=prototype-whst-variance-v0.3`, `cytomove_parameter_json`, runtime, comparator placeholder'ları, crop/rotation/deskew parametreleri.
 - File picker fix: open icon içinde native invisible `input[type=file]` var; JS `showPicker()` bağımlılığı yok.
 - Otsu threshold 0'a düştüğünde mask 0 px sorunu için percentile fallback eklendi. Log/CSV: `fallback_threshold`, `threshold_fallback_used`.
-- Fine deskew eklendi: `Angle correction (deg)` -20°..+20°, step 0.5°. Transform `imageOriginal + 90° rotation + deskew angle` üzerinden yeniden üretilir; crop sıfırlanır ve analiz tekrar çalışır.
-- Export alanları: `deskew_angle_deg`, `deskew_applied`; analysis log JSON içinde de yer alır.
+- Fine deskew eklendi: `Fine rotation (deg)` -20°..+20°, step 0.5°. Transform `imageOriginal + scratch orientation rotation + manual 90° rotation + fine rotation` üzerinden yeniden üretilir; crop sıfırlanır ve analiz tekrar çalışır.
+- Export alanları: `scratch_orientation`, `manual_rotation_deg`, `orientation_rotation_deg`, `rotation_deg`, `deskew_angle_deg`, `deskew_applied`; analysis log JSON içinde de yer alır.
+- `Show angle ruler` overlay: yarı şeffaf cetvel çizilir ve mouse ile taşınabilir. Amaç görsel hizalama; mask segmentasyonunu veya width metriğini değiştirmez.
 - 2026-05-01 methodological update: Cytomove should not position itself as only a wound-area calculator. Area metrics stay, but width-based metrics are first-class outputs because area fraction is crop/FOV dependent.
 - 2026-05-02 validation strategy update: validation is now three-layered. (1) Synthetic binary masks prove mathematical correctness with zero tolerance. (2) Synthetic microscopy-like images test robustness with predefined low tolerances. (3) Real microscopy images test biological/workflow validity against manual/consensus/ImageJ/WHST references.
 - Synthetic crop-robustness is a core validation requirement: use the same wound mask under different crop/FOV perturbations to show area fraction sensitivity and compare it with mean/median width stability.
