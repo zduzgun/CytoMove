@@ -1,8 +1,8 @@
 # Cytomove Validation Dataset Protocol
 
-**Document version:** 0.3 (draft)
+**Document version:** 0.4 (draft)
 **Status:** Pre-registered — Tier 1 archive identified and licence-cleared; collection workflow not yet started
-**Last updated:** 2026-04-30
+**Last updated:** 2026-05-02
 **Owner:** Z. Düzgün, Giresun University Faculty of Medicine, Department of Medical Biology
 **Intended use:** This protocol is pre-registered prior to data collection. The text is written in IMRAD style so that the *Methods* and *Validation Dataset* sections of the planned bioRxiv preprint (Phase 3) can be excerpted from this document with minimal rewriting.
 
@@ -13,6 +13,39 @@
 To define, in advance of any image acquisition or algorithm tuning, the dataset that will be used to evaluate the analytical performance of Cytomove against the established manual ground truth (ImageJ-based measurement). Pre-registration of the protocol is intended to eliminate post-hoc selection of inclusion criteria, sample size, or evaluation metrics.
 
 The dataset will support three downstream goals: (i) the Phase 2 MVP success criteria defined in `ROADMAP.md` (Pearson r > 0.9, mean wound-area error < 10 %, unedited acceptance rate ≥ 70 %); (ii) the comparative analysis against manual/consensus masks and established scratch-assay tools, prioritising the Wound Healing Size Tool (WHST), TScratch, PyScratch, and CSMA where technically feasible; and (iii) the bioRxiv preprint planned for Phase 3.
+
+## 1.1 Three-Layer Validation Strategy
+
+Cytomove validation is organised into three complementary layers. This replaces a single real-image-only validation strategy.
+
+1. **Synthetic binary masks.** Purpose: prove mathematical correctness of geometry, area, width-profile, valid-row, and closure calculations. Inputs are binary masks without antialiasing, blur, noise, compression, or resizing. Expected values are generated analytically from the mask geometry. Required tolerance: zero for integer-valued geometric quantities, and exact equality within floating-point representation for derived means/percentages.
+2. **Synthetic microscopy-like images.** Purpose: test robustness under controlled perturbations while preserving known ground truth. Images are generated from known masks and then degraded with documented perturbations such as blur, noise, uneven illumination, contrast change, debris, JPEG/PNG compression, and edge irregularity. Required tolerance: predefined low tolerance, not zero, because segmentation uncertainty is expected after image formation and preprocessing.
+3. **Real microscopy images.** Purpose: demonstrate biological and workflow validity on actual scratch-assay data. Performance is compared with manual/consensus masks, ImageJ/Fiji, WHST, and other comparator tools where feasible. Tolerances are interpreted relative to expert/rater variability and comparator agreement.
+
+This layered strategy supports the claim that Cytomove is mathematically correct on clean ground-truth masks, robust under controlled image perturbations, and valid on real microscopy images.
+
+## 1.2 Synthetic Validation Sets
+
+The synthetic validation suite contains four planned subsets:
+
+| Subset | Purpose | Examples | Primary outputs |
+|--------|---------|----------|-----------------|
+| Simple geometry | Unit-test metric formulas | Straight vertical wound, tilted wound, V-shaped wound, sinusoidal wound boundary, partial bridges, fragmented wound islands | Exact wound area, mean/median/SD/CV width, min/max width, valid row count/fraction |
+| Crop robustness | Quantify FOV/crop sensitivity | Same biological mask with central, shifted, top-truncated, bottom-truncated, narrow, wide, and aspect-ratio-varied crops | Variation of area fraction vs mean/median width |
+| Noise robustness | Characterise segmentation limits | Low/medium/high noise, Gaussian blur, uneven illumination, low contrast, compression, debris | Area error, width error, failure modes |
+| Time series | Verify closure calculations | Synthetic 0, 6, 12, 24 h series with known gap widths and closure percentages | Area-based closure, width-based closure, metric discordance |
+
+The crop-robustness subset is a methodological priority because it directly tests the known risk that wound area divided by total image area changes when field-of-view or crop differs between time points. The expected outcome is that area fraction is more crop-sensitive, while horizontal mean/median wound width is more stable when the wound axis remains approximately vertical.
+
+## 1.3 Error Tolerance Policy
+
+| Test type | Expected tolerance | Rationale |
+|-----------|-------------------|-----------|
+| Binary synthetic mask geometric tests | 0 | There is no imaging uncertainty; the mask is the ground truth. |
+| Clean synthetic rendered images | 0 or near-zero, depending on whether antialiasing/resizing is disabled | Pixel-perfect when rendered without antialiasing; low tolerance if rasterisation is involved. |
+| Realistic synthetic microscopy-like images | Explicit low tolerance, e.g. area/closure error <= 1-2 %, width error <= 1 px or <= 1 %, depending on perturbation severity | Segmentation after blur/noise/compression is not mathematically exact. |
+| Real microscopy images | Agreement against manual/consensus references and inter-rater variability | Biological images do not have perfect ground truth. |
+| Crop robustness tests | Compare variance/sensitivity between metrics rather than requiring a single zero-error value | The question is whether width-based metrics are more stable than area fraction under FOV perturbation. |
 
 ## 2. Sample Size and Statistical Justification
 
@@ -212,6 +245,9 @@ The Zenodo record cross-links to the GitHub repository and to the bioRxiv prepri
 
 For each evaluation run of Cytomove against this dataset, the following will be reported:
 
+- Synthetic binary-mask exactness: all expected geometric values, measured values, and zero-tolerance pass/fail status.
+- Synthetic microscopy-like robustness: perturbation type/severity, expected value, measured value, predefined tolerance, and pass/fail status.
+- Crop-robustness analysis: sensitivity of area fraction versus mean/median width under artificial crop perturbations of the same wound mask.
 - n (primary set), n (edge-case set).
 - Pearson and Spearman correlation with 95 % CI, on wound area percentage and, where available, percentage wound closure.
 - Bland–Altman analysis: mean bias, 95 % limits of agreement, with CI on the limits.
@@ -247,3 +283,6 @@ Most parameters previously marked TBD have now been resolved by reference to the
 - **Co-author consent** for releasing the unpublished subset of the archive under CC BY 4.0 (Korkmaz, Akgün). Published subset already CC BY 4.0 by virtue of journal licence.
 
 Resolved on 2026-04-29: `LC` = combined luteolin + cisplatin treatment.
+
+Additional changelog note:
+- **v0.4 (2026-05-02)** - Validation strategy revised to a three-layer design: synthetic binary masks for zero-tolerance mathematical correctness, synthetic microscopy-like images for controlled robustness testing with predefined tolerances, and real microscopy images for biological/workflow validity. Synthetic crop-robustness testing is now a core validation requirement for comparing area fraction and width-based metrics.

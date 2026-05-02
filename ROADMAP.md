@@ -99,6 +99,9 @@ Bu kriterler karşılanmadan Faz 3'e geçilmez.
 - [ ] Basic QC warnings: image dimension/FOV mismatch, crop-dependent area fraction, low valid row fraction, area-vs-width discordance
 - [ ] CSV/JSON report schema update: per-image area + width metrics, warnings, recommended primary metric
 - [ ] Preview/export resolution strategy: UI ve auto-calibration icin optimize edilmis working-resolution kullan; bilimsel PNG/CSV export sirasinda ayni ayarlari original full-resolution goruntuye yeniden uygula. Rapor alanlari: `working_resolution_px`, `export_resolution_px`, `resolution_scale`, `metrics_computed_at`.
+- [ ] Synthetic binary mask generator + exact geometric tests: clean masks icin wound area, width profile, valid row count/fraction ve closure hesaplari 0 toleransla dogrulanir.
+- [ ] Synthetic crop robustness validation: ayni wound mask uzerinde farkli crop/FOV senaryolari olustur; area fraction hassasiyeti ile mean/median width stabilitesini karsilastir.
+- [ ] Validation tolerance policy: binary synthetic tests = 0 tolerance; realistic synthetic tests = predefined low tolerance; real microscopy tests = expert/manual agreement.
 - [ ] Segmentasyon manuel düzeltme arayüzü
 - [ ] Yan yana görselleştirme (orijinal vs algılanan maske)
 - [ ] Dışa aktarma: PNG figür + CSV veri
@@ -139,6 +142,8 @@ Bu kriterler karşılanmadan Faz 3'e geçilmez.
 - [ ] Kapanma hızı hesabı: width-based (μm/saat) ve area-based (μm²/saat) birlikte
 - [ ] Kapanma eğrisi grafiği (zamana göre % kapanma)
 - [ ] Local width profile plot
+- [ ] Realistic synthetic microscopy-like image generator: noise, blur, uneven illumination, low contrast, debris, compression ve edge irregularity perturbasyonlari.
+- [ ] Synthetic time-series validation: 0/6/12/24 h gibi bilinen gap width ve closure degerleriyle area-based ve width-based closure hesaplarini test et.
 - [ ] Region-wise closure analysis (üst/orta/alt segmentler)
 - [ ] Better handling of fragmented masks and robust outlier trimming for scanline widths
 - [ ] Recommended primary metric logic: crop/FOV tutarsızsa width-based closure öner
