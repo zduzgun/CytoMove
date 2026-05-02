@@ -244,8 +244,8 @@
             <div class="control">
               <label for="varianceRadius">Variance radius</label>
               <div class="range-row">
-                <input id="varianceRadius" type="range" min="3" max="45" value="22" step="1">
-                <input class="value-input" id="varianceRadiusVal" type="number" min="3" max="45" value="22" step="1">
+                <input id="varianceRadius" type="range" min="1" max="45" value="22" step="1">
+                <input class="value-input" id="varianceRadiusVal" type="number" min="1" max="45" value="22" step="1">
               </div>
             </div>
             <div class="control">
@@ -279,14 +279,19 @@
             <div class="control">
               <label class="check-row" for="autoCropFov">
                 <input id="autoCropFov" type="checkbox">
-                Auto crop FOV square
+                Auto crop FOV
               </label>
-              <div class="check-hint">Cuts a center square inside the non-black microscope field before analysis.</div>
+              <div class="check-hint">Cuts the non-black microscope field before analysis; rectangular crops are allowed.</div>
+              <label class="check-row" for="applyCropRatioGroup" style="margin-top:8px;">
+                <input id="applyCropRatioGroup" type="checkbox">
+                Apply current crop ratio to group
+              </label>
+              <div class="check-hint">Uses the same relative rectangle for each image in group review.</div>
               <div class="action-row">
                 <button class="btn" id="adjustCrop" type="button" disabled>Adjust crop</button>
                 <button class="btn primary" id="applyCrop" type="button" disabled>Apply crop</button>
               </div>
-              <button class="btn" id="resetCrop" type="button" disabled style="width:100%;margin-top:7px;">Reset auto crop</button>
+              <button class="btn" id="resetCrop" type="button" disabled style="width:100%;margin-top:7px;">Reset crop</button>
             </div>
           </div>
 
@@ -432,7 +437,7 @@
     groupResults:{},
     calibrationReport:null,
     varMap:null, maskData:null, fieldData:null, sourceData:null,
-    crop:null, cropManual:false, cropEditing:false, cropDragging:false, cropDragStart:null,
+    crop:null, cropManual:false, cropEditing:false, cropDragging:false, cropDragStart:null, cropDragMode:'move',
     zoom:1, panX:0, panY:0, panning:false, panStart:null
   };
 
@@ -456,6 +461,7 @@
     deskewAngle:        document.getElementById('deskewAngle'),
     deskewAngleVal:     document.getElementById('deskewAngleVal'),
     autoCropFov:        document.getElementById('autoCropFov'),
+    applyCropRatioGroup:document.getElementById('applyCropRatioGroup'),
     adjustCrop:         document.getElementById('adjustCrop'),
     applyCrop:          document.getElementById('applyCrop'),
     resetCrop:          document.getElementById('resetCrop'),
@@ -554,11 +560,12 @@
     if(count<100||maxX<=minX||maxY<=minY) return {x:0,y:0,w:W,h:H,active:false};
     const bw=maxX-minX+1, bh=maxY-minY+1;
     const cx=(minX+maxX)/2, cy=(minY+maxY)/2;
-    const side=Math.max(16,Math.floor(Math.min(bw,bh)*0.7071*0.96));
-    let x=Math.round(cx-side/2), y=Math.round(cy-side/2);
-    x=Math.max(0,Math.min(W-side,x));
-    y=Math.max(0,Math.min(H-side,y));
-    return {x,y,w:side,h:side,active:side<W||side<H,fieldPixels:count,bounds:{minX,minY,maxX,maxY}};
+    const cropW=Math.max(16,Math.floor(bw*0.96));
+    const cropH=Math.max(16,Math.floor(bh*0.96));
+    let x=Math.round(cx-cropW/2), y=Math.round(cy-cropH/2);
+    x=Math.max(0,Math.min(W-cropW,x));
+    y=Math.max(0,Math.min(H-cropH,y));
+    return {x,y,w:cropW,h:cropH,active:cropW<W||cropH<H,fieldPixels:count,bounds:{minX,minY,maxX,maxY}};
   }
 
   function autoCropForImage(img, autoCrop=el.autoCropFov.checked, fovCutoff=Number(el.fovCutoff.value)) {
@@ -573,6 +580,7 @@
 
   function currentCrop() {
     if(!state.image) return null;
+    if(state.cropManual&&state.crop) return state.crop;
     if(!el.autoCropFov.checked) return {x:0,y:0,w:state.image.naturalWidth,h:state.image.naturalHeight,active:false};
     if(!state.crop) state.crop=autoCropForImage(state.image);
     return state.crop;
@@ -581,12 +589,39 @@
   function clampCrop(crop) {
     const img=state.image;
     if(!img) return crop;
-    const minSide=32;
-    const maxSide=Math.min(img.naturalWidth,img.naturalHeight);
-    crop.w=Math.max(minSide,Math.min(maxSide,Math.round(crop.w)));
-    crop.h=crop.w;
+    const minSize=32;
+    crop.w=Math.max(minSize,Math.min(img.naturalWidth,Math.round(crop.w)));
+    crop.h=Math.max(minSize,Math.min(img.naturalHeight,Math.round(crop.h)));
     crop.x=Math.max(0,Math.min(img.naturalWidth-crop.w,Math.round(crop.x)));
     crop.y=Math.max(0,Math.min(img.naturalHeight-crop.h,Math.round(crop.y)));
+    crop.active=crop.w<img.naturalWidth||crop.h<img.naturalHeight;
+    return crop;
+  }
+
+  function normalizedCropRatio(crop, img=state.image) {
+    if(!crop||!img) return null;
+    return {
+      x:crop.x/img.naturalWidth,
+      y:crop.y/img.naturalHeight,
+      w:crop.w/img.naturalWidth,
+      h:crop.h/img.naturalHeight
+    };
+  }
+
+  function cropFromRatio(img, ratio) {
+    if(!img||!ratio) return null;
+    const crop={
+      x:Math.round(ratio.x*img.naturalWidth),
+      y:Math.round(ratio.y*img.naturalHeight),
+      w:Math.round(ratio.w*img.naturalWidth),
+      h:Math.round(ratio.h*img.naturalHeight),
+      active:true
+    };
+    const minSize=32;
+    crop.w=Math.max(minSize,Math.min(img.naturalWidth,crop.w));
+    crop.h=Math.max(minSize,Math.min(img.naturalHeight,crop.h));
+    crop.x=Math.max(0,Math.min(img.naturalWidth-crop.w,crop.x));
+    crop.y=Math.max(0,Math.min(img.naturalHeight-crop.h,crop.y));
     crop.active=crop.w<img.naturalWidth||crop.h<img.naturalHeight;
     return crop;
   }
@@ -597,6 +632,16 @@
       x:(evt.clientX-rect.left)*el.canvas.width/rect.width,
       y:(evt.clientY-rect.top)*el.canvas.height/rect.height
     };
+  }
+
+  function cropHitMode(pt, crop) {
+    const handle=Math.max(12,el.canvas.width/120);
+    const near=(x,y)=>Math.abs(pt.x-x)<=handle&&Math.abs(pt.y-y)<=handle;
+    if(near(crop.x+crop.w,crop.y+crop.h)) return 'corner';
+    if(near(crop.x+crop.w,crop.y+crop.h/2)) return 'right';
+    if(near(crop.x+crop.w/2,crop.y+crop.h)) return 'bottom';
+    if(pt.x>=crop.x&&pt.x<=crop.x+crop.w&&pt.y>=crop.y&&pt.y<=crop.y+crop.h) return 'move';
+    return '';
   }
 
   function drawCropEditor() {
@@ -619,11 +664,19 @@
     ctx.lineWidth=Math.max(2,Math.round(el.canvas.width/1400));
     ctx.setLineDash([]);
     ctx.strokeRect(crop.x+2,crop.y+2,crop.w-4,crop.h-4);
+    const handle=Math.max(12,Math.round(el.canvas.width/120));
+    ctx.fillStyle='#ffffff';
+    ctx.strokeStyle='#000000';
+    ctx.lineWidth=Math.max(2,Math.round(el.canvas.width/1600));
+    [[crop.x+crop.w,crop.y+crop.h],[crop.x+crop.w,crop.y+crop.h/2],[crop.x+crop.w/2,crop.y+crop.h]].forEach(([hx,hy])=>{
+      ctx.fillRect(hx-handle/2,hy-handle/2,handle,handle);
+      ctx.strokeRect(hx-handle/2,hy-handle/2,handle,handle);
+    });
     ctx.restore();
     el.canvas.hidden=false; el.emptyState.hidden=true;
     el.canvasTitle.textContent='Adjust crop';
-    el.canvasMeta.textContent=`Drag square to move. Mouse wheel resizes. ${crop.w}x${crop.h} from ${img.naturalWidth}x${img.naturalHeight}`;
-    setLog('<strong>Crop edit mode.</strong> Drag the square to position it, use mouse wheel to resize, then Apply crop.');
+    el.canvasMeta.textContent=`Drag rectangle to move. Drag edge/corner handles or use mouse wheel to resize. ${crop.w}x${crop.h} from ${img.naturalWidth}x${img.naturalHeight}`;
+    setLog('<strong>Crop edit mode.</strong> Rectangular crop is allowed. Drag the rectangle or handles, then Apply crop.');
   }
 
   function enterCropEdit() {
@@ -641,6 +694,7 @@
   function leaveCropEdit(apply=true) {
     state.cropEditing=false;
     state.cropDragging=false;
+    state.cropDragMode='move';
     state.cropManual=!!apply;
     el.applyCrop.disabled=true;
     el.canvas.classList.remove('grabbing');
@@ -648,7 +702,7 @@
   }
 
   function resetCropAndZoom() {
-    state.crop=null; state.cropManual=false; state.cropEditing=false; state.cropDragging=false;
+    state.crop=null; state.cropManual=false; state.cropEditing=false; state.cropDragging=false; state.cropDragMode='move';
     state.zoom=1; state.panX=0; state.panY=0;
     el.canvas.style.transform='';
     el.zoomBadge.classList.remove('visible');
@@ -774,8 +828,8 @@
     return mask;
   }
 
-  // 7. Fill holes (border flood-fill inversion)
-  function fillHoles(mask, W, H) {
+  // 7. Fill only tiny enclosed holes; preserve large cell islands inside the wound.
+  function fillSmallHoles(mask, W, H, maxHoleArea=Math.max(64,Math.round(W*H*0.002))) {
     const len=W*H;
     const inv=new Uint8Array(len);
     for (let p=0;p<len;p++) inv[p]=mask[p]?0:1;
@@ -801,8 +855,33 @@
       }
     }
     const out=new Uint8Array(len);
-    for(let p=0;p<len;p++) out[p]=(mask[p]||(inv[p]&&!visited[p]))?1:0;
-    return out;
+    out.set(mask);
+    const holeQueue=new Int32Array(len);
+    let holeCount=0,holeArea=0,filledHoleCount=0,filledHoleArea=0,largestHoleArea=0;
+    for(let start=0;start<len;start++){
+      if(!inv[start]||visited[start]) continue;
+      let h=0,t=0,area=0;
+      holeQueue[t++]=start; visited[start]=1;
+      while(h<t){
+        const p=holeQueue[h++]; area++; const x=p%W;
+        const nb=[-1,1,-W,W];
+        for(const d of nb){
+          const ni=p+d;
+          if(ni<0||ni>=len||visited[ni]||!inv[ni]) continue;
+          if(d===-1&&x===0) continue; if(d===1&&x===W-1) continue;
+          visited[ni]=1; holeQueue[t++]=ni;
+        }
+      }
+      holeCount++;
+      holeArea+=area;
+      largestHoleArea=Math.max(largestHoleArea,area);
+      if(area<=maxHoleArea){
+        filledHoleCount++;
+        filledHoleArea+=area;
+        for(let i=0;i<t;i++) out[holeQueue[i]]=1;
+      }
+    }
+    return {mask:out,holeCount,holeArea,filledHoleCount,filledHoleArea,largestHoleArea,maxHoleArea};
   }
 
   // 8. Connected components - keep every component above the minimum area
@@ -906,6 +985,10 @@
       warnings.push('Final wound mask has multiple components; width and area metrics may need manual review.');
       score-=15;
     }
+    if(r.internalIslandCount>0) {
+      warnings.push('Internal cell islands/bridges are present inside the wound mask; review area and width visually.');
+      score-=5;
+    }
     if(!r.boundaryCount||!r.area) {
       warnings.push('No wound contour detected; adjust threshold, crop, or component filtering.');
       score-=40;
@@ -955,8 +1038,8 @@
       const finalTh=Math.max(1,Math.min(255,baseTh+thOff));
       const raw=applyThreshold(varMap,field,len,finalTh,maxV);
       const islandFilter=filterComponents(raw,W,H,minC);
-      const filled=fillHoles(islandFilter.mask,W,H);
-      const mask=filled;
+      const holeResult=fillSmallHoles(islandFilter.mask,W,H);
+      const mask=holeResult.mask;
       for(let p=0;p<len;p++) if(!field[p]) mask[p]=0;
       const finalComponents=componentStats(mask,W,H);
 
@@ -974,7 +1057,7 @@
       const boundaryCount=boundaryPixels(mask,W,H).length;
       drawCanvas(src,mask,field,varMap,W,H,maxV);
       const ms=Math.round(performance.now()-t0);
-      const partialResult={area,areaPct,wMean:width.mean,wMedian:width.median,wSd:width.sd,widthCv:width.cv,wMin:width.min,wMax:width.max,validRows:width.validRows,validRowFraction:width.validRowFraction,areaPerValidRow:width.areaPerValidRow,minValidWidth:width.minValidWidth,threshold:finalTh,otsuThreshold:otsuTh,baseThreshold:baseTh,fallbackThreshold:fallbackTh,thresholdFallbackUsed:otsuTh<3,maxV,fieldArea,gtComparable,areaErr,areaErrS,boundaryCount,totalComponents:islandFilter.totalComponents,keptComponents:islandFilter.keptComponents,largestArea:islandFilter.largestArea,finalComponents:finalComponents.totalComponents,crop,runtimeMs:ms};
+      const partialResult={area,areaPct,wMean:width.mean,wMedian:width.median,wSd:width.sd,widthCv:width.cv,wMin:width.min,wMax:width.max,validRows:width.validRows,validRowFraction:width.validRowFraction,areaPerValidRow:width.areaPerValidRow,minValidWidth:width.minValidWidth,threshold:finalTh,otsuThreshold:otsuTh,baseThreshold:baseTh,fallbackThreshold:fallbackTh,thresholdFallbackUsed:otsuTh<3,maxV,fieldArea,gtComparable,areaErr,areaErrS,boundaryCount,totalComponents:islandFilter.totalComponents,keptComponents:islandFilter.keptComponents,largestArea:islandFilter.largestArea,finalComponents:finalComponents.totalComponents,internalIslandCount:holeResult.holeCount,internalIslandArea:holeResult.holeArea,largestInternalIslandArea:holeResult.largestHoleArea,filledSmallIslandCount:holeResult.filledHoleCount,filledSmallIslandArea:holeResult.filledHoleArea,holeFillMaxArea:holeResult.maxHoleArea,crop,runtimeMs:ms};
       const qc=buildQc(partialResult,crop,W,H);
       state.result={...partialResult,segmentationQualityScore:qc.score,warnings:qc.warnings,recommendedPrimaryMetric:qc.recommendedPrimaryMetric};
       renderMetrics();
@@ -982,7 +1065,7 @@
       const thNote=otsuTh<3?`fallback ${fallbackTh}`:`Otsu ${otsuTh}`;
       const gtNote=gt?` &middot; GT ${fmt(gt.areaPct,2)}% area fraction`:'';
       const warningNote=state.result.warnings.length?` &middot; ${state.result.warnings.length} QC warning${state.result.warnings.length>1?'s':''}`:'';
-      setLog(`<strong>Threshold ${finalTh}</strong> (${thNote}) &middot; radius ${radius}${cropNote} &middot; FOV ${fmt(fieldArea)} px &middot; islands ${islandFilter.keptComponents}/${islandFilter.totalComponents} &middot; final comps ${finalComponents.totalComponents} &middot; mask ${fmt(area)} px &middot; width ${fmt(width.mean,1)} px &middot; contour ${fmt(boundaryCount)} px${warningNote}${gtNote}`, `${ms} ms`);
+      setLog(`<strong>Threshold ${finalTh}</strong> (${thNote}) &middot; radius ${radius}${cropNote} &middot; FOV ${fmt(fieldArea)} px &middot; wound comps ${islandFilter.keptComponents}/${islandFilter.totalComponents} &middot; internal islands ${holeResult.holeCount} &middot; mask ${fmt(area)} px &middot; width ${fmt(width.mean,1)} px &middot; contour ${fmt(boundaryCount)} px${warningNote}${gtNote}`, `${ms} ms`);
       el.rerun.disabled=false; el.exportPng.disabled=false; el.exportCsv.disabled=false;
       const deskew=Number(el.deskewAngle.value)||0;
       el.canvasMeta.textContent=`${W}x${H} px${state.rotation?` rotated ${state.rotation}deg`:''}${deskew?` deskew ${deskew}deg`:''}${crop.active?` cropped from ${img.naturalWidth}x${img.naturalHeight}`:''}  variance radius ${radius}  Otsu ${finalTh}`;
@@ -1100,8 +1183,9 @@
       metricCard('Valid rows',`${fmt(r.validRows)}`,`${fmt(r.validRowFraction,1)}% of image rows`),
       metricCard('Primary metric',r.recommendedPrimaryMetric.replace(/_/g,' '),r.warnings[0]||'area and width can be read together',primaryKind),
       metricCard('QC score',`${fmt(r.segmentationQualityScore)}/100`,r.warnings.length?`${r.warnings.length} warning${r.warnings.length>1?'s':''}`:'no major warnings',qcKind),
-      metricCard('Islands',`${fmt(r.keptComponents)}/${fmt(r.totalComponents)}`,`min ${fmt(el.minComponent.value)} px, largest ${fmt(r.largestArea)} px`),
-      metricCard('Final comps',`${fmt(r.finalComponents)}`,`after fill holes`),
+      metricCard('Wound comps',`${fmt(r.keptComponents)}/${fmt(r.totalComponents)}`,`min ${fmt(el.minComponent.value)} px, largest ${fmt(r.largestArea)} px`),
+      metricCard('Internal islands',`${fmt(r.internalIslandCount)}`,`area ${fmt(r.internalIslandArea)} px, largest ${fmt(r.largestInternalIslandArea)} px`,r.internalIslandCount?'warn':''),
+      metricCard('Final comps',`${fmt(r.finalComponents)}`,`after tiny-hole cleanup`),
       metricCard('Contour',`${fmt(r.boundaryCount)} px`,r.boundaryCount?'overlay boundary':'no boundary found',r.boundaryCount?'':'bad')
     ].join('');
   }
@@ -1195,6 +1279,11 @@
       ['auto_crop_fov',el.autoCropFov.checked?'yes':'no'],['crop_x',crop.x??''],['crop_y',crop.y??''],['crop_w',crop.w??''],['crop_h',crop.h??''],['crop_manual',state.cropManual?'yes':'no'],
       ['islands_total',r.totalComponents],['islands_kept',r.keptComponents],['final_components',r.finalComponents],
       ['largest_component_px',r.largestArea||''],
+      ['internal_island_count',r.internalIslandCount??''],['internal_island_area_px',r.internalIslandArea??''],
+      ['largest_internal_island_px',r.largestInternalIslandArea??''],
+      ['filled_small_internal_island_count',r.filledSmallIslandCount??''],
+      ['filled_small_internal_island_area_px',r.filledSmallIslandArea??''],
+      ['small_hole_fill_max_area_px',r.holeFillMaxArea??''],
       ['contour_thickness',el.contourThickness.value],['contour_color',el.contourColor.value],['contour_style',el.contourStyle.value],
       ['confidence',gt?.confidence||'manual'],['timestamp',new Date().toISOString()]
     ];
@@ -1245,10 +1334,11 @@
   function selectedGroup() { return GROUPS.find(g=>g.id===el.groupSelect.value)||GROUPS[0]; }
 
   function currentGroupSettingsSummary() {
-    const cropMode=el.autoCropFov.checked?'auto FOV crop':'full image';
+    const cropMode=state.cropManual&&state.crop?'manual crop':el.autoCropFov.checked?'auto FOV crop':'full image';
+    const groupCrop=el.applyCropRatioGroup.checked&&state.cropManual&&state.crop?'same crop ratio':'per-image crop';
     const rotation=state.rotation?`${state.rotation}deg rotation`:'no rotation';
     const deskew=Number(el.deskewAngle.value)||0;
-    return `R${el.varianceRadius.value}, T${el.thresholdOffset.value}, min ${el.minComponent.value}, FOV ${el.fovCutoff.value}, ${cropMode}, ${rotation}, deskew ${deskew}deg`;
+    return `R${el.varianceRadius.value}, T${el.thresholdOffset.value}, min ${el.minComponent.value}, FOV ${el.fovCutoff.value}, ${cropMode}, ${groupCrop}, ${rotation}, deskew ${deskew}deg`;
   }
 
   function parseTimeHours(time) {
@@ -1267,9 +1357,9 @@
     const warnings=[];
     const dims=new Set(rows.map(r=>`${r.sourceW}x${r.sourceH}`));
     if(dims.size>1) warnings.push('image dimensions differ across timepoints');
-    const cropSides=rows.map(r=>r.cropW).filter(Boolean);
-    const minCrop=Math.min(...cropSides), maxCrop=Math.max(...cropSides);
-    if(minCrop>0&&((maxCrop-minCrop)/minCrop)*100>3) warnings.push('auto FOV/crop size varies across timepoints');
+    const cropAreas=rows.map(r=>r.cropW*r.cropH).filter(Boolean);
+    const minCrop=Math.min(...cropAreas), maxCrop=Math.max(...cropAreas);
+    if(minCrop>0&&((maxCrop-minCrop)/minCrop)*100>3) warnings.push('crop/FOV size varies across timepoints');
     if(rows.some(r=>r.validRowFraction<35)) warnings.push('one or more timepoints have low valid row fraction');
     if(rows.some(r=>r.widthCv>65)) warnings.push('one or more wounds have a highly irregular width profile');
 
@@ -1321,6 +1411,7 @@
       <div class="group-metric"><span>Area %</span><span>${fmt(r.areaPct,2)}%</span></div>
       <div class="group-metric"><span>CM width</span><span>${fmt(r.wMean,1)} px</span></div>
       <div class="group-metric"><span>Valid rows</span><span>${fmt(r.validRowFraction,1)}%</span></div>
+      <div class="group-metric"><span>Internal islands</span><span>${fmt(r.internalIslandCount)}</span></div>
       <div class="group-metric"><span>Image QC</span><span class="${qcKind}">${fmt(r.segmentationQualityScore)}/100</span></div>
       <div class="group-metric"><span>GT closure</span><span>${sample.closure===null?'n/a':`${fmt(sample.closure,2)}%`}</span></div>
     `;
@@ -1384,6 +1475,7 @@
       minComponent:Number(el.minComponent.value),
       fovCutoff:Number(el.fovCutoff.value),
       autoCrop:el.autoCropFov.checked,
+      cropRatio:el.applyCropRatioGroup.checked&&state.cropManual&&state.crop?normalizedCropRatio(state.crop):null,
       rotation:state.rotation||0,
       deskew:Number(el.deskewAngle.value)||0
     };
@@ -1415,7 +1507,11 @@
   function analyzeImageWithSettings(workImg, sample, settings, maxSide=420) {
     const scratch=document.createElement('canvas');
     const ctx=scratch.getContext('2d',{willReadFrequently:true});
-    const crop=settings.autoCrop?autoCropForImage(workImg,true,settings.fovCutoff):{x:0,y:0,w:workImg.naturalWidth,h:workImg.naturalHeight,active:false};
+    const crop=settings.cropRatio
+      ? cropFromRatio(workImg,settings.cropRatio)
+      : settings.autoCrop
+        ? autoCropForImage(workImg,true,settings.fovCutoff)
+        : {x:0,y:0,w:workImg.naturalWidth,h:workImg.naturalHeight,active:false};
     const scale=maxSide?Math.min(1,maxSide/Math.max(crop.w,crop.h)):1;
     const W=Math.max(1,Math.round(crop.w*scale));
     const H=Math.max(1,Math.round(crop.h*scale));
@@ -1424,7 +1520,7 @@
     const src=ctx.getImageData(0,0,W,H);
     const len=W*H;
     const areaScale=(W*H)/(crop.w*crop.h);
-    const radius=Math.max(2,Math.round(settings.varianceRadius*Math.sqrt(areaScale)));
+    const radius=Math.max(1,Math.round(settings.varianceRadius*Math.sqrt(areaScale)));
     const minC=Math.max(25,Math.round(settings.minComponent*areaScale));
     const gray=toGray(src.data,len);
     const field=fovMask(gray,len,settings.fovCutoff);
@@ -1436,7 +1532,8 @@
     const finalTh=Math.max(1,Math.min(255,baseTh+settings.thresholdOffset));
     const raw=applyThreshold(varMap,field,len,finalTh,maxV);
     const filtered=filterComponents(raw,W,H,minC);
-    const mask=fillHoles(filtered.mask,W,H);
+    const holeResult=fillSmallHoles(filtered.mask,W,H);
+    const mask=holeResult.mask;
     for(let p=0;p<len;p++) if(!field[p]) mask[p]=0;
     const finalComponents=componentStats(mask,W,H);
     let area=0,fieldArea=0;
@@ -1453,7 +1550,10 @@
       areaPerValidRow:width.areaPerValidRow,minValidWidth:width.minValidWidth,
       threshold:finalTh,fieldArea,boundaryCount,maxV,
       totalComponents:filtered.totalComponents,keptComponents:filtered.keptComponents,
-      largestArea:filtered.largestArea,finalComponents:finalComponents.totalComponents,crop,
+      largestArea:filtered.largestArea,finalComponents:finalComponents.totalComponents,
+      internalIslandCount:holeResult.holeCount,internalIslandArea:holeResult.holeArea,
+      largestInternalIslandArea:holeResult.largestHoleArea,filledSmallIslandCount:holeResult.filledHoleCount,
+      filledSmallIslandArea:holeResult.filledHoleArea,holeFillMaxArea:holeResult.maxHoleArea,crop,
       src,field,varMap,mask
     };
     const qc=buildQc(partialResult,crop,W,H,false);
@@ -1466,7 +1566,7 @@
 
   function buildCalibrationGrid() {
     const c=currentSegmentationSettings();
-    const radii=candidateValues(c.varianceRadius,[c.varianceRadius-6,c.varianceRadius-3,c.varianceRadius,c.varianceRadius+3,c.varianceRadius+6].map(v=>Math.max(3,Math.min(45,Math.round(v)))));
+    const radii=candidateValues(c.varianceRadius,[c.varianceRadius-6,c.varianceRadius-3,c.varianceRadius,c.varianceRadius+3,c.varianceRadius+6].map(v=>Math.max(1,Math.min(45,Math.round(v)))));
     const thresholds=candidateValues(c.thresholdOffset,[c.thresholdOffset-12,c.thresholdOffset-6,c.thresholdOffset,c.thresholdOffset+6,c.thresholdOffset+12,-44,-38,-32,-26,-20].map(v=>Math.max(-50,Math.min(50,Math.round(v)))));
     const mins=candidateValues(c.minComponent,[0,10000,25000,40000,55000,75000,100000,c.minComponent].map(v=>Math.max(0,Math.min(100000,Math.round(v/1000)*1000))));
     const fovs=candidateValues(c.fovCutoff,[c.fovCutoff-8,c.fovCutoff,c.fovCutoff+8,30,36,44].map(v=>Math.max(0,Math.min(180,Math.round(v)))));
@@ -1756,7 +1856,10 @@
     el.applySettingsGroup.addEventListener('click',()=>{
       if(state.mode==='group') renderGroupView();
       else setMode('group');
-      setLog(`<strong>Group settings applied:</strong> ${escHtml(currentGroupSettingsSummary())}. Manual crop position is not copied; each image uses its own auto FOV crop.`);
+      const ratioNote=el.applyCropRatioGroup.checked&&state.cropManual&&state.crop
+        ? 'Current manual crop is copied as a relative rectangle across the group.'
+        : 'Each image uses its own full image or auto FOV crop.';
+      setLog(`<strong>Group settings applied:</strong> ${escHtml(currentGroupSettingsSummary())}. ${ratioNote}`);
     });
     el.autoCalibrateGroup.addEventListener('click',autoCalibrateGroup);
     el.sampleSelect.addEventListener('change',updateSampleMeta);
@@ -1821,12 +1924,12 @@
       if(state.cropEditing){
         const crop=currentCrop();
         const pt=canvasPoint(e);
-        const oldSide=crop.w;
+        const oldW=crop.w, oldH=crop.h;
         const factor=e.deltaY<0?1.06:1/1.06;
         crop.w=Math.round(crop.w*factor);
-        crop.h=crop.w;
-        crop.x=pt.x-(pt.x-crop.x)*(crop.w/oldSide);
-        crop.y=pt.y-(pt.y-crop.y)*(crop.h/oldSide);
+        crop.h=Math.round(crop.h*factor);
+        crop.x=pt.x-(pt.x-crop.x)*(crop.w/oldW);
+        crop.y=pt.y-(pt.y-crop.y)*(crop.h/oldH);
         clampCrop(crop);
         state.cropManual=true;
         drawCropEditor();
@@ -1838,9 +1941,11 @@
     el.canvas.addEventListener('mousedown',e=>{
       if(state.cropEditing){
         const pt=canvasPoint(e), crop=currentCrop();
-        if(pt.x>=crop.x&&pt.x<=crop.x+crop.w&&pt.y>=crop.y&&pt.y<=crop.y+crop.h){
+        const mode=cropHitMode(pt,crop);
+        if(mode){
           state.cropDragging=true;
-          state.cropDragStart={x:pt.x-crop.x,y:pt.y-crop.y};
+          state.cropDragMode=mode;
+          state.cropDragStart={x:pt.x,y:pt.y,crop:{...crop}};
         }
         return;
       }
@@ -1849,8 +1954,18 @@
     window.addEventListener('mousemove',e=>{
       if(state.cropEditing&&state.cropDragging){
         const pt=canvasPoint(e), crop=currentCrop();
-        crop.x=pt.x-state.cropDragStart.x;
-        crop.y=pt.y-state.cropDragStart.y;
+        const start=state.cropDragStart;
+        if(state.cropDragMode==='move') {
+          crop.x=start.crop.x+(pt.x-start.x);
+          crop.y=start.crop.y+(pt.y-start.y);
+        } else {
+          crop.x=start.crop.x;
+          crop.y=start.crop.y;
+          crop.w=start.crop.w;
+          crop.h=start.crop.h;
+          if(state.cropDragMode==='right'||state.cropDragMode==='corner') crop.w=start.crop.w+(pt.x-start.x);
+          if(state.cropDragMode==='bottom'||state.cropDragMode==='corner') crop.h=start.crop.h+(pt.y-start.y);
+        }
         clampCrop(crop);
         state.cropManual=true;
         drawCropEditor();
@@ -1858,7 +1973,7 @@
       }
       if(!state.panning)return;state.panX=e.clientX-state.panStart.x;state.panY=e.clientY-state.panStart.y;applyZoom();
     });
-    window.addEventListener('mouseup',()=>{state.cropDragging=false;state.panning=false;if(!state.cropEditing)el.canvas.classList.remove('grabbing');});
+    window.addEventListener('mouseup',()=>{state.cropDragging=false;state.cropDragMode='move';state.panning=false;if(!state.cropEditing)el.canvas.classList.remove('grabbing');});
 
     el.dropZone.addEventListener('dragover',e=>{e.preventDefault();el.dropZone.classList.add('dragging');});
     el.dropZone.addEventListener('dragleave',()=>el.dropZone.classList.remove('dragging'));

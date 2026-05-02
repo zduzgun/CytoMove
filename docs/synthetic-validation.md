@@ -27,6 +27,8 @@ Current outputs:
 - `binary-mask-exactness.csv`: zero-tolerance tests for wound area, area fraction, width profile, and valid row metrics.
 - `crop-robustness.csv`: controlled crop/FOV perturbation showing area fraction changes while mean/median width stays stable for the same wound gap.
 - `synthetic-time-series.csv`: expected width-based closure values for known gap widths.
+- `images/*.png`: synthetic microscopy-like raster images that can be dragged into the Cytomove prototype for user testing. Current images are full-size validation fixtures, mostly `2000x1200 px`; the hardest case is `2200x1400 px`.
+- `mask_png/*_mask.png`: binary ground-truth mask PNGs for visual inspection or external tools.
 - `masks/*.pgm`: optional generated binary mask fixtures.
 - `figures/*_panel.svg`: reviewer-facing panels showing ground-truth mask, synthetic microscopy-like image, and detected contour overlay.
 - `figures/crop_robustness_plot.svg`: manuscript-ready plot showing area-fraction sensitivity versus width stability under crop/FOV perturbation.
@@ -63,7 +65,7 @@ The binary-mask suite currently contains 10 cases ordered from simple to difficu
 | 7 | `partial_closure_gaps` | Rows with no wound pixels to test valid row fraction. |
 | 8 | `fragmented_bridge` | Wound rows split by a bridge; area changes while edge-span width remains stable. |
 | 9 | `tilted_straight_gap` | Constant-width wound tilted across the field. |
-| 10 | `extreme_irregular_multibridge` | Irregular edges, missing rows, and multiple bridges. |
+| 10 | `extreme_irregular_multibridge` | Chaotic large image with ragged edges, severe narrowing zones, and multiple bridges while preserving wound continuity. |
 
 ## Tolerance Policy
 

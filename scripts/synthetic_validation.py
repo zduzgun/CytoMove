@@ -9,9 +9,12 @@ pipeline reports after a wound mask exists.
 from __future__ import annotations
 
 import argparse
+import binascii
 import csv
 import html
 import math
+import struct
+import zlib
 from dataclasses import dataclass
 from pathlib import Path
 from statistics import median
@@ -144,94 +147,115 @@ def constant_width_case(case_id: str, difficulty: int, width: int, height: int, 
 
 def stepped_case() -> Case:
     rows = []
-    for y in range(40):
-        rows.append((y, 50, 79))  # 30 px
-    for y in range(40, 80):
-        rows.append((y, 45, 94))  # 50 px
-    return Case("stepped_width", 3, 160, 80, tuple(rows), "Two horizontal regions with known 30/50 px widths.")
+    for y in range(600):
+        rows.append((y, 760, 1079))  # 320 px
+    for y in range(600, 1200):
+        rows.append((y, 680, 1319))  # 640 px
+    return Case("stepped_width", 3, 2000, 1200, tuple(rows), "Two horizontal regions with known 320/640 px widths.")
 
 
 def tapered_case() -> Case:
     rows = []
-    for y in range(100):
-        width = 24 + round(y * 56 / 99)
-        cx = 100
+    for y in range(1200):
+        width = 240 + round(y * 560 / 1199)
+        cx = 1000
         x0 = cx - width // 2
         rows.append((y, x0, x0 + width - 1))
-    return Case("linear_taper", 4, 200, 100, tuple(rows), "Width increases linearly from 24 px to 80 px.")
+    return Case("linear_taper", 4, 2000, 1200, tuple(rows), "Width increases linearly from 240 px to 800 px.")
 
 
 def sinusoidal_case() -> Case:
     rows = []
-    for y in range(120):
-        left = 52 + round(8 * math.sin(y / 9))
-        right = 128 + round(10 * math.sin(y / 13 + 0.7))
+    for y in range(1200):
+        left = 520 + round(95 * math.sin(y / 82))
+        right = 1370 + round(115 * math.sin(y / 121 + 0.7))
         rows.append((y, left, right))
-    return Case("sinusoidal_edges", 5, 190, 120, tuple(rows), "Both wound edges follow smooth sinusoidal boundaries.")
+    return Case("sinusoidal_edges", 5, 2000, 1200, tuple(rows), "Both wound edges follow smooth sinusoidal boundaries.")
 
 
 def v_shaped_case() -> Case:
     rows = []
-    for y in range(120):
-        d = abs(y - 60)
-        width = 18 + round(d * 1.15)
-        cx = 100
+    for y in range(1200):
+        d = abs(y - 600)
+        width = 180 + round(d * 1.1)
+        cx = 1000
         x0 = cx - width // 2
         rows.append((y, x0, x0 + width - 1))
-    return Case("v_shaped_gap", 6, 200, 120, tuple(rows), "V-shaped wound with narrow centre and wider top/bottom.")
+    return Case("v_shaped_gap", 6, 2000, 1200, tuple(rows), "V-shaped wound with narrow centre and wider top/bottom.")
 
 
 def partial_closure_case() -> Case:
     rows = []
-    for y in range(120):
-        if 42 <= y <= 58 or 82 <= y <= 89:
+    for y in range(1200):
+        if 420 <= y <= 585 or 820 <= y <= 910:
             continue
-        width = 52 if y < 70 else 34
-        cx = 95 + round(4 * math.sin(y / 7))
+        width = 560 if y < 700 else 340
+        cx = 980 + round(45 * math.sin(y / 70))
         x0 = cx - width // 2
         rows.append((y, x0, x0 + width - 1))
-    return Case("partial_closure_gaps", 7, 190, 120, tuple(rows), "Some rows have no wound pixels, mimicking local full closure.")
+    return Case("partial_closure_gaps", 7, 2000, 1200, tuple(rows), "Some rows have no wound pixels, mimicking local full closure.")
 
 
 def fragmented_bridge_case() -> Case:
     rows = []
-    for y in range(60):
-        if 25 <= y <= 34:
-            rows.extend([(y, 30, 44), (y, 65, 79)])
+    for y in range(1200):
+        if 500 <= y <= 700:
+            rows.extend([(y, 520, 830), (y, 1180, 1490)])
         else:
-            rows.append((y, 30, 79))
-    return Case("fragmented_bridge", 8, 120, 60, tuple(rows), "Rows 25-34 contain a cell bridge splitting the wound mask.")
+            rows.append((y, 520, 1490))
+    return Case("fragmented_bridge", 8, 2000, 1200, tuple(rows), "A wide cell bridge splits the wound mask for many rows.")
 
 
 def tilted_case() -> Case:
     rows = []
-    for y in range(120):
-        x0 = 38 + round(y * 0.45)
-        rows.append((y, x0, x0 + 47))
-    return Case("tilted_straight_gap", 9, 160, 120, tuple(rows), "Constant-width wound tilted across the field.")
+    for y in range(1200):
+        x0 = 420 + round(y * 0.45)
+        rows.append((y, x0, x0 + 479))
+    return Case("tilted_straight_gap", 9, 2000, 1200, tuple(rows), "Constant-width wound tilted across the field.")
 
 
 def extreme_irregular_case() -> Case:
     rows = []
-    for y in range(140):
-        if y in {18, 19, 20, 77, 78, 121}:
-            continue
-        left = 46 + round(14 * math.sin(y / 5.5)) + (8 if 52 <= y <= 64 else 0)
-        right = 148 + round(18 * math.sin(y / 8.0 + 1.3)) - (18 if 95 <= y <= 108 else 0)
-        if 35 <= y <= 48 or 88 <= y <= 98:
-            bridge_w = 10 + (y % 5)
+    for y in range(1400):
+        left = (
+            430
+            + round(150 * math.sin(y / 47))
+            + round(70 * math.sin(y / 17 + 0.9))
+            + (95 if 510 <= y <= 670 else 0)
+            - (65 if 1030 <= y <= 1130 else 0)
+        )
+        right = (
+            1590
+            + round(170 * math.sin(y / 69 + 1.3))
+            + round(85 * math.sin(y / 23))
+            - (190 if 910 <= y <= 1085 else 0)
+            + (70 if 300 <= y <= 390 else 0)
+        )
+        if 155 <= y <= 205:
+            left += 230
+            right -= 260
+        if 730 <= y <= 785:
+            left += 310
+            right -= 350
+        if 1170 <= y <= 1215:
+            left += 260
+            right -= 300
+        left = max(60, min(1800, left))
+        right = max(left + 80, min(2140, right))
+        if 330 <= y <= 490 or 845 <= y <= 1005 or 1230 <= y <= 1320:
+            bridge_w = 95 + (y % 47)
             mid = (left + right) // 2
             rows.append((y, left, mid - bridge_w))
             rows.append((y, mid + bridge_w, right))
         else:
             rows.append((y, left, right))
-    return Case("extreme_irregular_multibridge", 10, 220, 140, tuple(rows), "Irregular edges, missing rows, and multiple cell bridges.")
+    return Case("extreme_irregular_multibridge", 10, 2200, 1400, tuple(rows), "Chaotic continuous wound with ragged edges, severe narrowing zones, and multiple bridges.")
 
 
 def synthetic_cases() -> list[Case]:
     return [
-        constant_width_case("straight_vertical", 1, 200, 100, 70, 129, "Straight 60 px vertical wound."),
-        constant_width_case("narrow_vertical", 2, 160, 100, 72, 91, "Narrow 20 px vertical wound."),
+        constant_width_case("straight_vertical", 1, 2000, 1200, 700, 1299, "Straight 600 px vertical wound."),
+        constant_width_case("narrow_vertical", 2, 2000, 1200, 900, 1099, "Narrow 200 px vertical wound."),
         stepped_case(),
         tapered_case(),
         sinusoidal_case(),
@@ -359,25 +383,101 @@ def synthetic_texture_rects(mask: list[list[int]], scale: int) -> str:
     return "\n".join(rects)
 
 
+def synthetic_rgb(mask: list[list[int]]) -> list[list[tuple[int, int, int]]]:
+    height = len(mask)
+    width = len(mask[0]) if height else 0
+    image = []
+    for y, row in enumerate(mask):
+        out_row = []
+        for x, value in enumerate(row):
+            if value:
+                # Wound/gap: bright, smooth, low local variance with mild illumination drift.
+                drift = round(10 * (x / max(1, width - 1)) + 5 * math.sin(y / 170))
+                micro = ((x * 3 + y * 5) % 5) - 2
+                shade = max(205, min(246, 224 + drift + micro))
+                out_row.append((shade, shade, max(200, shade - 6)))
+            else:
+                # Cell-covered monolayer: deliberately high local variance so the
+                # variance-based prototype does not confuse it with the wound gap.
+                checker = 46 if ((x // 7 + y // 5) % 2) else -34
+                ridge = round(24 * math.sin(x / 13.0) + 18 * math.cos(y / 17.0))
+                granule = ((x * 37 + y * 19 + (x * y) % 29) % 61) - 30
+                shade = max(55, min(230, 142 + checker + ridge + granule))
+                blue = max(45, min(225, shade + ((x + y) % 17) - 8))
+                out_row.append((shade, min(235, shade + 4), blue))
+        image.append(out_row)
+    return image
+
+
+def mask_rgb(mask: list[list[int]]) -> list[list[tuple[int, int, int]]]:
+    return [[(255, 255, 255) if value else (0, 0, 0) for value in row] for row in mask]
+
+
+def png_chunk(chunk_type: bytes, data: bytes) -> bytes:
+    crc = binascii.crc32(chunk_type + data) & 0xFFFFFFFF
+    return struct.pack(">I", len(data)) + chunk_type + data + struct.pack(">I", crc)
+
+
+def write_png(path: Path, pixels: list[list[tuple[int, int, int]]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    height = len(pixels)
+    width = len(pixels[0]) if height else 0
+    raw_rows = []
+    for row in pixels:
+        raw_rows.append(b"\x00" + b"".join(bytes((r, g, b)) for r, g, b in row))
+    raw = b"".join(raw_rows)
+    png = b"\x89PNG\r\n\x1a\n"
+    png += png_chunk("IHDR".encode("ascii"), struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
+    png += png_chunk("IDAT".encode("ascii"), zlib.compress(raw, level=9))
+    png += png_chunk("IEND".encode("ascii"), b"")
+    path.write_bytes(png)
+
+
+def downsample_mask(mask: list[list[int]], max_width: int = 260) -> list[list[int]]:
+    height = len(mask)
+    width = len(mask[0]) if height else 0
+    if not width or width <= max_width:
+        return mask
+    factor = math.ceil(width / max_width)
+    out_h = math.ceil(height / factor)
+    out_w = math.ceil(width / factor)
+    out = blank_mask(out_w, out_h)
+    for oy in range(out_h):
+        for ox in range(out_w):
+            found = 0
+            for y in range(oy * factor, min(height, (oy + 1) * factor)):
+                for x in range(ox * factor, min(width, (ox + 1) * factor)):
+                    if mask[y][x]:
+                        found = 1
+                        break
+                if found:
+                    break
+            out[oy][ox] = found
+    return out
+
+
 def svg_panel_case(case: Case, mask: list[list[int]], metrics: Metrics) -> str:
+    preview = downsample_mask(mask)
     scale = 3
     pad = 22
     label_h = 28
-    panel_w = case.width * scale
-    panel_h = case.height * scale
+    panel_h_px = len(preview)
+    panel_w_px = len(preview[0]) if panel_h_px else 0
+    panel_w = panel_w_px * scale
+    panel_h = panel_h_px * scale
     total_w = panel_w * 3 + pad * 4
     total_h = panel_h + label_h + pad * 2 + 72
     panels = [
-        ("A. Ground-truth binary mask", mask_rects(mask, scale, "#0f172a")),
-        ("B. Synthetic microscopy-like image", synthetic_texture_rects(mask, scale)),
-        ("C. Cytomove contour overlay", synthetic_texture_rects(mask, scale) + "\n" + boundary_rects(mask, scale, "#e11d48")),
+        ("A. Ground-truth binary mask", mask_rects(preview, scale, "#0f172a")),
+        ("B. Synthetic microscopy-like image", synthetic_texture_rects(preview, scale)),
+        ("C. Cytomove contour overlay", synthetic_texture_rects(preview, scale) + "\n" + boundary_rects(preview, scale, "#e11d48")),
     ]
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{total_w}" height="{total_h}" viewBox="0 0 {total_w} {total_h}">',
         '<rect width="100%" height="100%" fill="#ffffff"/>',
         '<style>text{font-family:Arial,sans-serif}.title{font-size:15px;font-weight:700;fill:#102027}.meta{font-size:12px;fill:#475569}.label{font-size:12px;font-weight:700;fill:#334155}</style>',
         f'<text class="title" x="{pad}" y="22">{html.escape(case.case_id)} synthetic validation panel</text>',
-        f'<text class="meta" x="{pad}" y="42">Area {metrics.wound_area_px} px; mean width {metrics.mean_width_px:.2f} px; valid rows {metrics.valid_row_count}</text>',
+        f'<text class="meta" x="{pad}" y="42">Full-size image {case.width}x{case.height} px; area {metrics.wound_area_px} px; mean width {metrics.mean_width_px:.2f} px</text>',
     ]
     for i, (label, body) in enumerate(panels):
         x = pad + i * (panel_w + pad)
@@ -397,8 +497,8 @@ def write_text(path: Path, text: str) -> None:
 
 
 def crop_plot_svg(rows: list[dict[str, str]]) -> str:
-    width, height = 720, 420
-    left, right, top, bottom = 64, 32, 44, 58
+    width, height = 900, 520
+    left, right, top, bottom = 92, 230, 76, 78
     plot_w = width - left - right
     plot_h = height - top - bottom
     area_vals = [float(r["wound_area_fraction_percent"]) for r in rows]
@@ -417,23 +517,49 @@ def crop_plot_svg(rows: list[dict[str, str]]) -> str:
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
         '<rect width="100%" height="100%" fill="#ffffff"/>',
-        '<style>text{font-family:Arial,sans-serif;fill:#102027}.title{font-size:16px;font-weight:700}.axis{font-size:11px;fill:#475569}.legend{font-size:12px;font-weight:700}</style>',
-        f'<text class="title" x="{left}" y="24">Crop robustness: same 40 px wound under different field widths</text>',
+        '<style>text{font-family:Arial,sans-serif;fill:#102027}.title{font-size:18px;font-weight:700}.subtitle{font-size:12px;fill:#475569}.axis{font-size:12px;fill:#475569}.tick{font-size:11px;fill:#64748b}.legend{font-size:13px;font-weight:700}.note{font-size:12px;fill:#334155}</style>',
+        f'<text class="title" x="{left}" y="28">Crop/FOV robustness test on the same synthetic wound</text>',
+        f'<text class="subtitle" x="{left}" y="50">The true wound width is fixed at 40 px; only field width / crop changes.</text>',
+        f'<rect x="{left - 10}" y="{top - 14}" width="{plot_w + 20}" height="{plot_h + 14}" fill="#f8fafc" stroke="#e2e8f0"/>',
         f'<line x1="{left}" y1="{top + plot_h}" x2="{left + plot_w}" y2="{top + plot_h}" stroke="#334155"/>',
         f'<line x1="{left}" y1="{top}" x2="{left}" y2="{top + plot_h}" stroke="#334155"/>',
-        f'<polyline points="{poly(area_vals)}" fill="none" stroke="#dc2626" stroke-width="3"/>',
-        f'<polyline points="{poly(width_vals)}" fill="none" stroke="#0f9f8f" stroke-width="3"/>',
-        f'<text class="legend" x="{left + 20}" y="{top + 18}" fill="#dc2626">Area fraction (%)</text>',
-        f'<text class="legend" x="{left + 180}" y="{top + 18}" fill="#0f9f8f">Mean width (px)</text>',
+        f'<polyline points="{poly(area_vals)}" fill="none" stroke="#dc2626" stroke-width="4"/>',
+        f'<polyline points="{poly(width_vals)}" fill="none" stroke="#0f766e" stroke-width="4"/>',
+        f'<g transform="translate({left + plot_w + 34},{top + 8})">',
+        '<rect x="0" y="0" width="178" height="142" rx="6" fill="#ffffff" stroke="#cbd5e1"/>',
+        '<line x1="16" y1="28" x2="52" y2="28" stroke="#dc2626" stroke-width="4"/>',
+        '<circle cx="34" cy="28" r="5" fill="#dc2626"/>',
+        '<text class="legend" x="62" y="32">Area fraction (%)</text>',
+        '<text class="note" x="16" y="53">Wound area divided by</text>',
+        '<text class="note" x="16" y="69">current image/FOV area</text>',
+        '<line x1="16" y1="96" x2="52" y2="96" stroke="#0f766e" stroke-width="4"/>',
+        '<circle cx="34" cy="96" r="5" fill="#0f766e"/>',
+        '<text class="legend" x="62" y="100">Mean width (px)</text>',
+        '<text class="note" x="16" y="121">Horizontal gap width</text>',
+        '<text class="note" x="16" y="137">from scanlines</text>',
+        '</g>',
+        f'<g transform="translate({left + plot_w + 34},{top + 176})">',
+        '<rect x="0" y="0" width="178" height="96" rx="6" fill="#fff7ed" stroke="#fed7aa"/>',
+        '<text class="legend" x="14" y="25">Interpretation</text>',
+        '<text class="note" x="14" y="48">Area fraction changes</text>',
+        '<text class="note" x="14" y="64">when crop/FOV changes.</text>',
+        '<text class="note" x="14" y="84">Width stays stable here.</text>',
+        '</g>',
     ]
+    for tick in range(0, int(y_max) + 1, 10):
+        x1 = left - 5
+        y = top + plot_h - (tick * plot_h / y_max)
+        parts.append(f'<line x1="{x1}" y1="{y:.1f}" x2="{left + plot_w}" y2="{y:.1f}" stroke="#e2e8f0"/>')
+        parts.append(f'<text class="tick" text-anchor="end" x="{left - 10}" y="{y + 4:.1f}">{tick}</text>')
     for i, row in enumerate(rows):
         x, _ = pt(i, 0)
-        parts.append(f'<text class="axis" text-anchor="middle" x="{x:.1f}" y="{top + plot_h + 24}">{html.escape(row["field_width_px"])} px</text>')
-        for value, color in ((area_vals[i], "#dc2626"), (width_vals[i], "#0f9f8f")):
+        parts.append(f'<text class="axis" text-anchor="middle" x="{x:.1f}" y="{top + plot_h + 28}">{html.escape(row["field_width_px"])} px</text>')
+        for value, color, dy in ((area_vals[i], "#dc2626", 18), (width_vals[i], "#0f766e", -12)):
             px, py = pt(i, value)
             parts.append(f'<circle cx="{px:.1f}" cy="{py:.1f}" r="4" fill="{color}"/>')
-    parts.append(f'<text class="axis" text-anchor="middle" x="{left + plot_w / 2}" y="{height - 14}">Field width / crop variant</text>')
-    parts.append(f'<text class="axis" transform="translate(18,{top + plot_h / 2}) rotate(-90)" text-anchor="middle">Metric value</text>')
+            parts.append(f'<text class="tick" text-anchor="middle" x="{px:.1f}" y="{py + dy:.1f}" fill="{color}">{value:.1f}</text>')
+    parts.append(f'<text class="axis" text-anchor="middle" x="{left + plot_w / 2}" y="{height - 24}">Field width / crop variant</text>')
+    parts.append(f'<text class="axis" transform="translate(25,{top + plot_h / 2}) rotate(-90)" text-anchor="middle">Metric value (%, px)</text>')
     parts.append("</svg>")
     return "\n".join(parts)
 
@@ -450,6 +576,8 @@ def run(output_dir: Path, write_masks: bool) -> None:
         metric_rows.append(row)
         if write_masks:
             write_pgm(output_dir / "masks" / f"{case.case_id}.pgm", mask)
+        write_png(output_dir / "images" / f"{case.case_id}.png", synthetic_rgb(mask))
+        write_png(output_dir / "mask_png" / f"{case.case_id}_mask.png", mask_rgb(mask))
         write_text(output_dir / "figures" / f"{case.case_id}_panel.svg", svg_panel_case(case, mask, actual))
 
     crop_rows = crop_robustness_rows()
