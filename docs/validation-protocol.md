@@ -24,6 +24,19 @@ Cytomove validation is organised into three complementary layers. This replaces 
 
 This layered strategy supports the claim that Cytomove is mathematically correct on clean ground-truth masks, robust under controlled image perturbations, and valid on real microscopy images.
 
+## 1.1.1 First-Wave Real-Image Validation Sources
+
+The real-image validation layer will use a mixed acquisition strategy rather than a single "best" dataset. This is intentional because Cytomove should serve both professional time-lapse microscopy images and less standard phone-through-eyepiece images from everyday lab workflows.
+
+| Source | Role in validation | Rationale | First-wave decision |
+|--------|--------------------|-----------|---------------------|
+| WHAD/CAMAD | Primary professional real-world validation | Public Zenodo dataset with professional scratch-assay imaging and frequent time-lapse acquisition; strongest candidate for the main real-image evidence base | Include as first-wave priority after manual inspection |
+| CSMA dataset | Public comparator/workflow validation | Public wound-healing analysis dataset linked to a comparator tool; useful for checking Cytomove against an existing area/width-oriented workflow | Include as first-wave secondary set |
+| Local Duzgun lab phone/eyepiece images | Real-world usability stress subset | Non-standard phone capture, circular FOV, crop/angle variability, and lower acquisition consistency represent the target user scenario Cytomove should handle with QC warnings | Keep as a selected usability subset, not the sole primary validation backbone |
+| RQSA | Robustness/stress candidate | Designed for difficult conditions and deep-learning/robustness-style evaluation; valuable later but not needed for the first validation pass | Defer to Phase 2/3 |
+
+Raw files for these sources should live outside git under `validation_ref_sets/raw/`. The working layout is documented in `docs/validation-dataset-layout.md`.
+
 ## 1.2 Synthetic Validation Sets
 
 The synthetic validation suite contains four planned subsets:

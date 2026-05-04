@@ -26,10 +26,10 @@
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       font-size: 13px; line-height: 1.5; -webkit-font-smoothing: antialiased;
     }
-    body { padding: 20px; min-height: 100%; }
+    body { padding: 20px; min-height: 100%; overflow: hidden; }
     button, input, select { font: inherit; }
 
-    .app { width: min(1500px,100%); margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+    .app { width: min(1500px,100%); height: calc(100vh - 40px); margin: 0 auto; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
 
     .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
     .brand { display: flex; align-items: center; gap: 12px; }
@@ -42,9 +42,9 @@
     .pill strong { color: var(--ink); font-weight: 700; }
     .pill-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); display: inline-block; }
 
-    .layout { display: grid; grid-template-columns: 340px minmax(0,1fr); gap: 16px; align-items: start; }
+    .layout { display: grid; grid-template-columns: 340px minmax(0,1fr); gap: 16px; align-items: start; flex: 1; min-height: 0; overflow: hidden; }
 
-    .sidebar { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); position: sticky; top: 20px; overflow: hidden; }
+    .sidebar { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow-y: auto; overflow-x: hidden; max-height: 100%; overscroll-behavior: contain; scrollbar-gutter: stable; }
     .sidebar-inner { padding: 16px; display: flex; flex-direction: column; gap: 0; }
     .section { padding: 14px 0; }
     .section + .section { border-top: 1px solid var(--line); }
@@ -101,7 +101,7 @@
 
     .export-row { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 10px; }
 
-    .workspace { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    .workspace { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow-y: auto; overflow-x: hidden; max-height: 100%; overscroll-behavior: contain; scrollbar-gutter: stable; }
     .canvas-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: rgba(238,246,244,0.5); }
     .canvas-title { font-size: 12.5px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
     .canvas-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
@@ -173,7 +173,7 @@
     .zoom-badge { position: absolute; bottom: 12px; right: 12px; background: rgba(16,32,39,0.72); color: white; border-radius: 6px; padding: 3px 8px; font-size: 11px; font-weight: 700; pointer-events: none; opacity: 0; transition: opacity .3s; }
     .zoom-badge.visible { opacity: 1; }
 
-    @media (max-width: 1050px) { body { padding: 14px; } .layout { grid-template-columns: 1fr; } .sidebar { position: static; } .drop-zone, .group-view { min-height: 420px; } .group-grid, .series-summary { grid-template-columns: 1fr; } }
+    @media (max-width: 1050px) { body { padding: 14px; overflow: auto; } .app { height: auto; min-height: 100vh; } .layout { grid-template-columns: 1fr; overflow: visible; } .sidebar, .workspace { max-height: none; overflow: visible; } .drop-zone, .group-view { min-height: 420px; } .group-grid, .series-summary { grid-template-columns: 1fr; } }
     @media (max-width: 600px) { .topbar { flex-direction: column; align-items: flex-start; } .metrics { grid-template-columns: 1fr; } .action-row, .export-row { grid-template-columns: 1fr; } .view-toggle { grid-template-columns: repeat(2,1fr); } }
   </style>
 </head>
@@ -191,7 +191,7 @@
         </div>
         <div>
           <div class="brand-name">Cytomove</div>
-          <div class="brand-tag">Area-First Segmentation Lab &mdash; Faz 2 Prototype</div>
+          <div class="brand-tag">Area-First Segmentation Lab &mdash; Phase 2 Prototype</div>
         </div>
       </div>
       <div class="status-pills">
@@ -237,6 +237,7 @@
               <button class="btn primary" id="applySettingsGroup" type="button">Apply to group</button>
               <button class="btn" id="autoCalibrateGroup" type="button">Auto calibrate</button>
             </div>
+            <button class="btn" id="autoDetectModeGroup" type="button" style="width:100%;margin-top:7px;">Auto detect microscope</button>
           </div>
 
           <div class="section">
@@ -268,6 +269,15 @@
                 <input id="fovCutoff" type="range" min="0" max="180" value="36" step="1">
                 <input class="value-input" id="fovCutoffVal" type="number" min="0" max="180" value="36" step="1">
               </div>
+            </div>
+            <div class="control">
+              <label>Microscope mode</label>
+              <div class="mode-row" id="microscopeMode" style="margin-bottom:0;">
+                <button class="view-btn active" data-fov-mode="full" type="button">Phase contrast</button>
+                <button class="view-btn" data-fov-mode="cutoff" type="button">Brightfield</button>
+              </div>
+              <input id="fovMode" type="hidden" value="full">
+              <div class="check-hint">Phase contrast: dark backgrounds. Brightfield: trims dark border/FOV outside by cutoff.</div>
             </div>
             <div class="control">
               <label for="scratchOrientation">Scratch orientation</label>
@@ -339,6 +349,26 @@
           </div>
 
           <div class="section">
+            <div class="section-title">Manual correction</div>
+            <div class="view-toggle" id="brushMode">
+              <button class="view-btn" data-brush-mode="off" type="button">Off</button>
+              <button class="view-btn active" data-brush-mode="add" type="button">Smart add</button>
+              <button class="view-btn" data-brush-mode="erase" type="button">Erase</button>
+            </div>
+            <div class="control">
+              <label for="brushSize">Region tolerance</label>
+              <div class="range-row">
+                <input id="brushSize" type="range" min="4" max="80" value="28" step="2">
+                <input class="value-input" id="brushSizeVal" type="number" min="4" max="80" value="28" step="2">
+              </div>
+            </div>
+            <div class="action-row">
+              <button class="btn" id="undoBrush" type="button" disabled>Undo</button>
+              <button class="btn" id="resetBrush" type="button" disabled>Reset correction</button>
+            </div>
+          </div>
+
+          <div class="section">
             <div class="section-title">Metrics</div>
             <div class="metrics" id="metricsPanel"></div>
           </div>
@@ -348,6 +378,7 @@
             <div class="export-row">
               <button class="btn" id="exportPng" type="button" disabled>PNG overlay</button>
               <button class="btn" id="exportCsv" type="button" disabled>CSV data</button>
+              <button class="btn" id="exportExcel" type="button" disabled>Excel table</button>
             </div>
           </div>
 
@@ -382,12 +413,10 @@
             </button>
             <label class="icon-btn file-picker-label" id="openFile" title="Open local image" style="cursor:pointer;">
               <svg viewBox="0 0 16 16" fill="none"><path d="M2 11V13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M8 2v8M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              <input class="file-input-native" id="fileInput" type="file" accept="image/*">
+              <input class="file-input-native" id="fileInput" type="file" accept="image/*" multiple>
             </label>
           </div>
         </div>
-
-        <div class="group-view" id="groupView" hidden></div>
 
         <div class="drop-zone" id="dropZone">
           <div class="empty-state" id="emptyState">
@@ -402,6 +431,8 @@
           <canvas id="canvas" hidden></canvas>
           <div class="zoom-badge" id="zoomBadge">100%</div>
         </div>
+
+        <div class="group-view" id="groupView" hidden></div>
 
         <div class="log-bar" id="logBar">
           <div class="spinner" id="spinner"></div>
@@ -425,9 +456,9 @@
   ];
 
   const PRESETS = {
-    rough:    { varianceRadius:18, thresholdOffset:-24, minComponent:20000, fovCutoff:30 },
-    standard: { varianceRadius:22, thresholdOffset:-32, minComponent:55000, fovCutoff:36 },
-    fine:     { varianceRadius:28, thresholdOffset:-38, minComponent:35000, fovCutoff:40 }
+    rough:    { varianceRadius:18, thresholdOffset:-24, minComponent:20000, fovCutoff:30, fovMode:'cutoff' },
+    standard: { varianceRadius:22, thresholdOffset:-32, minComponent:55000, fovCutoff:36, fovMode:'full' },
+    fine:     { varianceRadius:28, thresholdOffset:-38, minComponent:35000, fovCutoff:40, fovMode:'full' }
   };
 
   const GROUPS = [
@@ -436,15 +467,20 @@
     { id:'mk-control', label:'MK Control', sampleIds:['cal-007','cal-008','cal-009'] }
   ];
 
-  const CYTOMOVE_ALGORITHM_VERSION = 'prototype-whst-variance-v0.3';
+  const CYTOMOVE_ALGORITHM_VERSION = 'prototype-whst-variance-v0.4';
 
   const state = {
     mode:'single',
     image:null, imageOriginal:null, imageName:'', sample:null, rotation:0,
     view:'overlay', result:null, rulerVisible:false,
     groupResults:{},
+    manualOverrides:{},
+    customSamples:[],
+    objectUrls:[],
     calibrationReport:null,
-    varMap:null, maskData:null, fieldData:null, sourceData:null,
+    varMap:null, maskData:null, autoMaskData:null, fieldData:null, sourceData:null, grayData:null, darkGuideThreshold:0,
+    brushMode:'off', brushDrawing:false, brushEdited:false, brushAddedPx:0, brushRemovedPx:0,
+    brushHistory:[],
     crop:null, cropManual:false, cropEditing:false, cropDragging:false, cropDragStart:null, cropDragMode:'move',
     rulerOffsetX:0, rulerOffsetY:0, rulerDragging:false, rulerDragStart:null,
     zoom:1, panX:0, panY:0, panning:false, panStart:null
@@ -455,6 +491,7 @@
     groupSelect:        document.getElementById('groupSelect'),
     applySettingsGroup: document.getElementById('applySettingsGroup'),
     autoCalibrateGroup: document.getElementById('autoCalibrateGroup'),
+    autoDetectModeGroup:document.getElementById('autoDetectModeGroup'),
     sampleSelect:       document.getElementById('sampleSelect'),
     sampleMeta:         document.getElementById('sampleMeta'),
     loadSample:         document.getElementById('loadSample'),
@@ -467,6 +504,8 @@
     minComponentVal:    document.getElementById('minComponentVal'),
     fovCutoff:          document.getElementById('fovCutoff'),
     fovCutoffVal:       document.getElementById('fovCutoffVal'),
+    microscopeMode:     document.getElementById('microscopeMode'),
+    fovMode:            document.getElementById('fovMode'),
     scratchOrientation: document.getElementById('scratchOrientation'),
     deskewAngle:        document.getElementById('deskewAngle'),
     deskewAngleVal:     document.getElementById('deskewAngleVal'),
@@ -479,11 +518,17 @@
     contourThicknessVal:document.getElementById('contourThicknessVal'),
     contourColor:       document.getElementById('contourColor'),
     contourStyle:       document.getElementById('contourStyle'),
+    brushMode:          document.getElementById('brushMode'),
+    brushSize:          document.getElementById('brushSize'),
+    brushSizeVal:       document.getElementById('brushSizeVal'),
+    undoBrush:          document.getElementById('undoBrush'),
+    resetBrush:         document.getElementById('resetBrush'),
     angleRulerToggle:   document.getElementById('angleRulerToggle'),
     viewToggle:         document.getElementById('viewToggle'),
     metricsPanel:       document.getElementById('metricsPanel'),
     exportPng:          document.getElementById('exportPng'),
     exportCsv:          document.getElementById('exportCsv'),
+    exportExcel:        document.getElementById('exportExcel'),
     canvas:             document.getElementById('canvas'),
     canvasTitle:        document.getElementById('canvasTitle'),
     canvasMeta:         document.getElementById('canvasMeta'),
@@ -515,7 +560,7 @@
   }
   function setLog(msg, timer='') { el.logMsg.innerHTML=msg; el.timerMsg.textContent=timer; }
   function setSpinner(on) { el.spinner.classList.toggle('active',on); }
-  function sampleUrl(s) { return '../'+s.path.split('/').map(encodeURIComponent).join('/'); }
+  function sampleUrl(s) { return s.url||('../'+s.path.split('/').map(encodeURIComponent).join('/')); }
   function isFileProtocol() { return window.location.protocol==='file:'; }
   function clampControlValue(input, raw) {
     const min=Number(input.min), max=Number(input.max), step=Number(input.step)||1;
@@ -535,8 +580,12 @@
   }
 
   // 2. FOV field mask
-  function fovMask(gray, len, cutoff) {
+  function fovMask(gray, len, cutoff, mode='full') {
     const f=new Uint8Array(len);
+    if(mode==='full') {
+      f.fill(1);
+      return f;
+    }
     for (let p=0;p<len;p++) f[p]=gray[p]>cutoff?1:0;
     return f;
   }
@@ -837,14 +886,36 @@
   }
 
   // 6. Threshold low-variance wound gap
-  function applyThreshold(varMap, field, len, th, maxV) {
+  function applyThreshold(varMap, field, len, th, maxV, gray=null, mode='cutoff') {
     const mask=new Uint8Array(len);
     const normTh=th*maxV/255;
+    const darkTh=(mode==='full'&&gray)?darkPercentile(gray,field,len,0.42):255;
+    const brightfieldFloor=(mode==='cutoff'&&gray)?darkPercentile(gray,field,len,0.18):0;
     for (let p=0;p<len;p++) {
       if(!field[p]) continue;
-      mask[p]=varMap[p]<=normTh?1:0;
+      if(varMap[p]>normTh) continue;
+      if(mode==='full'&&gray&&gray[p]>darkTh) continue;
+      if(mode==='cutoff'&&gray&&gray[p]<brightfieldFloor) continue;
+      mask[p]=1;
     }
     return mask;
+  }
+
+  function darkPercentile(gray, field, len, pct) {
+    const hist=new Uint32Array(256);
+    let total=0;
+    for(let p=0;p<len;p++) {
+      if(!field[p]) continue;
+      hist[gray[p]]++;
+      total++;
+    }
+    const target=Math.max(1,Math.round(total*pct));
+    let acc=0;
+    for(let i=0;i<256;i++) {
+      acc+=hist[i];
+      if(acc>=target) return i;
+    }
+    return 255;
   }
 
   // 7. Fill only tiny enclosed holes; preserve large cell islands inside the wound.
@@ -877,6 +948,8 @@
     out.set(mask);
     const holeQueue=new Int32Array(len);
     let holeCount=0,holeArea=0,filledHoleCount=0,filledHoleArea=0,largestHoleArea=0;
+    let reportedHoleCount=0,reportedHoleArea=0,reportedLargestHoleArea=0;
+    const reportHoleArea=Math.max(maxHoleArea*2,Math.round(W*H*0.004));
     for(let start=0;start<len;start++){
       if(!inv[start]||visited[start]) continue;
       let h=0,t=0,area=0;
@@ -898,9 +971,25 @@
         filledHoleCount++;
         filledHoleArea+=area;
         for(let i=0;i<t;i++) out[holeQueue[i]]=1;
+      } else if(area>=reportHoleArea) {
+        reportedHoleCount++;
+        reportedHoleArea+=area;
+        reportedLargestHoleArea=Math.max(reportedLargestHoleArea,area);
       }
     }
-    return {mask:out,holeCount,holeArea,filledHoleCount,filledHoleArea,largestHoleArea,maxHoleArea};
+    return {
+      mask:out,
+      holeCount:reportedHoleCount,
+      holeArea:reportedHoleArea,
+      filledHoleCount,
+      filledHoleArea,
+      largestHoleArea:reportedLargestHoleArea,
+      rawHoleCount:holeCount,
+      rawHoleArea:holeArea,
+      rawLargestHoleArea:largestHoleArea,
+      maxHoleArea,
+      reportHoleArea
+    };
   }
 
   // 8. Connected components - keep every component above the minimum area
@@ -943,6 +1032,75 @@
     };
   }
 
+  function componentDetails(mask, W, H) {
+    const len=W*H, labels=new Int32Array(len), queue=new Int32Array(len), details=[];
+    let label=1;
+    const nb=[-1,1,-W,W];
+    for(let start=0;start<len;start++){
+      if(!mask[start]||labels[start]) continue;
+      let head=0,tail=0,area=0,minX=W,maxX=0,minY=H,maxY=0,sumX=0,sumY=0;
+      queue[tail++]=start; labels[start]=label;
+      while(head<tail){
+        const p=queue[head++], x=p%W, y=(p/W)|0;
+        area++; sumX+=x; sumY+=y;
+        if(x<minX) minX=x; if(x>maxX) maxX=x;
+        if(y<minY) minY=y; if(y>maxY) maxY=y;
+        for(const d of nb){
+          const ni=p+d;
+          if(ni<0||ni>=len||labels[ni]||!mask[ni]) continue;
+          if(d===-1&&x===0) continue; if(d===1&&x===W-1) continue;
+          labels[ni]=label; queue[tail++]=ni;
+        }
+      }
+      details.push({
+        label, area, minX, maxX, minY, maxY,
+        cx:sumX/area, cy:sumY/area,
+        rowCoverage:(maxY-minY+1)/Math.max(1,H),
+        colCoverage:(maxX-minX+1)/Math.max(1,W)
+      });
+      label++;
+    }
+    return {labels, details};
+  }
+
+  function enforceWoundContinuity(mask, W, H, orientation='vertical', mode='cutoff') {
+    const {labels,details}=componentDetails(mask,W,H);
+    if(details.length<=1) return {mask,kept:details.length,total:details.length,applied:false};
+    const axisIsVertical=orientation!=='horizontal';
+    const axisCenter=axisIsVertical?W/2:H/2;
+    const halfSize=Math.max(1,axisIsVertical?W:H);
+    const phaseContrast=mode==='full';
+    const sorted=[...details].sort((a,b)=>b.area-a.area);
+    const maxArea=Math.max(1,sorted[0]?.area||1);
+    const scored=details.map(d=>{
+      const axisCoord=axisIsVertical?d.cx:d.cy;
+      const centerDist=Math.abs(axisCoord-axisCenter)/halfSize;
+      const span=axisIsVertical?d.rowCoverage:d.colCoverage;
+      const areaNorm=d.area/maxArea;
+      const score=(span*2.2)+(areaNorm*0.9)-(centerDist*1.6);
+      return {...d,centerDist,span,score};
+    });
+    const centerCandidates=phaseContrast
+      ? scored.filter(d=>d.centerDist<=0.24&&d.span>=0.18)
+      : scored;
+    const ranked=(centerCandidates.length?centerCandidates:scored).sort((a,b)=>b.score-a.score);
+    const primary=ranked[0];
+    if(phaseContrast&&(!primary||primary.centerDist>0.3||primary.span<0.16)) {
+      return {mask:new Uint8Array(mask.length),kept:0,total:details.length,applied:true};
+    }
+    const spanFloor=phaseContrast?Math.max(0.18,primary.span*0.55):Math.max(0.3,primary.span*0.6);
+    const centerFloor=phaseContrast?Math.min(0.28,Math.max(0.1,primary.centerDist+0.08)):Math.min(0.34,Math.max(0.16,primary.centerDist+0.12));
+    let keepSet=new Set(
+      ranked
+        .filter(d=>d.span>=spanFloor&&d.centerDist<=centerFloor)
+        .map(d=>d.label)
+    );
+    if(!keepSet.size) keepSet=new Set([primary.label]);
+    const out=new Uint8Array(mask.length);
+    for(let p=0;p<mask.length;p++) if(labels[p]&&keepSet.has(labels[p])) out[p]=1;
+    return {mask:out,kept:keepSet.size,total:details.length,applied:true};
+  }
+
   // 9. Width estimation — ImageJ edge-span method
   function estimateWidth(mask, W, H) {
     const spans=[];
@@ -978,47 +1136,56 @@
   function buildQc(r, crop, W, H, manualCrop=state.cropManual) {
     const warnings=[];
     let score=100;
+    const fillRatio=Number.isFinite(r.areaWidthFillRatio)?r.areaWidthFillRatio:1;
+    const coherentAreaWidth=fillRatio>=0.72&&fillRatio<=1.08;
+    const seriesAreaWidthR2=currentSeriesAreaWidthR2();
+    const seriesAreaWidthCoherent=seriesAreaWidthR2!==null&&seriesAreaWidthR2>=0.9;
+    const nearClosed=(r.areaPct||0)<6||(W&&r.wMean/W<0.08);
+    const reliableSmallWound=nearClosed&&coherentAreaWidth&&r.area&&r.boundaryCount;
+    if(r.manualCorrectionStatus==='edited') {
+      warnings.push(`Manual correction applied (${fmt(r.manualCorrectionFractionPercent,2)}% of field).`);
+      if((r.manualCorrectionFractionPercent||0)>2) score-=5;
+    }
     if(crop.active) {
       warnings.push('Area fraction is crop/FOV dependent; interpret area-based closure with caution.');
-      score-=10;
     }
     if(manualCrop) {
       warnings.push('Manual crop was applied; keep crop rules consistent across timepoints.');
-      score-=5;
     }
     if(r.validRowFraction<35) {
-      warnings.push('Low valid row fraction; width estimate may be unstable.');
-      score-=25;
+      warnings.push(reliableSmallWound?'Low valid row fraction, consistent with a near-closed wound.':'Low valid row fraction; width estimate may be unstable.');
+      score-=reliableSmallWound?3:(coherentAreaWidth?10:25);
     } else if(r.validRowFraction<60) {
       warnings.push('Moderate valid row fraction; review width profile visually.');
       score-=10;
     }
     if(r.widthCv>65) {
       warnings.push('High width CV; wound edges may be irregular, tilted, fragmented, or poorly segmented.');
-      score-=20;
+      score-=coherentAreaWidth&&r.validRowFraction>=80?8:20;
     } else if(r.widthCv>40) {
       warnings.push('Moderate width CV; compare area and width metrics before interpreting closure.');
-      score-=10;
+      score-=coherentAreaWidth&&r.validRowFraction>=80?3:10;
     }
     if(r.finalComponents>1) {
       warnings.push('Final wound mask has multiple components; width and area metrics may need manual review.');
-      score-=15;
+      score-=reliableSmallWound?3:(coherentAreaWidth&&r.validRowFraction>=80?0:coherentAreaWidth&&r.validRowFraction>=35?5:15);
     }
     if(r.internalIslandCount>0) {
       warnings.push('Internal cell islands/bridges are present inside the wound mask; review area and width visually.');
-      score-=5;
+      score-=coherentAreaWidth?0:5;
     }
     if(!r.boundaryCount||!r.area) {
       warnings.push('No wound contour detected; adjust threshold, crop, or component filtering.');
       score-=40;
     }
-    if(r.gtComparable===false) {
+    if(r.gtComparable===false&&!seriesAreaWidthCoherent) {
       warnings.push('Ground-truth area exceeds analysed field; current crop is not comparable to this calibration row.');
-      score-=20;
+      score-=5;
     }
-    const recommendedPrimaryMetric=(!r.area||r.validRowFraction<35||r.widthCv>65||r.finalComponents>1)
+    const severeInstability=!r.area||(r.validRowFraction<20&&!reliableSmallWound)||r.widthCv>90||(r.finalComponents>1&&!coherentAreaWidth&&r.validRowFraction<35);
+    const recommendedPrimaryMetric=severeInstability
       ? 'review_required'
-      : (crop.active||manualCrop||r.gtComparable===false)
+      : (crop.active||manualCrop||(r.gtComparable===false&&!seriesAreaWidthCoherent)||r.finalComponents>1||(!coherentAreaWidth&&r.internalIslandCount>0))
         ? 'width_preferred'
         : 'area_and_width';
     return {
@@ -1029,7 +1196,7 @@
   }
 
   // Main segmentation runner
-  function runSegmentation() {
+  function runSegmentation(options={}) {
     if (!state.image) return;
     setSpinner(true);
     try {
@@ -1046,38 +1213,47 @@
       const thOff=Number(el.thresholdOffset.value);
       const minC=Number(el.minComponent.value);
       const fov=Number(el.fovCutoff.value);
+      const fovMode=el.fovMode.value;
 
       const gray=toGray(src.data,len);
-      const field=fovMask(gray,len,fov);
+      const field=fovMask(gray,len,fov,fovMode);
       const normed=enhanceContrast(gray,field,len);
       const varMap=varianceFilter(normed,field,W,H,radius);
       const {threshold:otsuTh,maxV}=otsuOnMap(varMap,field,len);
       const fallbackTh=percentileThresholdOnMap(varMap,field,len,maxV,0.38);
       const baseTh=otsuTh<3?fallbackTh:otsuTh;
       const finalTh=Math.max(1,Math.min(255,baseTh+thOff));
-      const raw=applyThreshold(varMap,field,len,finalTh,maxV);
+      const raw=applyThreshold(varMap,field,len,finalTh,maxV,gray,fovMode);
       const islandFilter=filterComponents(raw,W,H,minC);
-      const holeResult=fillSmallHoles(islandFilter.mask,W,H);
+      const holeFillLimit=fovMode==='cutoff'?Math.max(64,Math.round(W*H*0.012)):undefined;
+      const holeResult=fillSmallHoles(islandFilter.mask,W,H,holeFillLimit);
       const mask=holeResult.mask;
       for(let p=0;p<len;p++) if(!field[p]) mask[p]=0;
-      const finalComponents=componentStats(mask,W,H);
+      const continuity=enforceWoundContinuity(mask,W,H,el.scratchOrientation.value,fovMode);
+      const finalMask=continuity.mask;
+      const finalComponents=componentStats(finalMask,W,H);
 
       let area=0,fieldArea=0;
-      for(let p=0;p<len;p++){fieldArea+=field[p];area+=mask[p];}
+      for(let p=0;p<len;p++){fieldArea+=field[p];area+=finalMask[p];}
       const areaPct=fieldArea?area*100/fieldArea:0;
-      const width=estimateWidth(mask,W,H);
+      const width=estimateWidth(finalMask,W,H);
       const gt=state.sample;
       const gtComparable=!!(gt?.area&&gt.area<=fieldArea);
       const areaErr=gt?.areaPct?Math.abs(areaPct-gt.areaPct)*100/gt.areaPct:null;
       const areaErrS=gt?.areaPct?(areaPct-gt.areaPct)*100/gt.areaPct:null;
 
-      state.varMap=varMap; state.maskData=mask;
+      state.varMap=varMap; state.grayData=gray; state.darkGuideThreshold=darkPercentile(gray,field,len,0.48);
+      state.autoMaskData=new Uint8Array(finalMask); state.maskData=new Uint8Array(finalMask);
       state.fieldData=field; state.sourceData=src;
-      const boundaryCount=boundaryPixels(mask,W,H).length;
-      drawCanvas(src,mask,field,varMap,W,H,maxV);
+      resetBrushStats(false);
+      state.brushHistory=[];
+      const boundaryCount=boundaryPixels(state.maskData,W,H).length;
+      drawCanvas(src,state.maskData,field,varMap,W,H,maxV);
       const ms=Math.round(performance.now()-t0);
       const fineRotationDeg=Number(el.deskewAngle.value)||0;
-      const partialResult={area,areaPct,wMean:width.mean,wMedian:width.median,wSd:width.sd,widthCv:width.cv,wMin:width.min,wMax:width.max,validRows:width.validRows,validRowFraction:width.validRowFraction,areaPerValidRow:width.areaPerValidRow,minValidWidth:width.minValidWidth,threshold:finalTh,otsuThreshold:otsuTh,baseThreshold:baseTh,fallbackThreshold:fallbackTh,thresholdFallbackUsed:otsuTh<3,maxV,fieldArea,gtComparable,areaErr,areaErrS,boundaryCount,totalComponents:islandFilter.totalComponents,keptComponents:islandFilter.keptComponents,largestArea:islandFilter.largestArea,finalComponents:finalComponents.totalComponents,internalIslandCount:holeResult.holeCount,internalIslandArea:holeResult.holeArea,largestInternalIslandArea:holeResult.largestHoleArea,filledSmallIslandCount:holeResult.filledHoleCount,filledSmallIslandArea:holeResult.filledHoleArea,holeFillMaxArea:holeResult.maxHoleArea,crop,runtimeMs:ms,scratchOrientation:el.scratchOrientation.value,manualRotationDeg:state.rotation,orientationRotationDeg:orientationRotationDeg(),effectiveRotationDeg:effectiveRotationDeg(),fineRotationDeg};
+      const areaPerValidRow=width.validRows?area/width.validRows:0;
+      const areaWidthFillRatio=width.mean&&width.validRows?area/(width.mean*width.validRows):0;
+      const partialResult={area,areaPct,wMean:width.mean,wMedian:width.median,wSd:width.sd,widthCv:width.cv,wMin:width.min,wMax:width.max,validRows:width.validRows,validRowFraction:width.validRowFraction,areaPerValidRow,areaWidthFillRatio,minValidWidth:width.minValidWidth,threshold:finalTh,otsuThreshold:otsuTh,baseThreshold:baseTh,fallbackThreshold:fallbackTh,thresholdFallbackUsed:otsuTh<3,maxV,fieldArea,gtComparable,areaErr,areaErrS,boundaryCount,totalComponents:islandFilter.totalComponents,keptComponents:islandFilter.keptComponents,largestArea:islandFilter.largestArea,finalComponents:finalComponents.totalComponents,continuityKeptComponents:continuity.kept,continuityTotalComponents:continuity.total,internalIslandCount:holeResult.holeCount,internalIslandArea:holeResult.holeArea,largestInternalIslandArea:holeResult.largestHoleArea,filledSmallIslandCount:holeResult.filledHoleCount,filledSmallIslandArea:holeResult.filledHoleArea,holeFillMaxArea:holeResult.maxHoleArea,crop,runtimeMs:ms,fieldMaskMode:fovMode,scratchOrientation:el.scratchOrientation.value,manualRotationDeg:state.rotation,orientationRotationDeg:orientationRotationDeg(),effectiveRotationDeg:effectiveRotationDeg(),fineRotationDeg,manualCorrectionStatus:'none',manualAddedPx:0,manualRemovedPx:0,manualNetDeltaPx:0,manualCorrectionFractionPercent:0};
       const qc=buildQc(partialResult,crop,W,H);
       state.result={...partialResult,segmentationQualityScore:qc.score,warnings:qc.warnings,recommendedPrimaryMetric:qc.recommendedPrimaryMetric};
       renderMetrics();
@@ -1085,11 +1261,12 @@
       const thNote=otsuTh<3?`fallback ${fallbackTh}`:`Otsu ${otsuTh}`;
       const gtNote=gt?` &middot; GT ${fmt(gt.areaPct,2)}% area fraction`:'';
       const warningNote=state.result.warnings.length?` &middot; ${state.result.warnings.length} QC warning${state.result.warnings.length>1?'s':''}`:'';
-      setLog(`<strong>Threshold ${finalTh}</strong> (${thNote}) &middot; radius ${radius}${cropNote} &middot; FOV ${fmt(fieldArea)} px &middot; wound comps ${islandFilter.keptComponents}/${islandFilter.totalComponents} &middot; internal islands ${holeResult.holeCount} &middot; mask ${fmt(area)} px &middot; width ${fmt(width.mean,1)} px &middot; contour ${fmt(boundaryCount)} px${warningNote}${gtNote}`, `${ms} ms`);
-      el.rerun.disabled=false; el.exportPng.disabled=false; el.exportCsv.disabled=false;
+      setLog(`<strong>Threshold ${finalTh}</strong> (${thNote}) &middot; radius ${radius}${cropNote} &middot; microscope ${microscopeModeLabel(fovMode)} (${fmt(fieldArea)} px) &middot; wound comps ${islandFilter.keptComponents}/${islandFilter.totalComponents} &middot; internal islands ${holeResult.holeCount} &middot; mask ${fmt(area)} px &middot; width ${fmt(width.mean,1)} px &middot; contour ${fmt(boundaryCount)} px${warningNote}${gtNote}`, `${ms} ms`);
+      el.rerun.disabled=false; el.exportPng.disabled=false; el.exportCsv.disabled=false; el.exportExcel.disabled=false;
       const deskew=Number(el.deskewAngle.value)||0;
       const orientation=el.scratchOrientation.value==='horizontal'?'horizontal scratch -> 90deg':'vertical scratch';
       el.canvasMeta.textContent=`${W}x${H} px ${orientation}${state.rotation?` + manual rotate ${state.rotation}deg`:''}${deskew?` fine rotation ${deskew}deg`:''}${crop.active?` cropped from ${img.naturalWidth}x${img.naturalHeight}`:''}  variance radius ${radius}  Otsu ${finalTh}`;
+      if(options.restoreManual) applyManualOverrideToCurrentSample();
     } catch(err) {
       console.error(err);
       state.result=null;
@@ -1183,6 +1360,300 @@
     if(state.image&&state.sourceData) {
       drawCanvas(state.sourceData,state.maskData,state.fieldData,state.varMap,el.canvas.width,el.canvas.height,state.result?.maxV||1);
     }
+  }
+
+  function resetBrushStats(updateUi=true) {
+    state.brushEdited=false;
+    state.brushAddedPx=0;
+    state.brushRemovedPx=0;
+    state.brushDrawing=false;
+    if(updateUi) {
+      el.resetBrush.disabled=true;
+      el.undoBrush.disabled=true;
+      syncLabels();
+    }
+  }
+
+  function brushSnapshot() {
+    if(!state.maskData) return null;
+    return {
+      mask:new Uint8Array(state.maskData),
+      brushEdited:state.brushEdited,
+      brushAddedPx:state.brushAddedPx,
+      brushRemovedPx:state.brushRemovedPx
+    };
+  }
+
+  function pushBrushHistory(snap=brushSnapshot()) {
+    if(!snap) return;
+    state.brushHistory.push(snap);
+    if(state.brushHistory.length>25) state.brushHistory.shift();
+    el.undoBrush.disabled=false;
+  }
+
+  function undoBrush() {
+    const snap=state.brushHistory.pop();
+    if(!snap||!state.maskData) return;
+    state.maskData=new Uint8Array(snap.mask);
+    state.brushEdited=snap.brushEdited;
+    state.brushAddedPx=snap.brushAddedPx;
+    state.brushRemovedPx=snap.brushRemovedPx;
+    updateResultFromMask();
+    el.undoBrush.disabled=state.brushHistory.length===0;
+    el.resetBrush.disabled=!state.brushEdited;
+    syncLabels();
+    setLog('<strong>Manual correction undone.</strong>');
+  }
+
+  function brushActive() {
+    return state.brushMode!=='off'&&state.image&&state.maskData&&state.sourceData&&!state.cropEditing;
+  }
+
+  function applyBrushAt(pt) {
+    if(!brushActive()) return;
+    if(state.brushMode==='add') {
+      const snap=brushSnapshot();
+      if(applySmartAddAt(pt)&&snap) {
+        state.brushHistory.push(snap);
+        if(state.brushHistory.length>25) state.brushHistory.shift();
+        el.undoBrush.disabled=false;
+      }
+      return;
+    }
+    if(state.brushMode==='erase') {
+      const snap=brushSnapshot();
+      if(applySmartEraseAt(pt)&&snap) {
+        state.brushHistory.push(snap);
+        if(state.brushHistory.length>25) state.brushHistory.shift();
+        el.undoBrush.disabled=false;
+      }
+      return;
+    }
+    const snap=brushSnapshot();
+    const W=el.canvas.width,H=el.canvas.height;
+    const radius=Math.max(1,Number(el.brushSize.value)/2);
+    const r2=radius*radius;
+    const minX=Math.max(0,Math.floor(pt.x-radius));
+    const maxX=Math.min(W-1,Math.ceil(pt.x+radius));
+    const minY=Math.max(0,Math.floor(pt.y-radius));
+    const maxY=Math.min(H-1,Math.ceil(pt.y+radius));
+    let added=0,removed=0;
+    for(let y=minY;y<=maxY;y++) for(let x=minX;x<=maxX;x++) {
+      const dx=x-pt.x,dy=y-pt.y;
+      if(dx*dx+dy*dy>r2) continue;
+      const p=y*W+x;
+      if(state.fieldData&&!state.fieldData[p]) continue;
+      if(state.brushMode==='add') {
+        if(!state.maskData[p]) { state.maskData[p]=1; added++; }
+      } else if(state.brushMode==='erase') {
+        if(state.maskData[p]) { state.maskData[p]=0; removed++; }
+      }
+    }
+    if(added||removed) {
+      pushBrushHistory(snap);
+      state.brushEdited=true;
+      state.brushAddedPx+=added;
+      state.brushRemovedPx+=removed;
+      updateResultFromMask();
+      el.resetBrush.disabled=false;
+    }
+  }
+
+  function applySmartEraseAt(pt) {
+    const W=el.canvas.width,H=el.canvas.height,len=W*H;
+    const sx=Math.round(pt.x), sy=Math.round(pt.y);
+    if(sx<0||sy<0||sx>=W||sy>=H) return false;
+    const start=sy*W+sx;
+    if(!state.maskData[start]) return false;
+    const tol=Number(el.brushSize.value)||28;
+    const maxPixels=Math.max(80,Math.min(18000,Math.round(len*0.014)));
+    const maxRadius=Math.max(28,Math.min(220,Math.round(Math.min(W,H)*(0.04+tol/800))));
+    const maxR2=maxRadius*maxRadius;
+    const visited=new Uint8Array(len);
+    const queue=new Int32Array(Math.min(len,maxPixels*6));
+    const toErase=[];
+    let head=0,tail=0;
+    queue[tail++]=start; visited[start]=1;
+    const nb=[-1,1,-W,W];
+    while(head<tail&&toErase.length<maxPixels) {
+      const p=queue[head++], x=p%W, y=(p/W)|0;
+      const dx=x-sx,dy=y-sy;
+      if(dx*dx+dy*dy>maxR2) continue;
+      if(!state.maskData[p]) continue;
+      toErase.push(p);
+      for(const d of nb) {
+        const ni=p+d;
+        if(ni<0||ni>=len||visited[ni]) continue;
+        if(d===-1&&x===0) continue; if(d===1&&x===W-1) continue;
+        visited[ni]=1; queue[tail++]=ni;
+        if(tail>=queue.length) {
+          head=tail;
+          break;
+        }
+      }
+    }
+    if(toErase.length) {
+      for(const p of toErase) state.maskData[p]=0;
+      state.brushEdited=true;
+      state.brushRemovedPx+=toErase.length;
+      updateResultFromMask();
+      el.resetBrush.disabled=false;
+      return true;
+    }
+    return false;
+  }
+
+  function applySmartAddAt(pt) {
+    const W=el.canvas.width,H=el.canvas.height,len=W*H;
+    const sx=Math.round(pt.x), sy=Math.round(pt.y);
+    if(sx<0||sy<0||sx>=W||sy>=H) return false;
+    const start=sy*W+sx;
+    if(state.fieldData&&!state.fieldData[start]) return false;
+    const gray=state.grayData||toGray(state.sourceData.data,len);
+    const seedGray=gray[start];
+    const seedVar=state.varMap?.[start]||0;
+    const tol=Number(el.brushSize.value)||28;
+    const grayTol=Math.max(8,tol*1.25);
+    const varTol=Math.max(2,(state.result?.maxV||1)*(tol/255)*1.75);
+    const maxPixels=Math.max(80,Math.min(16000,Math.round(len*0.012)));
+    const maxRadius=Math.max(24,Math.min(180,Math.round(Math.min(W,H)*(0.035+tol/900))));
+    const maxR2=maxRadius*maxRadius;
+    const visited=new Uint8Array(len);
+    const queue=new Int32Array(Math.min(len,maxPixels*6));
+    let head=0,tail=0,added=0;
+    queue[tail++]=start; visited[start]=1;
+    const nb=[-1,1,-W,W];
+    const darkGuide=state.darkGuideThreshold||seedGray+grayTol;
+    while(head<tail&&added<maxPixels) {
+      const p=queue[head++], x=p%W, y=(p/W)|0;
+      const dx=x-sx,dy=y-sy;
+      if(dx*dx+dy*dy>maxR2) continue;
+      const g=gray[p], v=state.varMap?.[p]||0;
+      const darkEnough=g<=Math.max(seedGray+grayTol,darkGuide);
+      const similar=Math.abs(g-seedGray)<=grayTol||darkEnough;
+      const lowVar=v<=Math.max(seedVar+varTol,(state.result?.maxV||1)*0.18);
+      if(similar&&lowVar) {
+        if(!state.maskData[p]) { state.maskData[p]=1; added++; }
+        for(const d of nb) {
+          const ni=p+d;
+          if(ni<0||ni>=len||visited[ni]) continue;
+          if(d===-1&&x===0) continue; if(d===1&&x===W-1) continue;
+          if(state.fieldData&&!state.fieldData[ni]) continue;
+          visited[ni]=1; queue[tail++]=ni;
+          if(tail>=queue.length) {
+            head=tail;
+            break;
+          }
+        }
+      }
+    }
+    if(added) {
+      state.brushEdited=true;
+      state.brushAddedPx+=added;
+      updateResultFromMask();
+      el.resetBrush.disabled=false;
+      return true;
+    }
+    return false;
+  }
+
+  function updateResultFromMask() {
+    if(!state.result||!state.maskData||!state.fieldData||!state.sourceData) return;
+    const W=el.canvas.width,H=el.canvas.height,len=W*H;
+    let area=0,fieldArea=0;
+    for(let p=0;p<len;p++){fieldArea+=state.fieldData[p];area+=state.maskData[p];}
+    const width=estimateWidth(state.maskData,W,H);
+    const finalComponents=componentStats(state.maskData,W,H);
+    const boundaryCount=boundaryPixels(state.maskData,W,H).length;
+    const gt=state.sample;
+    const areaPct=fieldArea?area*100/fieldArea:0;
+    const areaErr=gt?.areaPct?Math.abs(areaPct-gt.areaPct)*100/gt.areaPct:null;
+    const areaErrS=gt?.areaPct?(areaPct-gt.areaPct)*100/gt.areaPct:null;
+    const manualNet=state.brushAddedPx-state.brushRemovedPx;
+    const areaPerValidRow=width.validRows?area/width.validRows:0;
+    const areaWidthFillRatio=width.mean&&width.validRows?area/(width.mean*width.validRows):0;
+    const patch={
+      area,areaPct,wMean:width.mean,wMedian:width.median,wSd:width.sd,widthCv:width.cv,
+      wMin:width.min,wMax:width.max,validRows:width.validRows,validRowFraction:width.validRowFraction,
+      areaPerValidRow,areaWidthFillRatio,minValidWidth:width.minValidWidth,
+      fieldArea,areaErr,areaErrS,boundaryCount,finalComponents:finalComponents.totalComponents,
+      manualCorrectionStatus:state.brushEdited?'edited':'none',
+      manualAddedPx:state.brushAddedPx,
+      manualRemovedPx:state.brushRemovedPx,
+      manualNetDeltaPx:manualNet,
+      manualCorrectionFractionPercent:fieldArea?Math.abs(manualNet)*100/fieldArea:0
+    };
+    const partial={...state.result,...patch};
+    const qc=buildQc(partial,state.crop,W,H);
+    state.result={...partial,segmentationQualityScore:qc.score,warnings:qc.warnings,recommendedPrimaryMetric:qc.recommendedPrimaryMetric};
+    redrawCurrentCanvas();
+    renderMetrics();
+    syncManualOverrideToGroup();
+  }
+
+  function syncManualOverrideToGroup() {
+    const sample=state.sample;
+    if(!sample?.id||!state.maskData||!state.result) return;
+    if(state.brushEdited) {
+      const override={
+        mask:new Uint8Array(state.maskData),
+        result:{...state.result},
+        sourceData:state.sourceData,
+        fieldData:state.fieldData,
+        varMap:state.varMap,
+        width:el.canvas.width,
+        height:el.canvas.height,
+        maxV:state.result?.maxV||1
+      };
+      state.manualOverrides[sample.id]=override;
+      state.groupResults[sample.id]=override.result;
+      updateGroupCardResult(sample,override.result);
+      updateGroupCardPreview(sample,override);
+    } else {
+      delete state.manualOverrides[sample.id];
+      state.groupResults[sample.id]={...state.result};
+      updateGroupCardResult(sample,state.groupResults[sample.id]);
+    }
+    const group=selectedGroup();
+    const samples=group.sampleIds?.map(id=>sampleById(id)).filter(Boolean)||[];
+    if(samples.some(s=>s.id===sample.id)) renderSeriesSummary(samples);
+  }
+
+  function applyManualOverrideToCurrentSample() {
+    const sample=state.sample;
+    const override=sample?.id?state.manualOverrides[sample.id]:null;
+    if(!override||!state.maskData||override.width!==el.canvas.width||override.height!==el.canvas.height) return false;
+    state.maskData=new Uint8Array(override.mask);
+    state.brushEdited=override.result.manualCorrectionStatus==='edited';
+    state.brushAddedPx=override.result.manualAddedPx||0;
+    state.brushRemovedPx=override.result.manualRemovedPx||0;
+    state.brushHistory=[];
+    state.result={...override.result};
+    redrawCurrentCanvas();
+    renderMetrics();
+    el.resetBrush.disabled=!state.brushEdited;
+    setLog(`<strong>Manual correction restored.</strong> Group preview and metrics are using the edited mask.`);
+    return true;
+  }
+
+  function updateGroupCardPreview(sample, override) {
+    const canvas=el.groupView?.querySelector(`canvas[data-sample-id="${sample.id}"]`);
+    if(!canvas||!override?.sourceData) return;
+    canvas.width=override.width;
+    canvas.height=override.height;
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    const out=new ImageData(new Uint8ClampedArray(override.sourceData.data),override.width,override.height);
+    const d=out.data;
+    const len=override.width*override.height;
+    for(let p=0,i=0;p<len;p++,i+=4) {
+      if(override.fieldData&&!override.fieldData[p]) {
+        d[i]=d[i]*0.35|0;
+        d[i+1]=d[i+1]*0.35|0;
+        d[i+2]=d[i+2]*0.35|0;
+      }
+    }
+    drawContour(d,override.mask,override.width,override.height);
+    ctx.putImageData(out,0,0);
   }
 
   function drawAngleRuler(ctx,W,H) {
@@ -1286,11 +1757,14 @@
       metricCard('Area error',r.areaErr===null?'n/a':`${fmt(r.areaErr,2)}%`,r.areaErrS===null?'load cal row':`${fmt(r.areaPct,2)}% vs ${fmt(gt?.areaPct,2)}%`,ek),
       metricCard('Mean width',`${fmt(r.wMean,1)} px`,`median ${fmt(r.wMedian,1)} px`),
       metricCard('Width spread',`${fmt(r.widthCv,1)}% CV`,`SD ${fmt(r.wSd,1)} px, ${fmt(r.wMin)}-${fmt(r.wMax)} px`),
+      metricCard('Area-width fit',r.areaWidthFillRatio?`${fmt(r.areaWidthFillRatio,2)}`:'n/a','1.00 means area matches scanline span',r.areaWidthFillRatio>=0.72&&r.areaWidthFillRatio<=1.08?'good':'warn'),
       metricCard('Valid rows',`${fmt(r.validRows)}`,`${fmt(r.validRowFraction,1)}% of image rows`),
-      metricCard('Primary metric',r.recommendedPrimaryMetric.replace(/_/g,' '),r.warnings[0]||'area and width can be read together',primaryKind),
+      metricCard('Primary metric',r.recommendedPrimaryMetric.replace(/_/g,' '),(r.recommendedPrimaryMetric==='review_required'?r.warnings.find(w=>!/Manual correction/i.test(w)):r.warnings.find(w=>!/Manual correction|Low valid row fraction, consistent/i.test(w)))||'area and width can be read together',primaryKind),
       metricCard('QC score',`${fmt(r.segmentationQualityScore)}/100`,r.warnings.length?`${r.warnings.length} warning${r.warnings.length>1?'s':''}`:'no major warnings',qcKind),
       metricCard('Wound comps',`${fmt(r.keptComponents)}/${fmt(r.totalComponents)}`,`min ${fmt(el.minComponent.value)} px, largest ${fmt(r.largestArea)} px`),
-      metricCard('Internal islands',`${fmt(r.internalIslandCount)}`,`area ${fmt(r.internalIslandArea)} px, largest ${fmt(r.largestInternalIslandArea)} px`,r.internalIslandCount?'warn':''),
+      metricCard('Continuity',`${fmt(r.continuityKeptComponents||r.finalComponents)}/${fmt(r.continuityTotalComponents||r.finalComponents)}`,`kept by center+span prior`,(r.continuityTotalComponents||0)>(r.continuityKeptComponents||0)?'warn':''),
+      metricCard('Internal islands',`${fmt(r.internalIslandCount)}`,r.internalIslandCount?`area ${fmt(r.internalIslandArea)} px, largest ${fmt(r.largestInternalIslandArea)} px`:`tiny holes ignored${r.filledSmallIslandCount?` (${fmt(r.filledSmallIslandCount)} filled)`:''}`,r.internalIslandCount?'warn':''),
+      metricCard('Manual edit',r.manualCorrectionStatus==='edited'?`${fmt(r.manualNetDeltaPx)} px`:'none',r.manualCorrectionStatus==='edited'?`added ${fmt(r.manualAddedPx)}, erased ${fmt(r.manualRemovedPx)}`:'auto mask unchanged',r.manualCorrectionStatus==='edited'?'warn':''),
       metricCard('Final comps',`${fmt(r.finalComponents)}`,`after tiny-hole cleanup`),
       metricCard('Contour',`${fmt(r.boundaryCount)} px`,r.boundaryCount?'overlay boundary':'no boundary found',r.boundaryCount?'':'bad')
     ].join('');
@@ -1305,7 +1779,82 @@
     a.click();
   }
 
-  function exportCsv() {
+  function csvCell(v) { return `"${String(v??'').replace(/"/g,'""')}"`; }
+
+  function downloadText(filename, mime, text) {
+    const a=document.createElement('a');
+    a.href=`data:${mime};charset=utf-8,`+encodeURIComponent(text);
+    a.download=filename;
+    a.click();
+  }
+
+  function selectedGroupSamples() {
+    const group=selectedGroup();
+    return group.sampleIds.map(id=>sampleById(id)).filter(Boolean);
+  }
+
+  function groupExportRows(samples=selectedGroupSamples()) {
+    return samples.map(s=>{
+      const r=state.groupResults[s.id]||state.manualOverrides[s.id]?.result||(state.sample?.id===s.id?state.result:null);
+      if(!r) return null;
+      return {
+        image_id:s.imageId||s.id,
+        filename:s.path.split('/').pop()||s.path,
+        group_id:`${s.cell} / ${s.condition}`,
+        timepoint:s.time,
+        time_hours:r.timeHours??'',
+        source_width_px:r.sourceWidth||'',
+        source_height_px:r.sourceHeight||'',
+        analysis_width_px:r.crop?.w||'',
+        analysis_height_px:r.crop?.h||'',
+        field_area_px:r.fieldArea,
+        wound_area_px:r.area,
+        wound_area_fraction_percent:Number.isFinite(r.areaPct)?r.areaPct.toFixed(4):'',
+        mean_wound_width_px:Number.isFinite(r.wMean)?r.wMean.toFixed(2):'',
+        median_wound_width_px:Number.isFinite(r.wMedian)?r.wMedian.toFixed(2):'',
+        width_sd_px:Number.isFinite(r.wSd)?r.wSd.toFixed(2):'',
+        width_cv_percent:Number.isFinite(r.widthCv)?r.widthCv.toFixed(4):'',
+        min_width_px:r.wMin??'',
+        max_width_px:r.wMax??'',
+        valid_row_count:r.validRows??'',
+        valid_row_fraction_percent:Number.isFinite(r.validRowFraction)?r.validRowFraction.toFixed(4):'',
+        segmentation_quality_score:r.segmentationQualityScore??'',
+        recommended_primary_metric:r.recommendedPrimaryMetric||'',
+        manual_correction_status:r.manualCorrectionStatus||'none',
+        manual_added_px:r.manualAddedPx||0,
+        manual_removed_px:r.manualRemovedPx||0,
+        manual_net_delta_px:r.manualNetDeltaPx||0,
+        internal_island_count:r.internalIslandCount??'',
+        final_components:r.finalComponents??'',
+        threshold:r.threshold??'',
+        variance_radius:r.varianceRadius??el.varianceRadius.value,
+        threshold_offset:r.thresholdOffset??el.thresholdOffset.value,
+        min_component_px:r.minComponentPx??el.minComponent.value,
+        fov_cutoff:r.fovCutoff??el.fovCutoff.value,
+        field_mask_mode:r.fieldMaskMode||el.fovMode.value,
+        gt_area_px:s.area??'',
+        gt_area_fraction_percent:s.areaPct??'',
+        gt_width_px:s.width??'',
+        gt_closure_percent:s.closure??'',
+        area_error_percent:Number.isFinite(r.areaErr)?r.areaErr.toFixed(4):'',
+        warnings:(r.warnings||[]).join(' | ')
+      };
+    }).filter(Boolean);
+  }
+
+  function exportGroupCsv() {
+    const records=groupExportRows();
+    if(!records.length) {
+      setLog('<strong>No group results yet.</strong> Wait for group analysis previews to finish, then export again.');
+      return;
+    }
+    const headers=Object.keys(records[0]);
+    const csv=[headers, ...records.map(r=>headers.map(h=>r[h]))].map(row=>row.map(csvCell).join(',')).join('\n');
+    const group=selectedGroup();
+    downloadText(`cytomove_${(group.label||'group').replace(/[^\w\-]+/g,'_')}_group_metrics.csv`,'text/csv',csv);
+  }
+
+  function exportSingleCsv() {
     if(!state.result) return;
     const r=state.result, gt=state.sample;
     const crop=r.crop||{};
@@ -1336,6 +1885,7 @@
       threshold_fallback_used:r.thresholdFallbackUsed,
       final_threshold:r.threshold,
       min_component_px:Number(el.minComponent.value),
+      field_mask_mode:el.fovMode.value,
       fov_cutoff:Number(el.fovCutoff.value),
       contour_thickness:Number(el.contourThickness.value),
       contour_color:el.contourColor.value,
@@ -1343,11 +1893,15 @@
       angle_ruler_visible:state.rulerVisible,
       angle_ruler_offset_x_px:Math.round(state.rulerOffsetX||0),
       angle_ruler_offset_y_px:Math.round(state.rulerOffsetY||0),
+      manual_correction_status:state.result?.manualCorrectionStatus||'none',
+      manual_added_px:state.result?.manualAddedPx||0,
+      manual_removed_px:state.result?.manualRemovedPx||0,
+      manual_net_delta_px:state.result?.manualNetDeltaPx||0,
+      manual_correction_fraction_percent:state.result?.manualCorrectionFractionPercent||0,
       width_min_valid_width_px:state.result?.minValidWidth||'',
       recommended_primary_metric:state.result?.recommendedPrimaryMetric||'',
       warnings:state.result?.warnings||[]
     };
-    const csvCell=v=>`"${String(v??'').replace(/"/g,'""')}"`;
     const rows=[
       ['field','value'],
       ['schema_version','validation-protocol-v0.3'],
@@ -1381,7 +1935,9 @@
       ['cytomove_recommended_primary_metric',r.recommendedPrimaryMetric],
       ['cytomove_warnings',r.warnings.join(' | ')],
       ['cytomove_runtime_ms',r.runtimeMs],
-      ['cytomove_manual_correction_status','none'],
+      ['cytomove_manual_correction_status',r.manualCorrectionStatus||'none'],
+      ['manual_added_px',r.manualAddedPx||0],['manual_removed_px',r.manualRemovedPx||0],
+      ['manual_net_delta_px',r.manualNetDeltaPx||0],['manual_correction_fraction_percent',r.manualCorrectionFractionPercent||0],
       ['cytomove_parameter_json',JSON.stringify(parameterLog)],
       ['comparator_whst_area_px',gt?.area||''],['comparator_tscratch_area_px',''],
       ['comparator_pyscratch_area_px',''],['comparator_csma_area_px',''],
@@ -1389,7 +1945,7 @@
       ['width_error_px',gt?.width?(r.wMean-gt.width).toFixed(4):''],
       ['otsu_threshold',r.otsuThreshold],['fallback_threshold',r.fallbackThreshold],['threshold_fallback_used',r.thresholdFallbackUsed?'yes':'no'],['final_threshold',r.threshold],['field_area_px',r.fieldArea],
       ['variance_radius',el.varianceRadius.value],['threshold_offset',el.thresholdOffset.value],
-      ['min_component_px',el.minComponent.value],['fov_cutoff',el.fovCutoff.value],
+      ['min_component_px',el.minComponent.value],['field_mask_mode',el.fovMode.value],['fov_cutoff',el.fovCutoff.value],
       ['auto_crop_fov',el.autoCropFov.checked?'yes':'no'],['crop_x',crop.x??''],['crop_y',crop.y??''],['crop_w',crop.w??''],['crop_h',crop.h??''],['crop_manual',state.cropManual?'yes':'no'],
       ['islands_total',r.totalComponents],['islands_kept',r.keptComponents],['final_components',r.finalComponents],
       ['largest_component_px',r.largestArea||''],
@@ -1403,10 +1959,42 @@
       ['angle_ruler_offset_x_px',Math.round(state.rulerOffsetX||0)],['angle_ruler_offset_y_px',Math.round(state.rulerOffsetY||0)],
       ['confidence',gt?.confidence||'manual'],['timestamp',new Date().toISOString()]
     ];
-    const a=document.createElement('a');
-    a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.map(row=>row.map(csvCell).join(',')).join('\n'));
-    a.download=`cytomove_${gt?.imageId||'image'}_metrics.csv`;
-    a.click();
+    downloadText(`cytomove_${gt?.imageId||'image'}_metrics.csv`,'text/csv',rows.map(row=>row.map(csvCell).join(',')).join('\n'));
+  }
+
+  function exportCsv() {
+    if(state.mode==='group') exportGroupCsv();
+    else exportSingleCsv();
+  }
+
+  function htmlTable(title, rows) {
+    if(!rows.length) return `<h2>${escHtml(title)}</h2><p>No rows</p>`;
+    const headers=Object.keys(rows[0]);
+    return `<h2>${escHtml(title)}</h2><table><thead><tr>${headers.map(h=>`<th>${escHtml(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${headers.map(h=>`<td>${escHtml(r[h])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  }
+
+  function exportExcel() {
+    const now=new Date().toISOString();
+    let rows=[];
+    let filename='cytomove_metrics.xls';
+    let title='CytoMove Single Image Metrics';
+    if(state.mode==='group') {
+      rows=groupExportRows();
+      const group=selectedGroup();
+      filename=`cytomove_${(group.label||'group').replace(/[^\w\-]+/g,'_')}_group_metrics.xls`;
+      title=`CytoMove Group Metrics - ${group.label}`;
+    } else if(state.result) {
+      rows=groupExportRows([state.sample||{id:'single',imageId:'single',path:state.imageName||'image',cell:'',condition:'',time:'',area:null,areaPct:null,width:null,closure:null}]);
+      if(!rows.length) rows=[{image_name:state.imageName||'image', wound_area_px:state.result.area, wound_area_fraction_percent:state.result.areaPct, mean_wound_width_px:state.result.wMean, segmentation_quality_score:state.result.segmentationQualityScore, recommended_primary_metric:state.result.recommendedPrimaryMetric, warnings:(state.result.warnings||[]).join(' | ')}];
+      filename=`cytomove_${(state.sample?.imageId||state.imageName||'image').replace(/[^\w\-]+/g,'_')}_metrics.xls`;
+    }
+    if(!rows.length) {
+      setLog('<strong>No exportable results yet.</strong> Run a single image or wait for group analysis to finish.');
+      return;
+    }
+    const summary=[{created_at:now, algorithm_version:CYTOMOVE_ALGORITHM_VERSION, export_scope:state.mode, image_count:rows.length, settings:currentGroupSettingsSummary()}];
+    const html=`<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Arial,sans-serif}h1{font-size:18px}h2{font-size:14px;margin-top:18px}table{border-collapse:collapse;margin-bottom:18px}th{background:#e8f4f2;font-weight:700}td,th{border:1px solid #b9d4cf;padding:6px 8px;font-size:12px;mso-number-format:"\\@";}</style></head><body><h1>${escHtml(title)}</h1>${htmlTable('Export summary',summary)}${htmlTable('Per-image metrics',rows)}</body></html>`;
+    downloadText(filename,'application/vnd.ms-excel',html);
   }
 
   // Zoom
@@ -1426,7 +2014,7 @@
   // Sample meta
   function populateGroups() {
     el.groupSelect.innerHTML='';
-    GROUPS.forEach(g=>{
+    groupOptions().forEach(g=>{
       const o=document.createElement('option');
       o.value=g.id;
       o.textContent=g.label;
@@ -1447,7 +2035,15 @@
   }
 
   function selectedSample() { return CALIBRATION.find(s=>s.id===el.sampleSelect.value)||CALIBRATION[0]; }
-  function selectedGroup() { return GROUPS.find(g=>g.id===el.groupSelect.value)||GROUPS[0]; }
+  function groupOptions() {
+    return state.customSamples.length
+      ? [...GROUPS,{id:'custom-local',label:`Custom local group (${state.customSamples.length})`,sampleIds:state.customSamples.map(s=>s.id),custom:true}]
+      : GROUPS;
+  }
+  function allSamples() { return [...CALIBRATION,...state.customSamples]; }
+  function sampleById(id) { return allSamples().find(s=>s.id===id); }
+  function selectedGroup() { return groupOptions().find(g=>g.id===el.groupSelect.value)||groupOptions()[0]; }
+  function microscopeModeLabel(mode) { return mode==='cutoff'?'brightfield':'phase contrast'; }
 
   function currentGroupSettingsSummary() {
     const cropMode=state.cropManual&&state.crop?'manual crop':el.autoCropFov.checked?'auto FOV crop':'full image';
@@ -1455,7 +2051,7 @@
     const orientation=el.scratchOrientation.value==='horizontal'?'horizontal scratch':'vertical scratch';
     const rotation=effectiveRotationDeg()?`${effectiveRotationDeg()}deg effective rotation`:'no rotation';
     const deskew=Number(el.deskewAngle.value)||0;
-    return `R${el.varianceRadius.value}, T${el.thresholdOffset.value}, min ${el.minComponent.value}, FOV ${el.fovCutoff.value}, ${orientation}, ${cropMode}, ${groupCrop}, ${rotation}, fine rotation ${deskew}deg`;
+    return `R${el.varianceRadius.value}, T${el.thresholdOffset.value}, min ${el.minComponent.value}, microscope ${microscopeModeLabel(el.fovMode.value)}, FOV ${el.fovCutoff.value}, ${orientation}, ${cropMode}, ${groupCrop}, ${rotation}, fine rotation ${deskew}deg`;
   }
 
   function parseTimeHours(time) {
@@ -1467,18 +2063,44 @@
     return `<div class="series-card ${kind}"><div class="series-label">${label}</div><div class="series-number">${number}</div><div class="series-hint">${hint}</div></div>`;
   }
 
+  function rSquared(xs, ys) {
+    const pairs=xs.map((x,i)=>[Number(x),Number(ys[i])]).filter(([x,y])=>Number.isFinite(x)&&Number.isFinite(y));
+    if(pairs.length<3) return null;
+    const mx=pairs.reduce((a,p)=>a+p[0],0)/pairs.length;
+    const my=pairs.reduce((a,p)=>a+p[1],0)/pairs.length;
+    let sxx=0,syy=0,sxy=0;
+    pairs.forEach(([x,y])=>{const dx=x-mx,dy=y-my;sxx+=dx*dx;syy+=dy*dy;sxy+=dx*dy;});
+    if(!sxx||!syy) return null;
+    return (sxy*sxy)/(sxx*syy);
+  }
+
+  function currentSeriesAreaWidthR2() {
+    const group=selectedGroup();
+    const rows=(group?.sampleIds||[]).map(id=>state.groupResults[id]).filter(Boolean);
+    if(rows.length<3) return null;
+    return rSquared(rows.map(r=>r.area),rows.map(r=>r.wMean));
+  }
+
   function computeSeriesQc(samples) {
     const rows=samples.map(s=>state.groupResults[s.id]).filter(Boolean).sort((a,b)=>a.timeHours-b.timeHours);
     if(rows.length<2) return null;
     const base=rows[0];
     const warnings=[];
+    const validRowProblem=rows.some(r=>{
+      const fillRatio=Number.isFinite(r.areaWidthFillRatio)?r.areaWidthFillRatio:1;
+      const coherent=fillRatio>=0.72&&fillRatio<=1.08;
+      const nearClosed=(r.areaPct||0)<6||(r.analysisW&&r.wMean/r.analysisW<0.08);
+      return r.validRowFraction<35&&!(nearClosed&&coherent&&r.area&&r.boundaryCount);
+    });
     const dims=new Set(rows.map(r=>`${r.sourceW}x${r.sourceH}`));
     if(dims.size>1) warnings.push('image dimensions differ across timepoints');
     const cropAreas=rows.map(r=>r.cropW*r.cropH).filter(Boolean);
     const minCrop=Math.min(...cropAreas), maxCrop=Math.max(...cropAreas);
     if(minCrop>0&&((maxCrop-minCrop)/minCrop)*100>3) warnings.push('crop/FOV size varies across timepoints');
-    if(rows.some(r=>r.validRowFraction<35)) warnings.push('one or more timepoints have low valid row fraction');
+    if(validRowProblem) warnings.push('one or more timepoints have low valid row fraction');
     if(rows.some(r=>r.widthCv>65)) warnings.push('one or more wounds have a highly irregular width profile');
+    const areaWidthR2=rSquared(rows.map(r=>r.area),rows.map(r=>r.wMean));
+    if(areaWidthR2!==null&&areaWidthR2<0.9) warnings.push(`area-width Pearson R² is weak (${fmt(areaWidthR2,3)})`);
 
     const closureRows=rows.slice(1).map(r=>{
       const areaClosure=base.area?((base.area-r.area)/base.area)*100:0;
@@ -1494,10 +2116,12 @@
     let score=100;
     if(cropOrFovWarning) score-=25;
     if(maxDiff>15) score-=25;
-    if(rows.some(r=>r.validRowFraction<35)) score-=15;
+    if(validRowProblem) score-=15;
     if(rows.some(r=>r.widthCv>65)) score-=10;
+    if(areaWidthR2!==null&&areaWidthR2>=0.98) score+=10;
+    else if(areaWidthR2!==null&&areaWidthR2<0.9) score-=15;
     score=Math.max(0,score);
-    return {rows,closureRows,latest,maxDiff,warnings:[...new Set(warnings)],recommended,score};
+    return {rows,closureRows,latest,maxDiff,areaWidthR2,warnings:[...new Set(warnings)],recommended,score:Math.min(100,score)};
   }
 
   function renderSeriesSummary(samples) {
@@ -1515,6 +2139,7 @@
       seriesCard('Series QC',`${fmt(qc.score)}/100`,qc.warnings.length?`${qc.warnings.length} warning${qc.warnings.length>1?'s':''}`:'crop/FOV looks consistent',kind),
       seriesCard('Latest area closure',`${fmt(qc.latest.areaClosure,1)}%`,`t0 to ${qc.latest.time}`),
       seriesCard('Latest width closure',`${fmt(qc.latest.widthClosure,1)}%`,`t0 to ${qc.latest.time}`),
+      seriesCard('Area-width Pearson R²',qc.areaWidthR2===null?'n/a':fmt(qc.areaWidthR2,3),qc.areaWidthR2!==null&&qc.areaWidthR2>=0.98?'Pearson correlation squared; metrics track together':'Pearson correlation squared; check agreement',qc.areaWidthR2!==null&&qc.areaWidthR2<0.9?'warn':'good'),
       seriesCard('Recommended',qc.recommended.replace(/_/g,' '),qc.warnings[0]||'area and width can be interpreted together',recKind)
     ].join('');
   }
@@ -1530,11 +2155,12 @@
       <div class="group-metric"><span>Valid rows</span><span>${fmt(r.validRowFraction,1)}%</span></div>
       <div class="group-metric"><span>Internal islands</span><span>${fmt(r.internalIslandCount)}</span></div>
       <div class="group-metric"><span>Image QC</span><span class="${qcKind}">${fmt(r.segmentationQualityScore)}/100</span></div>
-      <div class="group-metric"><span>GT closure</span><span>${sample.closure===null?'n/a':`${fmt(sample.closure,2)}%`}</span></div>
+      <div class="group-metric"><span>GT closure</span><span>${sample.closure===null||sample.closure===undefined?'n/a':`${fmt(sample.closure,2)}%`}</span></div>
     `;
   }
 
   function areaErrorClass(v) {
+    if(!Number.isFinite(v)) return '';
     const a=Math.abs(v);
     return a<=10?'error-good':a<=25?'error-warn':'error-bad';
   }
@@ -1554,7 +2180,7 @@
         <td>${escHtml(row.time)}</td>
         <td>${fmt(row.cytoAreaPct,2)}%</td>
         <td>${fmt(row.gtAreaPct,2)}%</td>
-        <td class="${areaErrorClass(row.areaErrorPct)}">${fmt(row.areaErrorPct,2)}%</td>
+        <td class="${areaErrorClass(row.areaErrorPct)}">${Number.isFinite(row.areaErrorPct)?`${fmt(row.areaErrorPct,2)}%`:'n/a'}</td>
       </tr>`;
     }).join('');
     target.innerHTML=`
@@ -1577,11 +2203,12 @@
         time:r.time,
         cytoAreaPct:r.areaPct,
         gtAreaPct,
-        areaErrorPct:gtAreaPct?Math.abs(r.areaPct-gtAreaPct)*100/gtAreaPct:0
+        areaErrorPct:gtAreaPct?Math.abs(r.areaPct-gtAreaPct)*100/gtAreaPct:null
       };
     });
-    const meanAreaErrorPct=reportRows.length?reportRows.reduce((a,b)=>a+b.areaErrorPct,0)/reportRows.length:0;
-    const maxAreaErrorPct=reportRows.length?Math.max(...reportRows.map(r=>r.areaErrorPct)):0;
+    const comparable=reportRows.map(r=>r.areaErrorPct).filter(v=>Number.isFinite(v));
+    const meanAreaErrorPct=comparable.length?comparable.reduce((a,b)=>a+b,0)/comparable.length:null;
+    const maxAreaErrorPct=comparable.length?Math.max(...comparable):null;
     return {rows:reportRows,meanAreaErrorPct,maxAreaErrorPct};
   }
 
@@ -1591,6 +2218,7 @@
       thresholdOffset:Number(el.thresholdOffset.value),
       minComponent:Number(el.minComponent.value),
       fovCutoff:Number(el.fovCutoff.value),
+      fovMode:el.fovMode.value,
       autoCrop:el.autoCropFov.checked,
       cropRatio:el.applyCropRatioGroup.checked&&state.cropManual&&state.crop?normalizedCropRatio(state.crop):null,
       scratchOrientation:el.scratchOrientation.value,
@@ -1606,6 +2234,7 @@
     el.thresholdOffset.value=settings.thresholdOffset;
     el.minComponent.value=settings.minComponent;
     el.fovCutoff.value=settings.fovCutoff;
+    if(settings.fovMode) el.fovMode.value=settings.fovMode;
     syncLabels();
   }
 
@@ -1617,6 +2246,83 @@
       img.onerror=reject;
       img.src=src;
     });
+  }
+
+  function classifyMicroscopeImage(img) {
+    const maxSide=260;
+    const scale=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));
+    const W=Math.max(1,Math.round(img.naturalWidth*scale));
+    const H=Math.max(1,Math.round(img.naturalHeight*scale));
+    const c=document.createElement('canvas');
+    c.width=W; c.height=H;
+    const ctx=c.getContext('2d',{willReadFrequently:true});
+    ctx.drawImage(img,0,0,W,H);
+    const data=ctx.getImageData(0,0,W,H).data;
+    const len=W*H;
+    const gray=toGray(data,len);
+    const hist=new Uint32Array(256);
+    let mean=0;
+    for(let i=0;i<len;i++){hist[gray[i]]++;mean+=gray[i];}
+    mean/=len;
+    let acc=0,p10=null,p90=255;
+    for(let i=0;i<256;i++) {
+      acc+=hist[i];
+      if(p10===null&&acc>=len*0.10) p10=i;
+      if(acc>=len*0.90){p90=i;break;}
+    }
+    const darkFrac=hist.slice(0,45).reduce((a,b)=>a+b,0)/len;
+    const contrast=((p90||255)-(p10||0))/255;
+    const field=fovMask(gray,len,18,'cutoff');
+    let fieldCount=0;
+    for(let i=0;i<len;i++) fieldCount+=field[i];
+    const fieldFraction=fieldCount/len;
+    const centerX0=Math.round(W*0.28), centerX1=Math.round(W*0.72);
+    let centerDark=0,centerN=0;
+    for(let y=0;y<H;y++) for(let x=centerX0;x<centerX1;x++) {
+      const p=y*W+x;
+      centerN++;
+      if(gray[p]<65) centerDark++;
+    }
+    const centerDarkFraction=centerN?centerDark/centerN:0;
+    let scorePhase=0,scoreBright=0;
+    if(darkFrac>0.08) scorePhase+=2;
+    if(centerDarkFraction>0.10) scorePhase+=2;
+    if(fieldFraction<0.92) scorePhase+=1;
+    if(mean<110) scorePhase+=1;
+    if(darkFrac<0.04) scoreBright+=2;
+    if(centerDarkFraction<0.06) scoreBright+=2;
+    if(fieldFraction>0.96) scoreBright+=1;
+    if(mean>=110) scoreBright+=1;
+    if(contrast>0.55&&darkFrac<0.06) scoreBright+=1;
+    return {mode:scorePhase>scoreBright?'full':'cutoff',scorePhase,scoreBright,darkFrac,centerDarkFraction,fieldFraction,mean,contrast};
+  }
+
+  async function autoDetectGroupMicroscopeMode() {
+    const group=selectedGroup();
+    const samples=group.sampleIds.map(id=>sampleById(id)).filter(Boolean);
+    if(!samples.length) return;
+    setSpinner(true);
+    setLog(`<strong>Auto detect microscope:</strong> sampling ${samples.length} group image${samples.length>1?'s':''}...`);
+    try {
+      const votes=[];
+      for(const sample of samples.slice(0,Math.min(samples.length,12))) {
+        const img=await loadImageElement(sampleUrl(sample));
+        votes.push(classifyMicroscopeImage(img));
+      }
+      const phase=votes.filter(v=>v.mode==='full').length;
+      const bright=votes.length-phase;
+      const next=phase>bright?'full':'cutoff';
+      el.fovMode.value=next;
+      syncLabels();
+      if(state.mode==='group') renderGroupView();
+      const confidence=Math.round(Math.max(phase,bright)*100/votes.length);
+      const avg=votes.reduce((a,v)=>({dark:a.dark+v.darkFrac,field:a.field+v.fieldFraction}),{dark:0,field:0});
+      setLog(`<strong>Auto detect microscope:</strong> selected ${microscopeModeLabel(next)} (${confidence}% vote; dark ${fmt(avg.dark*100/votes.length,1)}%, field ${fmt(avg.field*100/votes.length,1)}%).`);
+    } catch(err) {
+      setLog(`<strong>Auto detect failed.</strong> ${err.message||err}`);
+    } finally {
+      setSpinner(false);
+    }
   }
 
   function transformImageElement(img, settings) {
@@ -1643,24 +2349,29 @@
     const radius=Math.max(1,Math.round(settings.varianceRadius*Math.sqrt(areaScale)));
     const minC=Math.max(25,Math.round(settings.minComponent*areaScale));
     const gray=toGray(src.data,len);
-    const field=fovMask(gray,len,settings.fovCutoff);
+    const field=fovMask(gray,len,settings.fovCutoff,settings.fovMode);
     const normed=enhanceContrast(gray,field,len);
     const varMap=varianceFilter(normed,field,W,H,radius);
     const {threshold:otsuTh,maxV}=otsuOnMap(varMap,field,len);
     const fallbackTh=percentileThresholdOnMap(varMap,field,len,maxV,0.38);
     const baseTh=otsuTh<3?fallbackTh:otsuTh;
     const finalTh=Math.max(1,Math.min(255,baseTh+settings.thresholdOffset));
-    const raw=applyThreshold(varMap,field,len,finalTh,maxV);
+    const raw=applyThreshold(varMap,field,len,finalTh,maxV,gray,settings.fovMode);
     const filtered=filterComponents(raw,W,H,minC);
-    const holeResult=fillSmallHoles(filtered.mask,W,H);
-    const mask=holeResult.mask;
-    for(let p=0;p<len;p++) if(!field[p]) mask[p]=0;
-    const finalComponents=componentStats(mask,W,H);
+    const holeFillLimit=(settings.fovMode||'full')==='cutoff'?Math.max(64,Math.round(W*H*0.012)):undefined;
+    const holeResult=fillSmallHoles(filtered.mask,W,H,holeFillLimit);
+      const mask=holeResult.mask;
+      for(let p=0;p<len;p++) if(!field[p]) mask[p]=0;
+      const continuity=enforceWoundContinuity(mask,W,H,settings.scratchOrientation||'vertical',settings.fovMode);
+      const finalMask=continuity.mask;
+      const finalComponents=componentStats(finalMask,W,H);
     let area=0,fieldArea=0;
-    for(let p=0;p<len;p++){fieldArea+=field[p];area+=mask[p];}
+      for(let p=0;p<len;p++){fieldArea+=field[p];area+=finalMask[p];}
     const areaPct=fieldArea?area*100/fieldArea:0;
-    const width=estimateWidth(mask,W,H);
-    const boundaryCount=boundaryPixels(mask,W,H).length;
+      const width=estimateWidth(finalMask,W,H);
+      const boundaryCount=boundaryPixels(finalMask,W,H).length;
+    const areaPerValidRow=width.validRows?area/width.validRows:0;
+    const areaWidthFillRatio=width.mean&&width.validRows?area/(width.mean*width.validRows):0;
     const partialResult={
       sampleId:sample.id,time:sample.time,timeHours:parseTimeHours(sample.time),
       sourceW:workImg.naturalWidth,sourceH:workImg.naturalHeight,
@@ -1672,14 +2383,15 @@
       fineRotationDeg:settings.deskew||0,
       area,areaPct,wMean:width.mean,wMedian:width.median,wSd:width.sd,widthCv:width.cv,
       wMin:width.min,wMax:width.max,validRows:width.validRows,validRowFraction:width.validRowFraction,
-      areaPerValidRow:width.areaPerValidRow,minValidWidth:width.minValidWidth,
-      threshold:finalTh,fieldArea,boundaryCount,maxV,
+      areaPerValidRow,areaWidthFillRatio,minValidWidth:width.minValidWidth,
+      threshold:finalTh,fieldArea,boundaryCount,maxV,fieldMaskMode:settings.fovMode||'full',
       totalComponents:filtered.totalComponents,keptComponents:filtered.keptComponents,
       largestArea:filtered.largestArea,finalComponents:finalComponents.totalComponents,
+      continuityKeptComponents:continuity.kept,continuityTotalComponents:continuity.total,
       internalIslandCount:holeResult.holeCount,internalIslandArea:holeResult.holeArea,
       largestInternalIslandArea:holeResult.largestHoleArea,filledSmallIslandCount:holeResult.filledHoleCount,
       filledSmallIslandArea:holeResult.filledHoleArea,holeFillMaxArea:holeResult.maxHoleArea,crop,
-      src,field,varMap,mask
+      src,field,varMap,mask:finalMask
     };
     const qc=buildQc(partialResult,crop,W,H,false);
     return {...partialResult,segmentationQualityScore:qc.score,warnings:qc.warnings,recommendedPrimaryMetric:qc.recommendedPrimaryMetric};
@@ -1715,7 +2427,11 @@
 
   async function autoCalibrateGroup() {
     const group=selectedGroup();
-    const samples=group.sampleIds.map(id=>CALIBRATION.find(s=>s.id===id)).filter(Boolean);
+    const samples=group.sampleIds.map(id=>sampleById(id)).filter(Boolean);
+    if(group.custom||samples.some(s=>s.custom)) {
+      setLog('<strong>Auto calibration skipped.</strong> Custom local groups do not have ground-truth area values.');
+      return;
+    }
     const grid=buildCalibrationGrid();
     el.autoCalibrateGroup.disabled=true;
     el.applySettingsGroup.disabled=true;
@@ -1770,10 +2486,14 @@
 
   function renderGroupView() {
     const group=selectedGroup();
-    const samples=group.sampleIds.map(id=>CALIBRATION.find(s=>s.id===id)).filter(Boolean);
+    const samples=group.sampleIds.map(id=>sampleById(id)).filter(Boolean);
     state.groupResults={};
+    samples.forEach(s=>{ if(state.manualOverrides[s.id]) state.groupResults[s.id]=state.manualOverrides[s.id].result; });
     el.canvasTitle.textContent=`Group view: ${group.label}`;
     el.canvasMeta.textContent=`${samples.map(s=>s.time).join(' / ')} - previews use current settings: ${currentGroupSettingsSummary()}`;
+    el.exportPng.disabled=true;
+    el.exportCsv.disabled=false;
+    el.exportExcel.disabled=false;
     el.groupView.innerHTML=`
       <div class="series-summary" id="seriesSummary">
         ${seriesCard('Series QC','calculating',`0/${samples.length} images analysed`)}
@@ -1793,10 +2513,10 @@
               <canvas class="group-canvas" data-sample-id="${escHtml(s.id)}" aria-label="${escHtml(s.path.split('/').pop())} contour preview"></canvas>
             </div>
             <div class="group-card-body">
-              <div class="group-metric"><span>GT area</span><span>${fmt(s.area)} px</span></div>
-              <div class="group-metric"><span>Area %</span><span>${fmt(s.areaPct,3)}%</span></div>
-              <div class="group-metric"><span>GT width</span><span>${fmt(s.width,3)} px</span></div>
-              <div class="group-metric"><span>Closure</span><span>${s.closure===null?'n/a':`${fmt(s.closure,2)}%`}</span></div>
+              <div class="group-metric"><span>GT area</span><span>${s.area?`${fmt(s.area)} px`:'n/a'}</span></div>
+              <div class="group-metric"><span>Area %</span><span>${s.areaPct?`${fmt(s.areaPct,3)}%`:'n/a'}</span></div>
+              <div class="group-metric"><span>GT width</span><span>${s.width?`${fmt(s.width,3)} px`:'n/a'}</span></div>
+              <div class="group-metric"><span>Closure</span><span>${s.closure===null||s.closure===undefined?'n/a':`${fmt(s.closure,2)}%`}</span></div>
               <div class="group-metric"><span>Confidence</span><span>${escHtml(s.confidence)}</span></div>
             </div>
           </article>
@@ -1805,18 +2525,26 @@
     renderCalibrationReport();
     el.groupView.querySelectorAll('.group-card').forEach(card=>{
       card.addEventListener('click',()=>{
-        const sample=CALIBRATION.find(s=>s.id===card.dataset.sampleId);
+        const sample=sampleById(card.dataset.sampleId);
         if(!sample) return;
-        el.sampleSelect.value=sample.id;
-        updateSampleMeta();
+        if(!sample.custom) {
+          el.sampleSelect.value=sample.id;
+          updateSampleMeta();
+        }
         loadImage(sampleUrl(sample),sample,sample.path,true);
       });
     });
     renderGroupContours(samples);
+    samples.forEach(s=>{ if(state.manualOverrides[s.id]) updateGroupCardResult(s,state.manualOverrides[s.id].result); });
+    if(samples.some(s=>state.groupResults[s.id])) renderSeriesSummary(samples);
   }
 
   function renderGroupContours(samples) {
     samples.forEach(sample=>{
+      if(state.manualOverrides[sample.id]) {
+        updateGroupCardPreview(sample,state.manualOverrides[sample.id]);
+        return;
+      }
       const canvas=el.groupView.querySelector(`canvas[data-sample-id="${sample.id}"]`);
       if(!canvas) return;
       const ctx=canvas.getContext('2d',{willReadFrequently:true});
@@ -1919,12 +2647,21 @@
     el.thresholdOffsetVal.value=el.thresholdOffset.value;
     el.minComponentVal.value=el.minComponent.value;
     el.fovCutoffVal.value=el.fovCutoff.value;
+    el.microscopeMode.querySelectorAll('[data-fov-mode]').forEach(btn=>{
+      btn.classList.toggle('active',btn.dataset.fovMode===el.fovMode.value);
+    });
     el.deskewAngleVal.value=el.deskewAngle.value;
     el.deskewBadge.textContent=`${Number(el.deskewAngle.value).toFixed(1).replace('.0','')}°`;
     el.contourThicknessVal.value=el.contourThickness.value;
+    el.brushSizeVal.value=el.brushSize.value;
+    el.brushMode.querySelectorAll('[data-brush-mode]').forEach(btn=>{
+      btn.classList.toggle('active',btn.dataset.brushMode===state.brushMode);
+    });
+    el.resetBrush.disabled=!state.brushEdited;
+    el.undoBrush.disabled=state.brushHistory.length===0;
     el.angleRulerToggle.textContent=state.rulerVisible?'Hide angle ruler':'Show angle ruler';
     el.angleRulerToggle.classList.toggle('primary',state.rulerVisible);
-    el.canvas.style.cursor=state.rulerVisible&&!state.cropEditing?'grab':'';
+    el.canvas.style.cursor=brushActive()?'crosshair':state.rulerVisible&&!state.cropEditing?'grab':'';
   }
 
   function nudgeDeskew(delta) {
@@ -1970,10 +2707,77 @@
       el.canvasTitle.textContent=state.imageName.split('/').pop()||state.imageName;
       el.adjustCrop.disabled=false; el.resetCrop.disabled=false; el.applyCrop.disabled=true;
       el.rotateImage.disabled=false; el.deskewMinus.disabled=false; el.deskewPlus.disabled=false;
-      runSegmentation();
+      runSegmentation({restoreManual:true});
     };
     img.onerror=()=>{ setSpinner(false); setLog('<strong>Image load failed.</strong> Run a local HTTP server from the repo root (e.g. <code>python -m http.server</code>) to serve the wound healing archive.'); };
     img.src=src;
+  }
+
+  function makeCustomSample(file, index) {
+    const url=URL.createObjectURL(file);
+    state.objectUrls.push(url);
+    const stem=file.name.replace(/\.[^.]+$/,'');
+    const timeMatch=customFileTimeMatch(stem);
+    const time=timeMatch?`${Number(timeMatch[1])}h`:`${index+1}`;
+    return {
+      id:`custom-${Date.now()}-${index}`,
+      imageId:`local-${index+1}`,
+      path:file.name,
+      url,
+      cell:'Local',
+      condition:'Custom group',
+      time,
+      area:null,
+      areaPct:null,
+      width:null,
+      closure:null,
+      confidence:'local-review',
+      custom:true
+    };
+  }
+
+  function customFileTimeMatch(stem) {
+    return stem.match(/(?:^|[_\-\s])t(\d+)(?:[_\-\s]|$)/i)
+      || stem.match(/(\d+)\s*h/i)
+      || stem.match(/_(\d+)$/);
+  }
+
+  function customFileSortKey(file, index) {
+    const stem=file.name.replace(/\.[^.]+$/,'');
+    const match=customFileTimeMatch(stem);
+    return {
+      time:match?Number(match[1]):Number.POSITIVE_INFINITY,
+      name:file.name.toLocaleLowerCase(),
+      index
+    };
+  }
+
+  function loadLocalFiles(files) {
+    const picked=Array.from(files||[]);
+    const tiffs=picked.filter(f=>/\.(tif|tiff)$/i.test(f.name));
+    if(tiffs.length) {
+      setLog(`<strong>TIFF is not browser-decodable here.</strong> Use PNG/JPEG copies for review. Converted WHAD/CAMAD PNGs are under <code>validation_ref_sets/browser_ready/whad_camad_png/</code>.`);
+      return;
+    }
+    const images=picked
+      .filter(f=>f.type.startsWith('image/')||/\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(f.name))
+      .map((file,index)=>({file,key:customFileSortKey(file,index)}))
+      .sort((a,b)=>(a.key.time-b.key.time)||a.key.name.localeCompare(b.key.name)||a.key.index-b.key.index)
+      .map(item=>item.file);
+    if(!images.length) return;
+    if(images.length===1) {
+      loadImage(URL.createObjectURL(images[0]),null,images[0].name);
+      return;
+    }
+    state.objectUrls.forEach(url=>URL.revokeObjectURL(url));
+    state.objectUrls=[];
+    state.customSamples=images.map(makeCustomSample);
+    state.manualOverrides={};
+    state.calibrationReport=null;
+    populateGroups();
+    el.groupSelect.value='custom-local';
+    setMode('group');
+    setLog(`<strong>Custom group loaded:</strong> ${images.length} local images. Apply settings to review contours across the group.`);
   }
 
   // Events
@@ -1991,11 +2795,12 @@
         : 'Each image uses its own full image or auto FOV crop.';
       setLog(`<strong>Group settings applied:</strong> ${escHtml(currentGroupSettingsSummary())}. ${ratioNote}`);
     });
+    el.autoDetectModeGroup.addEventListener('click',autoDetectGroupMicroscopeMode);
     el.autoCalibrateGroup.addEventListener('click',autoCalibrateGroup);
     el.sampleSelect.addEventListener('change',updateSampleMeta);
     el.loadSample.addEventListener('click',()=>{const s=selectedSample();loadImage(sampleUrl(s),s,s.path);});
     el.rerun.addEventListener('click',()=>{syncLabels();runSegmentation();});
-    el.fileInput.addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;loadImage(URL.createObjectURL(f),null,f.name);});
+    el.fileInput.addEventListener('change',e=>{loadLocalFiles(e.target.files); e.target.value='';});
 
     const rerunFromSegmentation=()=>{if(state.image&&!state.cropEditing)runSegmentation();};
     const resetAutoCrop=()=>{state.crop=null;state.cropManual=false;if(state.cropEditing)drawCropEditor();else rerunFromSegmentation();};
@@ -2003,6 +2808,41 @@
     bindNumberPair(el.thresholdOffset,el.thresholdOffsetVal,rerunFromSegmentation);
     bindNumberPair(el.minComponent,el.minComponentVal,rerunFromSegmentation);
     bindNumberPair(el.fovCutoff,el.fovCutoffVal,rerunFromSegmentation);
+    bindNumberPair(el.brushSize,el.brushSizeVal,()=>syncLabels());
+    el.brushMode.addEventListener('click',e=>{
+      const btn=e.target.closest('[data-brush-mode]'); if(!btn) return;
+      state.brushMode=btn.dataset.brushMode;
+      syncLabels();
+    });
+    el.undoBrush.addEventListener('click',undoBrush);
+    el.resetBrush.addEventListener('click',()=>{
+      if(!state.autoMaskData||!state.maskData) return;
+      pushBrushHistory();
+      state.maskData=new Uint8Array(state.autoMaskData);
+      resetBrushStats(false);
+      updateResultFromMask();
+      el.undoBrush.disabled=state.brushHistory.length===0;
+      syncLabels();
+    });
+    window.addEventListener('keydown',e=>{
+      const editable=e.target&&['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName);
+      if(editable) return;
+      if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z') {
+        if(state.brushHistory.length) {
+          e.preventDefault();
+          undoBrush();
+        }
+      }
+    });
+    el.microscopeMode.querySelectorAll('[data-fov-mode]').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const next=btn.dataset.fovMode||'full';
+        if(next===el.fovMode.value) return;
+        el.fovMode.value=next;
+        syncLabels();
+        rerunFromSegmentation();
+      });
+    });
     bindNumberPair(el.deskewAngle,el.deskewAngleVal,deskewCurrentImage);
     el.angleRulerToggle.addEventListener('click',()=>{
       state.rulerVisible=!state.rulerVisible;
@@ -2040,6 +2880,7 @@
         const p=PRESETS[btn.dataset.preset];if(!p)return;
         el.varianceRadius.value=p.varianceRadius; el.thresholdOffset.value=p.thresholdOffset;
         el.minComponent.value=p.minComponent; el.fovCutoff.value=p.fovCutoff;
+        el.fovMode.value=p.fovMode||'full';
         syncLabels();
         document.querySelectorAll('.preset-btn').forEach(b=>b.classList.toggle('active',b===btn));
         if(state.image) runSegmentation();
@@ -2048,6 +2889,7 @@
 
     el.exportPng.addEventListener('click',exportPng);
     el.exportCsv.addEventListener('click',exportCsv);
+    el.exportExcel.addEventListener('click',exportExcel);
 
     el.zoomIn.addEventListener('click',()=>changeZoom(1.35));
     el.zoomOut.addEventListener('click',()=>changeZoom(1/1.35));
@@ -2088,6 +2930,12 @@
         return;
       }
       const pt=canvasPoint(e);
+      if(brushActive()) {
+        state.brushDrawing=false;
+        applyBrushAt(pt);
+        e.preventDefault();
+        return;
+      }
       if(rulerHitTest(pt,el.canvas.width,el.canvas.height)) {
         state.rulerDragging=true;
         state.rulerDragStart={x:pt.x,y:pt.y,offsetX:state.rulerOffsetX||0,offsetY:state.rulerOffsetY||0};
@@ -2125,13 +2973,17 @@
         redrawCurrentCanvas();
         return;
       }
+      if(state.brushDrawing) {
+        applyBrushAt(canvasPoint(e));
+        return;
+      }
       if(!state.panning)return;state.panX=e.clientX-state.panStart.x;state.panY=e.clientY-state.panStart.y;applyZoom();
     });
     window.addEventListener('mouseup',()=>{
-      state.cropDragging=false;state.cropDragMode='move';state.rulerDragging=false;state.rulerDragStart=null;state.panning=false;
+      state.cropDragging=false;state.cropDragMode='move';state.rulerDragging=false;state.rulerDragStart=null;state.brushDrawing=false;state.panning=false;
       if(!state.cropEditing) {
         el.canvas.classList.remove('grabbing');
-        el.canvas.style.cursor=state.rulerVisible?'grab':'';
+        el.canvas.style.cursor=brushActive()?'crosshair':state.rulerVisible?'grab':'';
       }
     });
 
@@ -2139,8 +2991,7 @@
     el.dropZone.addEventListener('dragleave',()=>el.dropZone.classList.remove('dragging'));
     el.dropZone.addEventListener('drop',e=>{
       e.preventDefault();el.dropZone.classList.remove('dragging');
-      const f=e.dataTransfer.files?.[0];if(!f||!f.type.startsWith('image/'))return;
-      loadImage(URL.createObjectURL(f),null,f.name);
+      loadLocalFiles(e.dataTransfer.files);
     });
   }
 

@@ -1,8 +1,8 @@
 # AGENT_BRIEF.md — Cytomove Operasyonel Hafıza
 <!-- Her oturuma bu dosyayı okuyarak başla. README.md ve ROADMAP.md ile birlikte kullan. -->
 
-**Son güncelleme:** 2026-04-30
-**Versiyon:** 1.0
+**Son güncelleme:** 2026-05-04
+**Versiyon:** 1.1
 
 ---
 
@@ -59,10 +59,9 @@ Başka ajan veya belgelere CellVerse anlatısını geri sokma.
 
 **Faz 1 — Minimum Credible Landing tamamlandı** (`de45c32`; marka/sosyal/blog işleri beta launch hazırlığına ertelendi)
 
-**Faz 2 — Validation iş kolu başladı (2026-04-28)**  
-Validation veri seti planlaması yapıldı, protokol v0.1 yazıldı, mevcut laboratuvar arşivi (442 görüntü) keşfedildi.
-Segmentasyon kodu henüz başlamadı; önce validation set'in CSV'ye aktarılması bekleniyor.
-Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı kabul oranı.
+**Faz 2 — MVP + Validation iş kolu aktif (2026-05-04)**  
+Validation protokolü v0.4 yönüne taşındı: sentetik binary mask doğrulaması, sentetik microscopy-like robustness ve gerçek görüntü validasyonu üç katmanlı yürür. Prototip artık `prototype-whst-variance-v0.4` seviyesinde: browser-only segmentasyon, group review, custom local group, manual brush correction, width profile metrikleri, QC uyarıları ve CSV/Excel export bulunur.
+Başarı kriterleri korunur: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı kabul oranı; ancak width mean/median ve QC/recommended-primary-metric artık area ile birlikte birinci sınıf çıktıdır.
 
 ---
 
@@ -101,6 +100,10 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 - Width inclination correction disabled/removed for now because it confused the user and changed metrics without an obvious visual effect. Width metrics currently use raw horizontal scanline width after the selected scratch orientation/fine rotation.
 - Angle ruler overlay added: View section has a `Show angle ruler` toggle. The semi-transparent ruler can be dragged with the mouse as a visual alignment guide. It does not change segmentation or width metrics.
 - Prototype'a `Group review` modu eklendi: HK Control, M8F FDI-6 8uM ve MK Control grupları 0h/24h/48h olarak yan yana gösterilir. Kartlarda downsampled kontur preview çizilir; karta tıklanınca ilgili sample üstteki ana analiz canvas'ına yüklenir. Preview ölçüm yerine hızlı review amaçlıdır; ana canvas mevcut full pipeline ile çalışır.
+- 2026-05-02 UI simplification update: segmentation `Field mask` select was replaced with user-facing `Microscope mode` buttons (`Phase contrast` / `Brightfield`). `Phase contrast` keeps full rectangular field for dark-background images; `Brightfield` applies cutoff-based field masking for black-border microscope FOVs.
+- 2026-05-02 layout update: in `prototype/index.html` single-image canvas (`dropZone`) is kept above `groupView` so left-side controls remain accessible while reviewing group cards.
+- 2026-05-02 segmentation stability update: a continuity filter was added after hole-fill/component steps (`enforceWoundContinuity`). It scores connected components by center proximity + axis span + area, and keeps the wound-like continuous component(s) to reduce late time-point drift to side islands.
+- 2026-05-02 version bump: `CYTOMOVE_ALGORITHM_VERSION` updated to `prototype-whst-variance-v0.4` (microscope-mode UI + continuity filtering).
 
 ---
 
@@ -125,6 +128,10 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 | `README.md` | ✅ | GitHub ana sayfası |
 | `AGENT_BRIEF.md` | v1.0 ✅ | Bu dosya |
 | `docs/validation-protocol.md` | v0.3 ✅ | Literatür destekli comparator + metric rationale eklendi; WHST primary comparator; CSV/analysis-log şeması genişledi |
+| `docs/validation-dataset-layout.md` | Yeni ✅ | Harici raw dataset yerleşimi: `validation_ref_sets/raw/`; generated outputs: `validation_sets/`; browser TIFF dönüşüm notu |
+| `docs/validation-ref-inventory.csv` | Yeni ✅ | WHAD/CAMAD, CSMA ve local phone subset için commit edilebilir metadata envanteri |
+| `docs/validation-ref-inventory-summary.md` | Yeni ✅ | First-wave gerçek görüntü sayımı: WHAD/CAMAD 83 TIFF, CSMA 49 JPEG, local phone 9 JPG; RQSA deferred |
+| `docs/synthetic-validation.md` | Yeni ✅ | Sentetik validation harness amacı, çıktıları, exact cases ve manuscript evidence planı |
 | `docs/literature/tool-comparison-matrix.md` | Yeni ✅ | TScratch, WHST, PyScratch, CSMA, MRI tool, WimScratch karşılaştırması; ürün/validasyon kararları |
 | `docs/validation-inventory.csv` | Üretildi ✅ | 442 satır, otomatik metadata; envanter bu dosyada |
 | `docs/validation-inventory-summary.md` | Üretildi ✅ | Hücre × koşul × zaman crosstab; coverage assessment |
@@ -132,6 +139,9 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 | `scripts/build_ground_truth_sample.py` | ✅ | ImageJ ölçüm planı generator; resolved metadata, max 3/stratum |
 | `scripts/build_combine_ground_truth.py` | ✅ | COMBİNE Excel area/width/closure extractor; mapping confidence ayrımı var |
 | `scripts/link_area_calibration.py` | ✅ | COMBİNE ground-truth değerlerini area-first calibration set + sampling plan'a bağlar |
+| `scripts/synthetic_validation.py` | ✅ | Sentetik binary mask, crop robustness, synthetic time-series ve manuscript panel outputs üretir; çıktılar `validation_sets/synthetic/` altında ignored |
+| `scripts/build_validation_ref_inventory.py` | ✅ | Ignored raw validation datasets için lightweight metadata CSV üretir |
+| `scripts/convert_tiff_for_browser.ps1` | ✅ | WHAD/CAMAD TIFF dosyalarını browser-ready PNG'ye dönüştürür; default output ignored |
 | `docs/visual-sample-review.md` | Üretildi ✅ | 9 representative Tier 1 image için kalite sınıfları + preprocessing notları |
 | `docs/ground-truth-sampling-plan.csv` | Üretildi ✅ | ImageJ re-measurement için deterministik 60 imajlık çalışma listesi |
 | `docs/ground-truth-sampling-plan-summary.md` | Üretildi ✅ | Örnekleme rol/hücre/koşul/zaman özeti |
@@ -141,7 +151,7 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 | `docs/area-calibration-trends.csv` | Üretildi ✅ | 12 aggregate ORT trend satırı; per-image validation değil |
 | `docs/area-calibration-summary.md` | Üretildi ✅ | Calibration bağlantı özeti; 3 sampling-plan satırı seed edildi |
 | `assets/og-image.png` | Canlı ✅ | Sosyal medya link önizleme görseli |
-| `prototype/index.html` | 🔄 Yeniden yazılıyor | WHST-aligned browser lab: crop, 90° rotate, fine deskew, threshold fallback, v0.3 CSV export, PNG export, zoom/pan |
+| `prototype/index.html` | 🔄 v0.4 aktif prototype | WHST-aligned browser lab: microscope mode, scratch orientation, manual fine rotation, angle ruler, rectangular crop, group review, custom local groups, manual brush correction, width profile/QC metrics, CSV/Excel/PNG export |
 
 ---
 
@@ -181,7 +191,10 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 
 - Logo / marka kimliği henüz yok (beta launch hazırlığına ertelendi)
 - Ürün kodu henüz public değil (private geliştirme)
-- Gerçek MVP (segmentasyon algoritması) henüz başlamadı
+- Prototype kodu hızlı ilerledi; `AGENT_BRIEF.md` ve doküman tabloları sık güncellenmeli, aksi halde aktif durum geriden geliyor.
+- `Cytomove - Segmentation Lab.pdf`, `_screenshot_*.png`, `find_backup.py` ve `.DS_Store` dosyaları çalışma ağacında görünebilir; commit etmeden önce tek tek değerlendir.
+- `github_token.txt` repo kökünde mevcut; asla stage/commit etme.
+- Raw validation datasets ve browser-ready dönüşümler ignored klasörlerde kalmalı: `validation_ref_sets/`, `validation_sets/`.
 
 ---
 
@@ -220,8 +233,8 @@ Başarı kriterleri: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı ka
 - [ ] **Per-image ImageJ ground truth re-measurement** (Düzgün lab tarafı): `docs/ground-truth-sampling-plan.csv` ile 60 imajlık deterministik liste hazır; COMBİNE Excel area/width değerleri seed calibration olarak çıkarıldı, kalan ImageJ ölçümleri hâlâ pending
 - [ ] Üçüncü hücre hattı kararı (HeLa / A549 / başka) — generalizability için
 - [ ] Gerçek mikroskop kamerası ile çekilmiş bir referans set (telefon-okül dışı)
-| `prototype/index.html` | 🔄 Yeniden yazılıyor | ImageJ-matched pipeline: variance filter, fill holes, export |
-- [ ] Manuel düzeltme arayüzü tasarımı
+| `prototype/index.html` | 🔄 v0.4 aktif prototype | ImageJ/WHST-inspired pipeline: variance filter, hole handling, continuity filter, width profile/QC, group review, manual correction, export |
+- [x] Manuel düzeltme arayüzü prototipi: brush add/erase/undo/reset var; bilimsel validation ve UX polish bekliyor
 - [ ] Prototype git commit + Cloudflare Pages test
 
 ### Validation Veri Seti — Mevcut Arşiv Özeti (2026-04-28)
@@ -311,8 +324,13 @@ Current CSV export includes analysis parameters, crop coordinates, rotation, isl
 - Fine deskew eklendi: `Fine rotation (deg)` -20°..+20°, step 0.5°. Transform `imageOriginal + scratch orientation rotation + manual 90° rotation + fine rotation` üzerinden yeniden üretilir; crop sıfırlanır ve analiz tekrar çalışır.
 - Export alanları: `scratch_orientation`, `manual_rotation_deg`, `orientation_rotation_deg`, `rotation_deg`, `deskew_angle_deg`, `deskew_applied`; analysis log JSON içinde de yer alır.
 - `Show angle ruler` overlay: yarı şeffaf cetvel çizilir ve mouse ile taşınabilir. Amaç görsel hizalama; mask segmentasyonunu veya width metriğini değiştirmez.
+- Custom local group upload added: file picker accepts multiple images and drag/drop accepts multiple image files. Selecting or dropping 2+ images creates a temporary `Custom local group`, switches to Group review, runs the same preview/contour pipeline, and allows card click-through to the single-image canvas. Custom groups have no GT fields and skip auto-calibration.
+- Browser TIFF caveat: native browser image decoding does not reliably support `.tif/.tiff`, so WHAD/CAMAD TIFFs should be converted to PNG for app review. Use `scripts/convert_tiff_for_browser.ps1`; default output is ignored under `validation_ref_sets/browser_ready/whad_camad_png/`. The app now warns if TIFF files are selected/dropped.
 - 2026-05-01 methodological update: Cytomove should not position itself as only a wound-area calculator. Area metrics stay, but width-based metrics are first-class outputs because area fraction is crop/FOV dependent.
 - 2026-05-02 validation strategy update: validation is now three-layered. (1) Synthetic binary masks prove mathematical correctness with zero tolerance. (2) Synthetic microscopy-like images test robustness with predefined low tolerances. (3) Real microscopy images test biological/workflow validity against manual/consensus/ImageJ/WHST references.
+- 2026-05-02 real-image validation source decision: first-wave real validation should mix acquisition quality levels. WHAD/CAMAD is the primary professional time-lapse set; CSMA is the public comparator/workflow set; selected local Duzgun phone/eyepiece images remain a real-world usability stress subset. RQSA is deferred to later robustness/stress validation rather than first-wave validation.
+- Raw/public datasets must not be copied into the project root or committed. Use ignored `validation_ref_sets/raw/` for WHAD/CAMAD, CSMA, local phone, and deferred RQSA archives; use `validation_sets/` for generated Cytomove outputs. Dataset layout is documented in `docs/validation-dataset-layout.md`.
+- External validation reference inventory added: `scripts/build_validation_ref_inventory.py` writes `docs/validation-ref-inventory.csv` and `docs/validation-ref-inventory-summary.md`. Current first-wave subset count is WHAD/CAMAD 83 TIFF, CSMA 49 JPEG, local phone 9 JPG; RQSA empty/deferred.
 - Synthetic crop-robustness is a core validation requirement: use the same wound mask under different crop/FOV perturbations to show area fraction sensitivity and compare it with mean/median width stability.
 - Synthetic validation harness started: `scripts/synthetic_validation.py` writes ignored outputs under `validation_sets/synthetic/`; documentation lives in `docs/synthetic-validation.md`. Run with `py -3 scripts/synthetic_validation.py --output-dir validation_sets/synthetic --write-masks`. Current binary-mask suite has 10 cases ordered from simple to difficult, including straight, narrow, stepped, tapered, sinusoidal, V-shaped, partial-closure, bridge, tilted, and extreme irregular multi-bridge wounds. App-test PNG fixtures are mostly `2000x1200 px`; the hardest chaotic case is `2200x1400 px` and should preserve wound continuity while adding severe narrowing and bridges.
 - Crop handling note: rectangular microscopy/synthetic fixtures must remain valid. Do not force square crops. The prototype now allows rectangular manual crop adjustment and can apply the current crop as a normalized rectangle across group review.
@@ -320,6 +338,14 @@ Current CSV export includes analysis parameters, crop coordinates, rotation, isl
 - Per-image QC now includes `segmentation_quality_score`, warning list, and `recommended_primary_metric` (`area_and_width`, `width_preferred`, or `review_required`). Warnings include crop/FOV-dependent area fraction, manual crop, low valid row fraction, high width CV, fragmented final mask, no contour, and GT/crop mismatch.
 - CSV export includes width profile metrics, QC warnings, and recommended primary metric. Time-series area-vs-width closure comparison remains a next step.
 - Validation experiment to add: create artificial crop perturbations from the same wound mask and compare sensitivity of area fraction vs mean/median width.
+
+### 2026-05-04 Workspace Reconciliation
+
+- Weekend work produced multiple commits through `96fa550 Refine scratch orientation and ruler workflow`; local workspace still has uncommitted changes in `AGENT_BRIEF.md`, `ROADMAP.md`, `docs/validation-protocol.md`, and `prototype/index.html`.
+- New untracked project files to review before commit: `docs/validation-dataset-layout.md`, `docs/validation-ref-inventory.csv`, `docs/validation-ref-inventory-summary.md`, `scripts/build_validation_ref_inventory.py`, and `scripts/convert_tiff_for_browser.ps1`.
+- Untracked local artifacts likely not for commit: `Cytomove - Segmentation Lab.pdf`, `_screenshot_0.png`, `_screenshot_1.png`, `find_backup.py`, and `.DS_Store` files under `sample_imagej_apps/`.
+- `.gitignore` already ignores `validation_ref_sets/`, `validation_sets/`, literature paper/extracted folders, and comparator benchmark images.
+- `prototype/index.html` passes JS syntax check with `new Function(script)` as of this reconciliation.
 
 ### Git / GitHub
 - Repo: `https://github.com/zduzgun/CytoMove`

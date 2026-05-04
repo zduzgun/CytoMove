@@ -102,6 +102,8 @@ Bu kriterler karşılanmadan Faz 3'e geçilmez.
 - [ ] Synthetic binary mask generator + exact geometric tests: clean masks icin wound area, width profile, valid row count/fraction ve closure hesaplari 0 toleransla dogrulanir.
 - [ ] Synthetic crop robustness validation: ayni wound mask uzerinde farkli crop/FOV senaryolari olustur; area fraction hassasiyeti ile mean/median width stabilitesini karsilastir.
 - [ ] Validation tolerance policy: binary synthetic tests = 0 tolerance; realistic synthetic tests = predefined low tolerance; real microscopy tests = expert/manual agreement.
+- [ ] First-wave real-image validation panel: WHAD/CAMAD primary professional time-lapse set, CSMA public comparator set, selected local phone/eyepiece usability subset; RQSA deferred to later robustness/stress validation.
+- [ ] Public raw dataset storage: keep large/raw images under ignored `validation_ref_sets/raw/`, not project root or git. Commit only metadata, scripts, small derived panels, and documentation.
 - [ ] Segmentasyon manuel düzeltme arayüzü
 - [ ] Yan yana görselleştirme (orijinal vs algılanan maske)
 - [ ] Dışa aktarma: PNG figür + CSV veri
@@ -109,7 +111,7 @@ Bu kriterler karşılanmadan Faz 3'e geçilmez.
 - [ ] Yapılandırılmış geri bildirim döngüsü (Notion / Tally)
 
 **Akademik çıktılar (preprint hazırlığı için):**
-- [ ] Validation veri seti: kendi laboratuvarından 20-30 scratch assay görüntüsü
+- [ ] Validation veri seti: public professional WHAD/CAMAD + CSMA comparator + selected local phone/eyepiece images
 - [ ] Ground truth: aynı görüntülerin ImageJ ile manuel ölçümü
 - [ ] Karşılaştırma analizi: TScratch, ImageJ MRI Wound Healing macro, Wimasis vs Cytomove
 - [ ] İstatistiksel doğrulama: Pearson r, Bland-Altman, intra-class correlation
