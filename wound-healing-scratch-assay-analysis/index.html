@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wound Healing Scratch Assay Analysis - Browser Guide | Cytomove</title>
+  <meta name="description" content="A practical guide to wound healing scratch assay analysis: image input, wound area, mean gap width, mask review, manual correction, and export with Cytomove.">
+  <link rel="canonical" href="https://cytomove.com/wound-healing-scratch-assay-analysis/">
+  <meta property="og:title" content="Wound Healing Scratch Assay Analysis - Cytomove">
+  <meta property="og:description" content="Learn how wound healing scratch assay images can be reviewed in the browser with area and width metrics, mask review, and export.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://cytomove.com/wound-healing-scratch-assay-analysis/">
+  <meta property="og:image" content="https://cytomove.com/assets/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Wound Healing Scratch Assay Analysis - Cytomove">
+  <meta name="twitter:description" content="A practical browser-based guide to wound area, gap width, mask review, manual correction, and export.">
+  <meta name="twitter:image" content="https://cytomove.com/assets/og-image.png">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' stroke='%230f9f8f' stroke-width='2' fill='white'/><circle cx='10' cy='16' r='4' fill='%23bdeee8' stroke='%230f9f8f' stroke-width='1.4'/><circle cx='22' cy='16' r='4' fill='%23bdeee8' stroke='%230f9f8f' stroke-width='1.4'/><path d='M14 12.7L18.5 16 14 19.3' stroke='%2308766c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": "Wound Healing Scratch Assay Analysis",
+      "description": "A practical guide to browser-based wound healing scratch assay analysis with area and width metrics.",
+      "author": {
+        "@type": "Person",
+        "name": "Zekeriya Duzgun"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Cytomove"
+      },
+      "mainEntityOfPage": "https://cytomove.com/wound-healing-scratch-assay-analysis/"
+    }
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f7faf9;
+      --paper: #ffffff;
+      --soft: #eef7f5;
+      --ink: #102027;
+      --muted: #526d6b;
+      --dim: #7e9290;
+      --line: #d8e6e3;
+      --teal: #0f9f8f;
+      --teal-dark: #08766c;
+      --shadow: 0 22px 58px rgba(16, 32, 39, 0.10);
+    }
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.65;
+    }
+    a { color: inherit; }
+    .page { width: min(1040px, calc(100% - 40px)); margin: 0 auto; }
+    .site-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 22px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+    .logo-mark {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--paper);
+      box-shadow: 0 8px 22px rgba(16, 32, 39, 0.06);
+    }
+    .logo-text { font-size: 19px; font-weight: 800; letter-spacing: -0.02em; }
+    .site-nav { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+    .nav-link {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 750;
+      padding: 9px 11px;
+      border-radius: 999px;
+    }
+    .nav-link:hover { color: var(--ink); background: rgba(255, 255, 255, 0.82); }
+    .nav-link.primary { color: #ffffff; background: var(--ink); padding-inline: 15px; }
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(270px, 0.42fr);
+      gap: 40px;
+      align-items: end;
+      padding: 58px 0 46px;
+      border-bottom: 1px solid var(--line);
+    }
+    .eyebrow {
+      color: var(--teal-dark);
+      font-size: 12px;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+    h1 {
+      max-width: 780px;
+      font-size: clamp(40px, 6vw, 74px);
+      line-height: 0.99;
+      letter-spacing: -0.055em;
+      font-weight: 760;
+    }
+    .hero p {
+      max-width: 690px;
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .cta-card {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: var(--paper);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+    .cta-card strong { display: block; font-size: 17px; margin-bottom: 8px; }
+    .cta-card p { color: var(--muted); font-size: 14px; line-height: 1.55; margin-bottom: 16px; }
+    .button {
+      min-height: 46px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--ink);
+      border-radius: 12px;
+      background: var(--ink);
+      color: #ffffff;
+      padding: 12px 16px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 820;
+      width: 100%;
+    }
+    .content {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 260px;
+      gap: 48px;
+      padding: 48px 0 64px;
+    }
+    article {
+      min-width: 0;
+      max-width: 760px;
+    }
+    article h2 {
+      font-size: clamp(25px, 3vw, 36px);
+      line-height: 1.12;
+      letter-spacing: -0.035em;
+      margin: 38px 0 12px;
+    }
+    article h2:first-child { margin-top: 0; }
+    article h3 {
+      font-size: 19px;
+      letter-spacing: -0.02em;
+      margin: 22px 0 8px;
+    }
+    article p, article li {
+      color: var(--muted);
+      font-size: 16px;
+    }
+    article p + p { margin-top: 12px; }
+    ul, ol { padding-left: 22px; margin: 12px 0 0; }
+    li + li { margin-top: 8px; }
+    .note {
+      border-left: 4px solid var(--teal);
+      background: var(--soft);
+      border-radius: 0 14px 14px 0;
+      padding: 16px 18px;
+      margin: 24px 0;
+    }
+    .note p { font-size: 15px; }
+    .toc {
+      position: sticky;
+      top: 18px;
+      align-self: start;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.72);
+      padding: 17px;
+    }
+    .toc strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 11px;
+    }
+    .toc a {
+      display: block;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 7px 0;
+    }
+    .toc a:hover { color: var(--ink); }
+    .inline-cta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: var(--paper);
+      padding: 20px;
+      margin-top: 38px;
+    }
+    .inline-cta p { margin: 0; font-size: 15px; }
+    .inline-cta .button { width: auto; min-width: 160px; }
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      color: var(--dim);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+      padding: 24px 0 34px;
+    }
+    footer a { color: var(--muted); text-decoration: none; }
+    footer a:hover { color: var(--ink); }
+    @media (max-width: 840px) {
+      .hero, .content { grid-template-columns: 1fr; }
+      .toc { position: static; }
+      .inline-cta { display: block; }
+      .inline-cta .button { width: 100%; margin-top: 14px; }
+    }
+    @media (max-width: 620px) {
+      body { padding: 0 14px; overflow-x: hidden; }
+      .page { width: 100%; }
+      .site-header { align-items: flex-start; flex-direction: column; }
+      .site-nav { width: 100%; }
+      .nav-link.primary { width: 100%; text-align: center; }
+      h1 { font-size: 34px; line-height: 1.08; letter-spacing: -0.035em; }
+      .hero p { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="site-header">
+      <a class="logo" href="../" aria-label="Cytomove home">
+        <span class="logo-mark">
+          <svg width="25" height="25" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <circle cx="16" cy="16" r="13" stroke="#0f9f8f" stroke-width="1.8"/>
+            <ellipse cx="10.5" cy="16" rx="4" ry="4" fill="#bdeee8" stroke="#0f9f8f" stroke-width="1.4"/>
+            <ellipse cx="21.5" cy="16" rx="4" ry="4" fill="#bdeee8" stroke="#0f9f8f" stroke-width="1.4"/>
+            <path d="M14 12.5L18.5 16 14 19.5" stroke="#08766c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="logo-text">Cytomove</span>
+      </a>
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a class="nav-link" href="../">Home</a>
+        <a class="nav-link" href="#metrics">Metrics</a>
+        <a class="nav-link" href="#workflow">Workflow</a>
+        <a class="nav-link primary" href="../prototype_refactor/">Open Web App</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <div class="eyebrow">Practical guide</div>
+          <h1>Wound healing scratch assay analysis.</h1>
+          <p>
+            Scratch assays are simple to run, but image analysis can become inconsistent
+            when masks, crop regions, and time-point exports are handled manually.
+            Cytomove is being built as a browser-based way to review those steps.
+          </p>
+        </div>
+        <aside class="cta-card">
+          <strong>Try the web app</strong>
+          <p>Open local scratch assay images, review the mask, measure wound area and width, then export results.</p>
+          <a class="button" href="../prototype_refactor/">Open Web App</a>
+        </aside>
+      </section>
+
+      <div class="content">
+        <article>
+          <h2 id="overview">What is a wound healing scratch assay?</h2>
+          <p>
+            A wound healing scratch assay is an in vitro cell migration experiment. A
+            confluent cell monolayer is scratched to create a cell-free gap, then images
+            are captured over time to estimate how quickly cells migrate into the open area.
+          </p>
+          <p>
+            The key image-analysis task is to separate the wound region from the cell-covered
+            region, inspect the segmentation mask, and report reproducible measurements.
+          </p>
+
+          <h2 id="metrics">Which measurements matter?</h2>
+          <h3>Wound area percentage</h3>
+          <p>
+            Wound area percentage describes how much of the image field is still open.
+            It is intuitive and commonly reported, but it can be sensitive to crop choices,
+            circular microscope fields, labels, and black borders.
+          </p>
+
+          <h3>Mean horizontal gap width</h3>
+          <p>
+            Gap width summarizes the wound span across image rows. It is useful when
+            crop or field-of-view differences make area fractions harder to compare.
+            Cytomove reports mean, median, spread, valid rows, and QC warnings so the
+            area and width metrics can be read together.
+          </p>
+
+          <div class="note">
+            <p>
+              A reliable workflow should not hide the mask. Researchers need to see where
+              the segmentation boundary is, adjust settings when needed, and document the
+              export used for reporting.
+            </p>
+          </div>
+
+          <h2 id="workflow">A browser-based analysis workflow</h2>
+          <ol>
+            <li>Open one scratch assay image, or drop multiple time-point images to create a group.</li>
+            <li>Select a brightfield or phase contrast preset and review the contour or mask.</li>
+            <li>Adjust threshold, variance radius, field crop, orientation, or rotation if needed.</li>
+            <li>Use manual correction tools for difficult regions, debris, or missed wound fragments.</li>
+            <li>Export PNG overlays, group PNG ZIPs, plots, CSV, or Excel-compatible tables.</li>
+          </ol>
+
+          <h2 id="imagej">How does this relate to ImageJ workflows?</h2>
+          <p>
+            Many wound healing assays are still analyzed with ImageJ macros or manual
+            workflows. Cytomove is designed to complement that familiar approach with a
+            local browser workspace: fast visual review, exportable measurements, and
+            a clear record of the settings used for each image.
+          </p>
+          <p>
+            Validation against manual and ImageJ-style references is still in progress,
+            so Cytomove should be treated as a prototype feedback tool rather than a final
+            public beta.
+          </p>
+
+          <h2 id="privacy">What does browser-local image handling mean?</h2>
+          <p>
+            You can open image files normally through the file picker or drag-and-drop.
+            The current web workflow analyzes those files in the browser and keeps assay
+            image files on your device. This is important for unpublished microscopy data
+            and early-stage academic workflows.
+          </p>
+
+          <h2 id="formats">Supported exports</h2>
+          <p>
+            Cytomove currently focuses on practical outputs for review and reporting:
+            overlay PNGs, group overlay ZIP files, area and width plot ZIP files, CSV
+            metrics, and Excel-compatible tables.
+          </p>
+
+          <div class="inline-cta">
+            <p><strong>Ready to test a scratch assay image?</strong><br>Use the browser workspace for a quick local review.</p>
+            <a class="button" href="../prototype_refactor/">Open Web App</a>
+          </div>
+        </article>
+
+        <aside class="toc" aria-label="Guide contents">
+          <strong>On this page</strong>
+          <a href="#overview">Scratch assay overview</a>
+          <a href="#metrics">Area and width metrics</a>
+          <a href="#workflow">Browser workflow</a>
+          <a href="#imagej">ImageJ relation</a>
+          <a href="#privacy">Local image handling</a>
+          <a href="#formats">Exports</a>
+        </aside>
+      </div>
+    </main>
+
+    <footer>
+      <p>Copyright 2026 Cytomove</p>
+      <p>
+        <a href="https://github.com/zduzgun/CytoMove" target="_blank" rel="noopener noreferrer">GitHub</a>
+        &nbsp;/&nbsp;
+        <a href="mailto:zekeriya.duzgun@giresun.edu.tr">Contact</a>
+      </p>
+    </footer>
+  </div>
+</body>
+</html>

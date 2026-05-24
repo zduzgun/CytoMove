@@ -36,6 +36,7 @@ Cytomove artık sadece waitlist/landing aşamasında değil. Soft deploy yayınd
 - Desktop Alpha hattı başlatıldı: çalışan web prototipinin Electron tabanlı yerel uygulama kopyası `desktop_alpha/` altında. Web sürümüne alternatif değil; büyük dosya/grup iş akışları ve ileride lisanslı modüller için deney alanı.
 - Desktop Alpha 0.1 ürün kararı: tam ücretsiz, zorunlu giriş yok. E-posta/kayıt şimdilik opsiyonel feedback ve güncelleme kanalı olarak kalır. 10 günlük trial veya mail aktivasyonu private beta / ücretli modül aşamasına ertelenir.
 - Güncel landing page, web app'i ana public yol olarak konumlandırır ve gerçek web app yeteneklerini listeler: local image input, single/group review, segmentation controls, area/width metrics, mask/contour review, manual correction, QC guidance, plots, PNG/CSV/Excel/ZIP export ve browser-local image handling.
+- SEO temeli başlatıldı: root title/meta "wound healing scratch assay analysis" arama niyetine hizalandı; `wound-healing-scratch-assay-analysis/` rehber sayfası, `robots.txt` ve `sitemap.xml` eklendi. Sonraki adım Google Search Console doğrulaması ve sitemap submit.
 - Desktop Alpha tester dağıtımı installer yerine portable ZIP ile yapılır. `npm run pack:win` ZIP üretir ve `TESTER_README.txt` ekler; public installer/code signing sonraya bırakılır.
 - Abonelik yönü: iskelet baştan kurulur ama ücretli kapı Alpha 0.1'de açılmaz. Plan dili Free Alpha / Academic / Commercial olarak hazırlanır; ödeme, 10 günlük trial ve lisans kontrolü private beta veya doğrulanmış ücretli modül aşamasında devreye alınır.
 - Public beta değil. Doğru sonraki adım: 3-5 güvenilir kullanıcıyla "prototype feedback round".
@@ -440,6 +441,7 @@ Her PDF rapora otomatik methods paragrafı + DOI + sürüm gömülecek. Akademis
 | 2026-05-24 | Performans teknik borcu kaydedildi | Canlı prototip lokale göre yavaş hissediliyor; sonraki Faz 2 işi sistematik performans profili ve Web Worker/cache değerlendirmesi |
 | 2026-05-24 | Landing page web app-first sadeleştirildi | Ana CTA `Open Web App`; Desktop Alpha request-only hatta alındı; web app yetenekleri net listelendi. |
 | 2026-05-24 | Desktop Alpha tester paketi ZIP olarak seçildi | Installer/code signing sonraya bırakıldı; güvenilir testçiler için portable ZIP ve `TESTER_README.txt` yeterli. |
+| 2026-05-24 | SEO foundation başlatıldı | Root title/meta hedef keyword'e hizalandı; ilk wound healing scratch assay analysis rehberi, robots.txt ve sitemap.xml eklendi. |
 
 ---
 
