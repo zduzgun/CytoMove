@@ -2379,10 +2379,19 @@
       setLog('<strong>No group loaded yet.</strong> Drop multiple images or use the open button to create a group.');
       return;
     }
-    const missing=samples.filter(s=>(!state.groupResults[s.id]||state.groupResults[s.id].previewOnly)&&!state.manualOverrides[s.id]?.result);
+    let missing=samples.filter(s=>(!state.groupResults[s.id]||state.groupResults[s.id].previewOnly)&&!state.manualOverrides[s.id]?.result);
     if(missing.length) {
-      setLog(`<strong>Group PNG export:</strong> ${missing.length}/${samples.length} image${missing.length>1?'s need':' needs'} full-resolution analysis. Click Apply to group, wait for cards to finish, then export.`);
-      return;
+      setSpinner(true);
+      el.exportGroupPng.disabled=true;
+      setLog(`<strong>Group PNG export:</strong> preparing ${missing.length}/${samples.length} full-resolution overlay${missing.length>1?'s':''} before download.`);
+      await renderGroupContours(samples,{force:true});
+      missing=samples.filter(s=>(!state.groupResults[s.id]||state.groupResults[s.id].previewOnly)&&!state.manualOverrides[s.id]?.result);
+      if(missing.length) {
+        setSpinner(false);
+        el.exportGroupPng.disabled=false;
+        setLog(`<strong>Group PNG export:</strong> ${missing.length}/${samples.length} image${missing.length>1?'s still need':' still needs'} full-resolution analysis. Check whether any group cards failed, then try again.`);
+        return;
+      }
     }
     const group=selectedGroup();
     const groupName=safeFilenamePart(group.label,'group');
@@ -3611,8 +3620,7 @@
     el.canvasTitle.textContent=`Group view: ${group.label}`;
     el.canvasMeta.textContent=`${samples.map(s=>s.time).join(' / ')} - previews use current settings: ${currentGroupSettingsSummary()}`;
     el.exportPng.disabled=true;
-    const hasFullGroupResults=samples.length&&samples.every(s=>state.manualOverrides[s.id]?.result||(state.groupResults[s.id]&&!state.groupResults[s.id].previewOnly));
-    el.exportGroupPng.disabled=!(force||hasFullGroupResults);
+    el.exportGroupPng.disabled=!samples.length;
     el.exportPlots.disabled=false;
     el.showAreaPlot.disabled=false;
     el.showWidthPlot.disabled=false;
@@ -3724,7 +3732,7 @@
           state.calibrationReport=buildCalibrationReport(Object.values(state.groupResults),samples);
           renderCalibrationReport();
         }
-        el.exportGroupPng.disabled=!samples.every(s=>state.manualOverrides[s.id]?.result||(state.groupResults[s.id]&&!state.groupResults[s.id].previewOnly));
+        el.exportGroupPng.disabled=!samples.length;
         renderSeriesSummary(samples);
       } catch(err) {
         failPreview();
