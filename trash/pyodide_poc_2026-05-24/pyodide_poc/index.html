@@ -1,0 +1,325 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cytomove - Segmentation Lab</title>
+  <meta name="description" content="Browser-based wound healing scratch assay segmentation prototype. Local images only - privacy first.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="16" cy="16" r="13" stroke="#0f9f8f" stroke-width="1.8"/>
+            <ellipse cx="10.5" cy="16" rx="4" ry="4" fill="#bdeee8" stroke="#0f9f8f" stroke-width="1.4"/>
+            <ellipse cx="21.5" cy="16" rx="4" ry="4" fill="#bdeee8" stroke="#0f9f8f" stroke-width="1.4"/>
+            <path d="M14 12.5L18.5 16 14 19.5" stroke="#08766c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-name">Cytomove</div>
+          <div class="brand-tag">Area-First Segmentation Lab &mdash; Phase 2 Prototype</div>
+        </div>
+      </div>
+      <div class="status-pills">
+        <span class="pill"><span class="pill-dot"></span><strong>Area</strong> MVP metric</span>
+        <span class="pill"><strong>Width</strong> secondary</span>
+        <span class="pill"><strong>Images</strong> local only</span>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-inner">
+
+          <div class="section" id="reviewModeSection">
+            <div class="section-title">Review Mode</div>
+            <div class="mode-row" id="modeToggle">
+              <button class="view-btn active" data-mode="single" type="button">Single</button>
+              <button class="view-btn" data-mode="group" type="button">Group</button>
+            </div>
+            <label for="groupSelect" id="groupSelectLabel">Loaded group</label>
+            <div class="group-select-row" id="groupSelectRow">
+              <select id="groupSelect"></select>
+              <button class="icon-btn danger" id="deleteGroup" type="button" title="Delete selected group" aria-label="Delete selected group">
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 4h10M6 4V3h4v1M5 6v6M8 6v6M11 6v6M4.5 4l.5 10h6l.5-10" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="section" hidden>
+            <div class="section-title">Calibration Sample</div>
+            <label for="sampleSelect">Ground-truth row</label>
+            <select id="sampleSelect"></select>
+            <div class="meta-grid" id="sampleMeta"></div>
+            <div class="action-row">
+              <button class="btn primary" id="loadSample" type="button">Load Sample</button>
+              <button class="btn" id="rerun" type="button" disabled>Re-run</button>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Presets</div>
+            <div class="preset-row">
+              <button class="preset-btn" data-preset="rough" type="button">Brightfield<small>normal cells</small></button>
+              <button class="preset-btn active" data-preset="standard" type="button">Brightfield<small>small cells</small></button>
+              <button class="preset-btn" data-preset="fine" type="button">Phase<small>contrast</small></button>
+              <button class="preset-btn" data-preset="phase2" type="button">Phase<small>contrast 2</small></button>
+            </div>
+            <div class="action-row">
+              <button class="btn primary" id="applySettingsGroup" type="button">Apply to group</button>
+            </div>
+            <button class="btn" id="autoDetectModeGroup" type="button" style="width:100%;margin-top:7px;">Auto detect microscope</button>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Segmentation</div>
+            <div class="control">
+              <label for="varianceRadius">Variance radius</label>
+              <div class="range-row">
+                <input id="varianceRadius" type="range" min="1" max="45" value="1" step="1">
+                <input class="value-input" id="varianceRadiusVal" type="number" min="1" max="45" value="1" step="1">
+              </div>
+            </div>
+            <div class="control">
+              <label id="thresholdOffsetLabel" for="thresholdOffset">Threshold level</label>
+              <div class="range-row">
+                <input id="thresholdOffset" type="range" min="1" max="50" value="1" step="1">
+                <input class="value-input" id="thresholdOffsetVal" type="number" min="1" max="50" value="1" step="1">
+              </div>
+            </div>
+            <div class="control">
+              <label for="minComponent">Min component (px)</label>
+              <div class="range-row">
+                <input id="minComponent" type="range" min="0" max="100000" value="0" step="1000">
+                <input class="value-input" id="minComponentVal" type="number" min="0" max="100000" value="0" step="1000">
+              </div>
+            </div>
+            <div class="control">
+              <label for="tinyIslandMode">Ignore tiny islands</label>
+              <select id="tinyIslandMode">
+                <option value="off">Off</option>
+                <option value="trace" selected>Trace</option>
+                <option value="very-low">Very low</option>
+                <option value="low">Low</option>
+                <option value="moderate">Moderate</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+            <div class="control">
+              <label for="fovCutoff">FOV cutoff</label>
+              <div class="range-row">
+                <input id="fovCutoff" type="range" min="0" max="180" value="0" step="1">
+                <input class="value-input" id="fovCutoffVal" type="number" min="0" max="180" value="0" step="1">
+              </div>
+            </div>
+            <div class="control">
+              <div class="label-help">
+                <label>Microscope mode</label>
+                <button class="help-dot" type="button" data-tip="Phase contrast keeps the full rectangular image. Brightfield trims dark microscope borders using FOV cutoff." aria-label="Microscope mode help">?</button>
+              </div>
+              <div class="mode-row" id="microscopeMode" style="margin-bottom:0;">
+                <button class="view-btn" data-fov-mode="full" type="button">Phase contrast</button>
+                <button class="view-btn active" data-fov-mode="cutoff" type="button">Brightfield</button>
+              </div>
+              <input id="fovMode" type="hidden" value="cutoff">
+            </div>
+            <div class="control">
+              <label for="scratchOrientation">Scratch orientation</label>
+              <select id="scratchOrientation">
+                <option value="vertical">Vertical scratch</option>
+                <option value="horizontal">Horizontal scratch</option>
+              </select>
+              <div id="orientationHint" class="inline-warning" hidden></div>
+            </div>
+            <div class="control">
+              <label for="deskewAngle">Fine rotation (deg)</label>
+              <div class="range-row">
+                <input id="deskewAngle" type="range" min="-20" max="20" value="0" step="0.5">
+                <input class="value-input" id="deskewAngleVal" type="number" min="-20" max="20" value="0" step="0.5">
+              </div>
+            </div>
+            <button class="btn" id="angleRulerToggle" type="button" style="width:100%;margin-bottom:10px;">Show angle ruler</button>
+            <div class="control">
+              <label class="check-row" for="autoCropFov">
+                <input id="autoCropFov" type="checkbox">
+                Auto crop FOV
+              </label>
+              <div class="check-hint">Cuts the non-black microscope field before analysis; rectangular crops are allowed.</div>
+              <label class="check-row" for="applyCropRatioGroup" style="margin-top:8px;">
+                <input id="applyCropRatioGroup" type="checkbox">
+                Apply current crop ratio to group
+              </label>
+              <div class="check-hint">Uses the same relative rectangle for each image in group review.</div>
+              <div class="action-row">
+                <button class="btn" id="adjustCrop" type="button" disabled>Adjust crop</button>
+                <button class="btn primary" id="applyCrop" type="button" disabled>Apply crop</button>
+              </div>
+              <button class="btn" id="resetCrop" type="button" disabled style="width:100%;margin-top:7px;">Reset crop</button>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">View</div>
+            <div class="view-toggle" id="viewToggle">
+              <button class="view-btn active" data-view="overlay" type="button">Contour</button>
+              <button class="view-btn" data-view="mask" type="button">Mask</button>
+            </div>
+            <div class="control">
+              <label for="contourThickness">Contour thickness</label>
+              <div class="range-row">
+                <input id="contourThickness" type="range" min="1" max="9" value="3" step="1">
+                <input class="value-input" id="contourThicknessVal" type="number" min="1" max="9" value="3" step="1">
+              </div>
+            </div>
+            <div class="style-row">
+              <div>
+                <label for="contourColor">Contour color</label>
+                <select id="contourColor">
+                  <option value="#000000">Black</option>
+                  <option value="#ffc440">Amber</option>
+                  <option value="#00d1ff">Cyan</option>
+                  <option value="#ff4d6d">Rose</option>
+                  <option value="#ffffff">White</option>
+                  <option value="#0f9f8f">Teal</option>
+                </select>
+              </div>
+              <div>
+                <label for="contourStyle">Line style</label>
+                <select id="contourStyle">
+                  <option value="solid" selected>Solid</option>
+                  <option value="dashed">Dashed</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Manual correction</div>
+            <div class="view-toggle manual-toggle" id="brushMode">
+              <button class="view-btn" data-brush-mode="off" type="button">Off</button>
+              <button class="view-btn active" data-brush-mode="add" type="button">Add scan</button>
+              <button class="view-btn" data-brush-mode="fill" type="button">Fill area</button>
+              <button class="view-btn" data-brush-mode="erase" type="button">Erase scan</button>
+              <button class="view-btn" data-brush-mode="clean" type="button">Clean specks</button>
+            </div>
+            <div class="control">
+              <label for="brushSize">Scan sensitivity</label>
+              <div class="range-row">
+                <input id="brushSize" type="range" min="4" max="80" value="28" step="2">
+                <input class="value-input" id="brushSizeVal" type="number" min="4" max="80" value="28" step="2">
+              </div>
+            </div>
+            <div class="action-row">
+              <button class="btn" id="undoBrush" type="button" disabled>Undo</button>
+              <button class="btn" id="resetBrush" type="button" disabled>Reset correction</button>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Metrics</div>
+            <div class="metrics" id="metricsPanel"></div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Export</div>
+            <div class="export-row">
+              <button class="btn" id="exportPng" type="button" disabled>PNG overlay</button>
+              <button class="btn" id="exportGroupPng" type="button" disabled>Group PNGs ZIP</button>
+              <button class="btn" id="exportPlots" type="button" disabled>Plots ZIP</button>
+              <button class="btn" id="showAreaPlot" type="button" disabled>Area plot</button>
+              <button class="btn" id="showWidthPlot" type="button" disabled>Width plot</button>
+              <button class="btn" id="exportCsv" type="button" disabled>CSV data</button>
+              <button class="btn" id="exportExcel" type="button" disabled>Excel table</button>
+            </div>
+          </div>
+
+        </div>
+      </aside>
+
+      <section class="workspace">
+        <div class="canvas-head">
+          <div>
+            <div class="canvas-title" id="canvasTitle">No image loaded</div>
+            <div class="canvas-meta" id="canvasMeta"></div>
+          </div>
+          <div class="canvas-actions">
+            <button class="icon-btn" id="zoomIn" title="Zoom in" type="button">
+              <svg viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.4"/><path d="M5 7h4M7 5v4M11 11l2.5 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            </button>
+            <button class="icon-btn" id="zoomOut" title="Zoom out" type="button">
+              <svg viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.4"/><path d="M5 7h4M11 11l2.5 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            </button>
+            <button class="icon-btn" id="zoomReset" title="Reset zoom" type="button">
+              <svg viewBox="0 0 16 16" fill="none"><path d="M3 8a5 5 0 1 1 1.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3 12V8h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button class="icon-btn" id="deskewMinus" title="Deskew -0.5 degrees" type="button" disabled>
+              <svg viewBox="0 0 16 16" fill="none"><path d="M11.5 4.5A5 5 0 1 0 12 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M11.5 2v2.8H8.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="angle-chip" id="deskewBadge">0 deg</div>
+            <button class="icon-btn" id="deskewPlus" title="Deskew +0.5 degrees" type="button" disabled>
+              <svg viewBox="0 0 16 16" fill="none"><path d="M4.5 4.5A5 5 0 1 1 4 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M4.5 2v2.8h2.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button class="icon-btn" id="rotateImage" title="Rotate image 90 degrees" type="button" disabled>
+              <svg viewBox="0 0 16 16" fill="none"><path d="M12.5 5.5A5 5 0 1 0 13 10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M12.5 2.5v3h-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <label class="icon-btn file-picker-label" id="openFile" title="Open local image" style="cursor:pointer;">
+              <svg viewBox="0 0 16 16" fill="none"><path d="M2 11V13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M8 2v8M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <input class="file-input-native" id="fileInput" type="file" accept="image/*" multiple>
+            </label>
+          </div>
+        </div>
+
+        <div class="drop-zone" id="dropZone">
+          <div class="empty-state" id="emptyState">
+            <div class="empty-icon">&#128300;</div>
+            <div class="empty-title">Load scratch assay images</div>
+            <div class="empty-text">
+              Drag &amp; drop one image for single-image analysis, or drop multiple images to create a group.
+              You can also use the open button in the top-right toolbar.<br><br>
+              Analysis runs entirely in your browser &mdash; images never leave your device.
+            </div>
+          </div>
+          <canvas id="canvas" hidden></canvas>
+          <button class="group-nav-btn prev" id="groupPrev" type="button" disabled aria-label="Previous group image">
+            <svg viewBox="0 0 16 16" fill="none"><path d="M10 3 5 8l5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="group-nav-btn next" id="groupNext" type="button" disabled aria-label="Next group image">
+            <svg viewBox="0 0 16 16" fill="none"><path d="m6 3 5 5-5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="zoom-badge" id="zoomBadge">100%</div>
+        </div>
+
+        <div class="group-view" id="groupView" hidden></div>
+
+        <div class="plot-panel" id="plotPanel" hidden>
+          <div class="plot-dialog" role="dialog" aria-modal="true" aria-labelledby="plotDialogTitle">
+            <div class="plot-head">
+              <div class="plot-title" id="plotDialogTitle">Plot</div>
+              <button class="icon-btn" id="closePlot" type="button" aria-label="Close plot">
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+            <div class="plot-body" id="plotBody"></div>
+          </div>
+        </div>
+
+        <div class="log-bar" id="logBar">
+          <div class="spinner" id="spinner"></div>
+          <span id="logMsg">Ready.</span>
+          <span class="timer" id="timerMsg"></span>
+        </div>
+      </section>
+    </div>
+  </main>
+  <script type="module" src="pyodide-runner.js"></script>
+</body>
+</html>
+

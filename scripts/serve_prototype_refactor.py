@@ -5,6 +5,7 @@ from urllib.parse import unquote, urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE_INDEX = ROOT / "index.html"
+DESKTOP_MANIFEST = ROOT / "desktop-manifest.json"
 PROTOTYPE = ROOT / "prototype_refactor"
 PROTOTYPE_REDIRECT = ROOT / "prototype"
 ALLOW_PREFIXES = [
@@ -15,7 +16,7 @@ ALLOW_PREFIXES = [
     ROOT / "validation_sets",
     ROOT / "assets",
 ]
-ALLOW_FILES = [SITE_INDEX]
+ALLOW_FILES = [SITE_INDEX, DESKTOP_MANIFEST]
 
 
 class PrototypeHandler(SimpleHTTPRequestHandler):
@@ -24,6 +25,8 @@ class PrototypeHandler(SimpleHTTPRequestHandler):
         request_path = unquote(parsed.path).replace("\\", "/")
         if request_path in ("", "/", "/index.html"):
             target = SITE_INDEX
+        elif request_path == "/desktop-manifest.json":
+            target = DESKTOP_MANIFEST
         elif request_path.startswith(("/prototype_refactor/", "/prototype/")):
             target = ROOT / request_path.lstrip("/")
         elif request_path.startswith(("/wound healing/", "/validation_ref_sets/", "/validation_sets/", "/assets/")):

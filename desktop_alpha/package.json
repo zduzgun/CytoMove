@@ -1,0 +1,44 @@
+{
+  "name": "cytomove-desktop-alpha",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "description": "Cytomove Desktop Alpha - local-first wound healing analysis app.",
+  "main": "main.js",
+  "author": "Cytomove",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check main.js && node --check preload.js && node --check renderer/app.js",
+    "pack:win": "powershell -ExecutionPolicy Bypass -File scripts/package-win-unpacked.ps1",
+    "pack:win:builder": "electron-builder --win --dir",
+    "dist:win": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.cytomove.desktopalpha",
+    "productName": "Cytomove Desktop Alpha",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

@@ -431,6 +431,75 @@
       gap: 14px;
     }
 
+    .desktop-callout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+      gap: 18px;
+      align-items: stretch;
+      border: 1px solid #c8ece6;
+      border-radius: 22px;
+      padding: 20px;
+      background: linear-gradient(135deg, rgba(224,245,243,0.82), rgba(255,255,255,0.86));
+      box-shadow: var(--shadow-soft);
+    }
+
+    .desktop-callout h2 {
+      max-width: 720px;
+      margin-bottom: 10px;
+    }
+
+    .desktop-callout p {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    .desktop-card {
+      display: grid;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      background: var(--paper);
+    }
+
+    .desktop-card strong {
+      color: var(--ink);
+      font-size: 15px;
+    }
+
+    .desktop-card span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .desktop-list {
+      display: grid;
+      gap: 8px;
+      margin: 15px 0 18px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+      list-style: none;
+    }
+
+    .desktop-list li {
+      position: relative;
+      padding-left: 18px;
+    }
+
+    .desktop-list li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.72em;
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--teal);
+    }
+
     .step {
       background: rgba(255,255,255,0.76);
       border: 1px solid var(--line);
@@ -636,7 +705,7 @@
       .hero { grid-template-columns: 1fr; gap: 34px; }
       .section-header { display: block; }
       .section-header p { margin-top: 12px; }
-      .steps, .evidence-grid, .feedback-panel { grid-template-columns: 1fr; }
+      .steps, .evidence-grid, .feedback-panel, .desktop-callout { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 560px) {
@@ -785,6 +854,7 @@
       </div>
       <nav class="site-nav" aria-label="Primary navigation">
         <a class="nav-link" href="#workflow-title">Workflow</a>
+        <a class="nav-link" href="#desktop-alpha-title">Desktop Alpha</a>
         <a class="nav-link" href="#evidence-title">Status</a>
         <a class="nav-link" href="#feedback-title">Feedback</a>
         <a class="nav-link primary" href="prototype_refactor/">Open prototype</a>
@@ -799,17 +869,17 @@
             Prototype workspace
           </div>
 
-          <h1>Scratch assay analysis, <em>in your browser.</em></h1>
+          <h1>Scratch assay analysis, <em>local first.</em></h1>
 
           <p class="subtitle">
-            Cytomove is a browser-based workspace for wound healing images:
-            load images, review the wound mask, and export area/width measurements
-            without sending assay images to a server.
+            Cytomove analyzes wound healing images without uploading assay data.
+            Use the web prototype for quick checks; use the Desktop Alpha for faster
+            local group work and heavier export workflows.
           </p>
 
           <div class="cta-row" aria-label="Primary actions">
-            <a class="cta-button" href="prototype_refactor/">Open analysis prototype</a>
-            <a class="cta-button secondary" href="#evidence-title">Check status</a>
+            <a class="cta-button" href="#desktop-alpha-title">Use Desktop Alpha</a>
+            <a class="cta-button secondary" href="prototype_refactor/">Open web prototype</a>
           </div>
 
           <div class="trust-row" aria-label="Product highlights">
@@ -817,14 +887,14 @@
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                 <path d="M3 7.2l2.2 2.2L11 3.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              Images stay local
+              Assay images stay local
             </span>
             <span class="trust-chip">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                 <rect x="2" y="1.5" width="10" height="11" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
                 <path d="M4.5 5h5M4.5 7h4M4.5 9h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
               </svg>
-              PNG, CSV, Excel export
+              Desktop recommended for speed
             </span>
             <span class="trust-chip">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -840,7 +910,7 @@
           <div class="product-bar">
             <div class="window-dots" aria-hidden="true"><span></span><span></span><span></span></div>
             <span>Analysis preview</span>
-            <span class="browser-pill">Browser-only</span>
+            <span class="browser-pill">Local-first</span>
           </div>
           <div class="analysis-body">
             <div class="canvas-wrap">
@@ -865,13 +935,14 @@
               <span>Current focus</span>
               <p>
                 Improve segmentation robustness, compare against ImageJ/manual
-                references, and prepare a small private beta.
+                references, test the Desktop Alpha with real groups, and prepare a
+                small private beta.
               </p>
             </div>
             <a class="prototype-strip" href="prototype_refactor/" aria-label="Open Cytomove prototype">
               <span>
-                <strong>Prototype is available</strong>
-                Try the current browser-based segmentation workspace.
+                <strong>Web prototype remains available</strong>
+                Good for quick checks; Desktop Alpha is recommended for heavier groups.
               </span>
               <strong>Open</strong>
             </a>
@@ -879,19 +950,48 @@
         </aside>
       </section>
 
+      <section class="section" aria-labelledby="desktop-alpha-title">
+        <div class="desktop-callout">
+          <div>
+            <h2 id="desktop-alpha-title">Desktop Alpha is the faster local path.</h2>
+            <p>
+              The web prototype is useful for quick review, but large images, multi-file
+              groups, and ZIP exports feel better in the Windows Desktop Alpha. It runs
+              the current Cytomove workflow locally and keeps the same privacy posture:
+              assay images are not uploaded.
+            </p>
+            <ul class="desktop-list">
+              <li>Full free alpha: no mandatory account or login.</li>
+              <li>Recommended for group analysis, plots, and full-resolution overlay exports.</li>
+              <li>Optional email feedback keeps you in the update loop before private beta.</li>
+            </ul>
+            <div class="cta-row" aria-label="Desktop Alpha actions">
+              <a class="cta-button" href="#feedback-title">Request Desktop Alpha</a>
+              <a class="cta-button secondary" href="prototype_refactor/">Try web prototype</a>
+            </div>
+          </div>
+          <div class="desktop-card" aria-label="Desktop Alpha status">
+            <strong>Current desktop policy</strong>
+            <span>Alpha 0.1 is free and offline-friendly. Future paid modules may use account licensing, but the core analysis path stays local-first.</span>
+            <strong>Web connection</strong>
+            <span>The app can read Cytomove status/update messages from the website. It does not upload microscopy images or analysis results.</span>
+          </div>
+        </div>
+      </section>
+
       <section class="section" aria-labelledby="workflow-title">
         <div class="section-header">
           <h2 id="workflow-title">A focused analysis workflow.</h2>
           <p>
-            The prototype is intentionally narrow: image input, segmentation review,
-            manual correction, and export.
+            The current workflow is intentionally practical: image input,
+            segmentation review, manual correction, and export.
           </p>
         </div>
         <div class="steps">
           <article class="step">
             <div class="step-num">01</div>
             <h3>Load images</h3>
-            <p>Use single images or grouped time-point images directly in the browser.</p>
+            <p>Use single images or grouped time-point images in the web prototype or Desktop Alpha.</p>
           </article>
           <article class="step">
             <div class="step-num">02</div>
@@ -901,7 +1001,7 @@
           <article class="step">
             <div class="step-num">03</div>
             <h3>Export results</h3>
-            <p>Download overlays, plots, CSV, or Excel tables for downstream analysis.</p>
+            <p>Download overlays, plots, CSV, or Excel tables; Desktop Alpha is preferred for heavier ZIP exports.</p>
           </article>
         </div>
       </section>
@@ -910,14 +1010,14 @@
           <h2 id="evidence-title">Where the project stands.</h2>
           <p>
             Cytomove is not ready for broad public beta yet. The next sensible step is
-            a small private beta after validation and the main UX issues settle.
+            Desktop Alpha feedback from a small trusted group while validation continues.
           </p>
         </div>
         <div class="evidence-grid">
           <article class="evidence-item">
             <span>01</span>
             <h3>Prototype usable now</h3>
-            <p>The browser workspace supports local images, group review, manual correction, and export.</p>
+            <p>The web workspace supports local images, group review, manual correction, and export.</p>
           </article>
           <article class="evidence-item">
             <span>02</span>
@@ -926,19 +1026,18 @@
           </article>
           <article class="evidence-item">
             <span>03</span>
-            <h3>Private beta next</h3>
-            <p>Target a small trusted group first, then public beta after reproducibility checks pass.</p>
+            <h3>Desktop Alpha first</h3>
+            <p>Use a small trusted group to test speed, exports, and real multi-image workflows before public beta.</p>
           </article>
         </div>
       </section>
       <section class="section" aria-labelledby="feedback-title">
         <div class="feedback-panel">
           <div class="feedback-copy">
-            <h2 id="feedback-title">Help shape the prototype.</h2>
+            <h2 id="feedback-title">Help shape the Desktop Alpha.</h2>
             <p>
-              Send a short note about missing features, difficult images,
-              validation needs, or anything that would make Cytomove more useful
-              in a real scratch assay workflow.
+              Request the Windows Desktop Alpha, send difficult image notes, or tell
+              me what would make Cytomove more useful in a real scratch assay workflow.
             </p>
           </div>
           <form class="feedback-form" id="feedbackForm"
@@ -948,7 +1047,7 @@
             <input type="hidden" name="_subject" value="Cytomove feedback">
             <div class="field-group">
               <label for="feedbackMessage">Suggestion</label>
-              <textarea id="feedbackMessage" name="message" placeholder="Tell me what to improve, what failed, or what you need next." required></textarea>
+              <textarea id="feedbackMessage" name="message" placeholder="Request Desktop Alpha, describe a difficult image, or tell me what you need next." required></textarea>
             </div>
             <div class="field-group">
               <label for="feedbackEmail">Email</label>

@@ -15,3 +15,5 @@ docs/comparator-benchmark/images/
 _screenshot_*.png
 Cytomove - Segmentation Lab.pdf
 find_backup.py
+desktop_alpha/node_modules/
+desktop_alpha/release/

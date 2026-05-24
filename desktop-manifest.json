@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "latestVersion": "0.1.0-alpha.1",
+  "channel": "alpha",
+  "status": "active",
+  "message": "Desktop Alpha is the recommended path for faster local group analysis and heavier exports. Alpha 0.1 is free; please send feedback from the Cytomove website after testing real image groups.",
+  "updateUrl": "https://cytomove.com/",
+  "feedbackUrl": "https://cytomove.com/#feedback-title",
+  "accountUrl": "https://cytomove.com/",
+  "modules": [
+    {
+      "id": "wound-healing-core",
+      "label": "Wound healing core",
+      "state": "included"
+    },
+    {
+      "id": "validation-report",
+      "label": "Validation report",
+      "state": "planned"
+    },
+    {
+      "id": "pro-exports",
+      "label": "Pro exports",
+      "state": "planned"
+    }
+  ],
+  "plans": [
+    {
+      "id": "free-alpha",
+      "label": "Free Alpha",
+      "audience": "early testers",
+      "state": "active",
+      "note": "No mandatory account during Alpha 0.1."
+    },
+    {
+      "id": "academic",
+      "label": "Academic",
+      "audience": "research labs and students",
+      "state": "planned",
+      "note": "Planned for private beta; pricing and license checks are not active yet."
+    },
+    {
+      "id": "commercial",
+      "label": "Commercial",
+      "audience": "company and CRO workflows",
+      "state": "planned",
+      "note": "Planned for paid modules after validation and beta feedback."
+    }
+  ]
+}

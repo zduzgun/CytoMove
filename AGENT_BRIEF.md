@@ -1,8 +1,8 @@
 # AGENT_BRIEF.md — Cytomove Operasyonel Hafıza
 <!-- Her oturuma bu dosyayı okuyarak başla. README.md ve ROADMAP.md ile birlikte kullan. -->
 
-**Son güncelleme:** 2026-05-04
-**Versiyon:** 1.1
+**Son güncelleme:** 2026-05-24
+**Versiyon:** 1.2
 
 ---
 
@@ -32,7 +32,31 @@ Anahtar fark: assay görüntüleri sunucuya gönderilmez, analiz tamamen client-
 - **Web:** [cytomove.com](https://cytomove.com) / [cytomove.pages.dev](https://cytomove.pages.dev)
 - **GitHub:** [github.com/zduzgun/CytoMove](https://github.com/zduzgun/CytoMove)
 - **Deploy:** Cloudflare Pages (static HTML, GitHub entegrasyonu ile otomatik)
-- **Waitlist:** Formspree `mdayrwqe` → zekeriya.duzgun@giresun.edu.tr
+- **Feedback form:** Formspree `mdayrwqe` -> zekeriya.duzgun@giresun.edu.tr
+
+---
+
+## Current Operational Snapshot (2026-05-24)
+
+- Soft deploy is live on `https://cytomove.com`.
+- `www.cytomove.com` DNS is configured and resolves successfully.
+- Root `index.html` is now a prototype-focused landing page, not a waitlist page.
+- Landing page has a feedback/suggestion form. Test mail delivery was confirmed by the user.
+- Current prototype lives at `prototype_refactor/`.
+- Legacy `prototype/` is a redirect page to `prototype_refactor/`.
+- The previous large single-file prototype is archived at `old/prototype/index.html`.
+- Local helper server: `scripts/serve_prototype_refactor.py` serves root landing + prototype routes on `127.0.0.1:8768`.
+- Major prototype UI changes: collapsible left panel, Basic/Advanced subpanels, cleaner export section.
+- Auto crop FOV default is off. Brightfield circular-FOV crop logic was improved, but it still needs broader image testing.
+- Group previews use downsampled analysis for speed; full-resolution group work is triggered explicitly where needed.
+- `Plots ZIP` works.
+- `Group PNGs ZIP` was fixed in commit `afe30ee`: it now auto-prepares missing full-resolution overlays before downloading the ZIP.
+- Known technical debt: live deployment feels slower than local. Next performance pass should measure load time, image analysis time, group render time, export time, cache headers, and whether analysis/export should move to a Web Worker.
+- Soft-deploy communication stance: do not market as public beta yet. Use "prototype feedback round" / small private feedback group language.
+- Desktop Alpha strategy decision (2026-05-24): keep Alpha 0.1 fully free and no mandatory login. Email/account capture should start as optional feedback/update signup, not as a hard gate. A 10-day trial / email activation / license check belongs to private beta or paid module phase, not the first alpha. Long-term model: core analysis stays free/offline-friendly; paid modules can require account/license with a short offline grace period.
+- Desktop Alpha web-link layer exists: app can read `https://cytomove.com/desktop-manifest.json` for update/module/status messaging and has Feedback / Account / Updates links. This is not a license system and must not upload assay images or analysis outputs.
+- Landing page positioning update (2026-05-24): root site now recommends Desktop Alpha for faster local group analysis and heavier ZIP/export workflows, while keeping the web prototype available for quick checks. Desktop Alpha is requested through the feedback form for now; do not imply a public downloadable installer until release hosting is decided.
+- Subscription direction (2026-05-24): build the subscription/account skeleton early, but do not start hard gating in Alpha 0.1. Public language can mention planned Free Alpha / Academic / Commercial paths, while actual payment, 10-day trial, and license enforcement wait until private beta or validated paid modules. Academic/commercial differentiation should not compromise the privacy claim: assay images remain local.
 
 ---
 
@@ -57,24 +81,28 @@ Başka ajan veya belgelere CellVerse anlatısını geri sokma.
 
 ## Mevcut Faz
 
-**Faz 1 — Minimum Credible Landing tamamlandı** (`de45c32`; marka/sosyal/blog işleri beta launch hazırlığına ertelendi)
+**Faz 1 — Minimum Credible Landing + soft deploy tamamlandı** (`43c7d57`, `afe30ee`; marka/sosyal/blog işleri beta launch hazırlığına ertelendi)
 
-**Faz 2 — MVP + Validation iş kolu aktif (2026-05-04)**  
-Validation protokolü v0.4 yönüne taşındı: sentetik binary mask doğrulaması, sentetik microscopy-like robustness ve gerçek görüntü validasyonu üç katmanlı yürür. Prototip artık `prototype-whst-variance-v0.4` seviyesinde: browser-only segmentasyon, group review, custom local group, manual brush correction, width profile metrikleri, QC uyarıları ve CSV/Excel export bulunur.
-Başarı kriterleri korunur: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı kabul oranı; ancak width mean/median ve QC/recommended-primary-metric artık area ile birlikte birinci sınıf çıktıdır.
+**Faz 2 — MVP + Validation + private feedback iş kolu aktif (2026-05-24)**
+Validation protokolü v0.4 yönünde kalır: sentetik binary mask doğrulaması, sentetik microscopy-like robustness ve gerçek görüntü validasyonu üç katmanlı yürür. Prototip artık soft-deployed browser workspace seviyesinde: browser-only segmentasyon, group review, custom local group, manual brush correction, width profile metrikleri, QC uyarıları, CSV/Excel export, plot ZIP ve full-resolution Group PNG ZIP export bulunur.
+Başarı kriterleri korunur: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı kabul oranı; ancak width mean/median ve QC/recommended-primary-metric artık area ile birlikte birinci sınıf çıktıdır. Public beta değildir; sıradaki doğru adım küçük bir private feedback round ve performans profillemesidir.
 
 ---
 
-## Canlı Durum (2026-04-29 itibarıyla)
+## Canlı Durum (2026-05-24 itibarıyla)
 
 - ✅ Cloudflare Pages deploy aktif
-- ✅ cytomove.com custom domain (propagasyon tamamlandı)
-- ✅ Light tema landing page yayında (iki sütun hero, ürün kartı, mobil taşma kontrol edildi)
+- ✅ cytomove.com custom domain aktif
+- ✅ www.cytomove.com erişilebilir
+- ✅ Light tema landing page yayında; artık waitlist değil, prototype + status + feedback odaklı
 - ✅ Canvas wound healing animasyonu çalışıyor
-- ✅ Formspree waitlist çalışıyor (inbox'a geliyor, spam değil)
+- ✅ Formspree feedback formu çalışıyor (mail geldiği kullanıcı tarafından doğrulandı)
 - ✅ GitHub repo public: `github.com/zduzgun/CytoMove`
-- ✅ Scientific trust layer eklendi: cell biologist, browser-local assay images, validation in progress
-- 🔄 `prototype/index.html` tam yeniden yazımı devam ediyor (2026-04-29)
+- ✅ Scientific trust layer sadeleştirildi: browser-local assay images, validation in progress, private beta next
+- ✅ `prototype_refactor/` canlı prototip yolu
+- ✅ `prototype/` eski URL için redirect
+- ✅ `old/prototype/` eski tek dosyalı prototip arşivi
+- 🔄 Performance pass gerekli: canlı site/prototip lokale göre yavaş hissediliyor
 
 ### 2026-05-01 Resolution / Export Karari
 
@@ -101,6 +129,57 @@ Başarı kriterleri korunur: Pearson r > 0.9, <10% wound area error, 70%+ kullan
 - Angle ruler overlay added: View section has a `Show angle ruler` toggle. The semi-transparent ruler can be dragged with the mouse as a visual alignment guide. It does not change segmentation or width metrics.
 - Prototype'a `Group review` modu eklendi: HK Control, M8F FDI-6 8uM ve MK Control grupları 0h/24h/48h olarak yan yana gösterilir. Kartlarda downsampled kontur preview çizilir; karta tıklanınca ilgili sample üstteki ana analiz canvas'ına yüklenir. Preview ölçüm yerine hızlı review amaçlıdır; ana canvas mevcut full pipeline ile çalışır.
 - 2026-05-02 UI simplification update: segmentation `Field mask` select was replaced with user-facing `Microscope mode` buttons (`Phase contrast` / `Brightfield`). `Phase contrast` keeps full rectangular field for dark-background images; `Brightfield` applies cutoff-based field masking for black-border microscope FOVs.
+- 2026-05-04 group review update: entering Group review or changing a group automatically samples the group images in the background and activates the appropriate `Microscope mode` button. Manual microscope-mode or preset selection is treated as a user override and is not repeatedly overwritten by auto-detect.
+- 2026-05-04 segmentation cleanup update: `Ignore tiny islands` control added (`Off/Trace/Very low/Low/Moderate/Medium/High`). It maps to `tiny_island_mode` / `tiny_island_max_area_px` in export and adjusts small internal island filling for noisy/debris-heavy wound gaps.
+- 2026-05-04 internal island reporting update: internal island metrics now report total detected islands as `remaining + ignored/filled` instead of showing only the post-cleanup remaining count. CSV/Excel exports include total, remaining, and filled-small island fields.
+- 2026-05-04 startup UX update: calibration/demo UI is hidden in the default prototype flow (`SHOW_DEMO_CALIBRATION=false`), auto-loading the bundled calibration image is disabled, and the app opens clean for drag/drop or multi-file Open workflows.
+- 2026-05-04 contour UX update: contour color auto-follows microscope mode (`Brightfield -> black`, `Phase contrast -> cyan`) and contour style now defaults to solid. Manual contour color/style edits set a user override and are not overwritten until a new local group is loaded.
+- 2026-05-05 contour default update: contour style now defaults to `solid` for both Brightfield and Phase contrast auto-style. Users can still manually switch to dashed.
+- 2026-05-04 custom group UX update: multi-image import asks for a group name via prompt with an auto-suggested default. Multiple custom groups persist in memory for the current browser session and remain selectable from `Loaded group`.
+- 2026-05-05 group navigation UX update: when a loaded group image is open in the main single-image canvas, left/right overlay arrow buttons allow stepping through previous/next timepoints without scrolling down to the group cards. Buttons hide automatically at group boundaries, outside group mode, or while crop editing.
+- 2026-05-05 group export UX update: `Group PNGs ZIP` moved into the Export section. It packages full analysis-resolution contour overlay PNGs for every analyzed image in the selected group into one browser-generated `.zip`; it no longer exports the downsampled ~520 px group-card previews. Exported filenames include the rendered `WxH` pixel dimensions.
+- 2026-05-06 plot export update: Export section now has `Plots ZIP`. In group mode it creates two PNG plots in one browser-generated zip: wound area (%) over time and mean wound width (px) over time. If time labels cannot be parsed, image order is used on the x-axis.
+- 2026-05-06 plot preview update: Export section also has `Area plot` and `Width plot` buttons. They render the same group time-course plots in an in-app modal without downloading; clicking outside the modal or the close button dismisses it.
+- 2026-05-06 CSMA-inspired group prior update: main-canvas segmentation now uses the previous analyzed timepoint mask as a spatial prior when the current image belongs to a loaded group. The prior mask is dilated into a wound corridor and only constrains the current raw candidate mask; the experimental local sensitive prior-search was reverted because it worsened late-frame segmentation by adding noisy regions. The log shows `group prior r...` when this corridor constraint is active.
+- 2026-05-06 late-wound preset reset: empirical CSMA sample 11 testing showed late timepoints work best around `variance radius 1`, `threshold offset -100`, `min component 0`, `tiny islands Trace`, `FOV cutoff 0`, `Brightfield`. Prototype defaults and the active `Standard` preset now use exactly these values; `Rough` and `Fine` are small variants around this standard. WHST takeaway is to preserve transparent local-variance/threshold control and WHST-aligned metrics rather than copying a hidden parameter.
+- 2026-05-06 preset naming update: user-facing presets were renamed from `Rough / Standard / Fine` to image-type presets: `Brightfield normal cells`, `Brightfield small cells`, and `Phase contrast`. The middle `Brightfield small cells` preset is the CSMA brightfield small-cell optimized setting (`radius 3`, `threshold level 1`, `min component 0`, `Trace`, `Brightfield`). The `Phase contrast` preset switches microscope mode to full-field phase contrast.
+- 2026-05-06 export consistency fix: CSV/Excel exports now use the last displayed segmentation result stored on each image (`state.result` / `state.groupResults`) for metrics and segmentation parameters. They no longer fall back to the currently visible slider values for radius, threshold, min component, tiny-island mode, FOV cutoff, microscope mode, crop, rotation, and analysis dimensions. This prevents exports from drifting if a user changes controls after the displayed segmentation was produced.
+- 2026-05-06 preset-specific threshold scale: `Brightfield small cells` keeps the narrow CSMA-optimized `Threshold level` scale (`1-50`, internally `-100..-50`) so small-cell behavior is preserved. `Brightfield normal cells` and `Phase contrast` switch the same control to `Threshold offset` with the old wide range (`-100..+100`) so normal-cell brightfield images can be tuned again. Exports include `threshold_mode`.
+- 2026-05-06 Brightfield normal cells preset restore: for `validation_sets/comparator_clean/images_png/local_phone_9/HK` and similar normal-cell brightfield images, the `Brightfield normal cells` preset was restored to the early WHST-like settings that found the wound easily: `variance radius 22`, `threshold offset -32`, `min component 55000`, `tiny islands Medium`, `FOV cutoff 36`, `Brightfield`. The variance-radius UI range is back to `1-45`. `Brightfield small cells` remains unchanged at the CSMA small-cell setting.
+- 2026-05-07 scratch orientation UX fix: default scratch orientation stays `Vertical scratch` for all presets, including `Brightfield normal cells`. If a loaded group looks like a horizontal scratch while the selector is still vertical, an inline warning bubble appears under `Scratch orientation` telling the user to select `Horizontal scratch` to rotate images into vertical analysis view. Group thumbnails and the main single-image view now both apply the same orientation transform, so clicking a thumbnail no longer opens the main image in a different orientation.
+- 2026-05-07 orientation warning visibility fix: horizontal-scratch detection also renders a red `Orientation check` card in the group summary area, advising `Scratch orientation -> Horizontal scratch`. Changing scratch orientation clears stale group results and re-renders group thumbnails, so preview cards and the main single-image canvas stay in the same orientation.
+- 2026-05-06 threshold UI scale update: visible `Threshold offset` was renamed to `Threshold level` with a 1-50 scale. Internally it maps linearly to the old offset range (`1 -> -100`, `50 -> -50`). CSV/export includes both `threshold_level` and internal `threshold_offset`. `Variance radius` UI range was narrowed to 1-20 for current tuning.
+- 2026-05-06 fragmented late-wound bridge update: continuity filtering for Brightfield/late wounds now keeps shorter central wound components (`spanFloor` relaxed), and a vertical row-interpolation bridge connects nearby fragments in the same x-corridor. Logs/export include `bridgeFilledPx` / `bridgeGapCount` and show `bridged ... gaps` when applied.
+- 2026-05-06 bridge refinement: the fragment bridge no longer draws a narrow center-line connection. It interpolates the left/right wound edges between compatible fragments, allows a wider vertical gap, and requires loose horizontal overlap so missing middle gaps can be included without leaving dotted internal contour lines.
+- 2026-05-07 frame-edge wound extension: after continuity and bridge, brightfield/cutoff segmentation extends a stable wound corridor to the top and/or bottom image frame when the detected wound component reaches near the frame edge. This fixes HK/local-phone cases such as `hk_24h_002.png` where the wound visibly continues out of frame but the upper portion was not contoured. Logs/export include `edgeExtendedPx` / `edgeExtendedCount`.
+- 2026-05-07 phase contrast slit cleanup: phase-contrast/full-field segmentation now closes very narrow, vertically persistent internal slit gaps that are flanked by wound mask on both sides. This removes false inner contour lines inside the wound body, such as the marked vertical artifact in `whad_mcf7_026.png`. Logs/export include `phaseSlitFilledPx` / `phaseSlitCount`.
+- 2026-05-07 phase contrast edge smoothing: phase-contrast/full-field masks now receive a small morphological close/open smoothing step after slit cleanup and before bridge/edge extension. This reduces jagged/pütürlü wound corners in later WHAD MCF7 frames without changing brightfield presets. Logs/export include `phaseSmoothChangedPx` / `phaseSmoothRadius`.
+- 2026-05-07 final internal-island cleanup: after slit cleanup, phase smoothing, bridge, and edge extension, the final mask now runs one more small-hole cleanup pass. This catches second-generation internal island artifacts created by later morphology steps, such as the bad contour around the marked island in `whad_mcf7_026.png`. Result fields include `finalHoleFilledCount` / `finalHoleFilledArea`.
+- 2026-05-08 manual correction persistence/export fix: manual corrections are restored when a user switches away from an edited group image and returns, including orientation/rotation-transformed images. The main single-image canvas is now the authoritative result for a sample: when a group image is opened and segmented, Cytomove stores that exact `src/field/mask/result` into `state.groupResults`, refreshes the group card from it, and uses it for CSV/Excel/plot/Group PNG ZIP exports. Group cards no longer run a second downsampled segmentation for their visible contour; they render a downsampled preview of the stored full-result mask. Group preview background analysis refuses to overwrite an existing manual override, and group exports prefer `manualOverrides` over stale `groupResults`.
+- 2026-05-08 per-image settings scope: left-panel segmentation controls now affect only the currently open main/single image. If that image belongs to the loaded group, only its group card/result is refreshed. Full group re-analysis is reserved for the explicit `Apply to group` button, which forces non-manual group results to be recalculated with the current controls. Scratch orientation changes no longer clear/re-render the whole group automatically.
+- 2026-05-08 per-image settings memory: each group image now stores its own left-panel segmentation settings in `state.sampleSettings`. Opening another image first restores that image's saved settings (or settings recovered from its existing result) into the panel before segmentation. If the image has no history, the default Brightfield small-cells preset is used instead of inheriting the previously edited image's sliders. `Apply to group` still intentionally writes the current settings across the group.
+- 2026-05-08 initial microscope preset detection: when a new local multi-image group is added, Cytomove samples the images before opening the first one. If the group is classified as phase contrast, every new sample starts with the `Phase contrast` preset; otherwise it starts with `Brightfield small cells`. These detected settings are written into each sample's `state.sampleSettings`, so the first opened image no longer begins with the wrong brightfield default for phase-contrast datasets.
+- 2026-05-08 Phase contrast 2 preset: added a fourth preset, `Phase contrast 2`, for speckled/pütürlü phase-contrast images such as `validation_sets/comparator_clean/images_png/whad_mcf10a_33`. It intentionally uses a brightfield-style low-variance setup (`variance radius 1`, `threshold level 1`, `min component 0`, `Trace`, `FOV cutoff 0`, microscope mode `Brightfield/cutoff`) because this captures the wound body better than the classic full-field phase preset on that set. Initial group detection now routes phase-like images with high dark/center-dark speckling to `Phase contrast 2`.
+- 2026-05-05 manual correction UX update: manual correction no longer acts like a point brush. `Add scan` lets the user drag a small rectangular ROI; on mouse release Cytomove clears that ROI, runs a local fine threshold scan, then writes back only the largest connected gap component so tiny speckles/pütür components are suppressed. `Erase scan` is intentionally simpler: it clears all mask pixels inside the selected ROI so that region becomes non-wound/no-border. `Scan sensitivity` controls the local threshold tolerance for Add scan only.
+- 2026-05-06 Add scan stability update: reverted the failed 4-neighbor/gray-variance scoring experiment because it broke the previously useful low-sensitivity behavior. Add scan now uses the earlier connected-component selection again, while `Scan sensitivity` maps to a conservative local threshold range (`4` remains strongly conservative; high sensitivity is capped and cannot become overly permissive).
+- 2026-05-06 Clean specks update: manual correction now has a separate `Clean specks` ROI mode. It does not re-scan or erase the whole ROI; it removes only small existing mask components inside the selected rectangle. It uses 4-connected components so diagonal pütür bridges split apart. `Scan sensitivity` controls the maximum component size cleaned.
+- 2026-05-06 Clean specks tiny-island update: Clean specks also removes components below a separate `non-cell floor` even if they are the largest component in a tiny ROI, so islands too small to plausibly be cells are cleaned.
+- 2026-05-06 Add scan tiny-island update: after Add scan keeps the largest local gap component, it now fills tiny internal holes/islands within that component before writing the ROI back to the mask. This reduces many small contour loops inside the added wound area.
+- 2026-05-07 Fill area manual correction: Manual Correction now includes `Fill area`. Unlike `Add scan`, it does not threshold or search; it directly fills all analysis-field pixels inside the dragged ROI as wound mask. Use it when the user knows a rectangular region is already inside the wound contour and wants to close missed internal gaps quickly.
+- 2026-05-04 comparator validation plan update: core comparator workbench created at `validation_sets/comparator_workbench/`. Core set contains local phone 9 images, CSMA 12 selected images, WHAD MCF10A 12 selected images, and WHAD MCF7 12 selected images. Full stress sets contain CSMA 49, WHAD MCF10A 35, and WHAD MCF7 48. Use `manifest.csv` and `core_comparator_template.csv` for result entry.
+- 2026-05-04 comparator priority update: primary comparator tools are WHST, TScratch, and PyScratch. ImageJ manual/threshold is no longer treated as a main competitor; keep it only as optional human/manual reference. CSMA remains optional/supplementary if PyScratch or TScratch becomes impractical.
+- 2026-05-04 TScratch blocker: local TScratch package under `sample_imagej_apps/TScratch-master/TScratch-master` is `tscratch_nomcr_win` only. It requires MATLAB Compiler Runtime v7.8 and fails with missing `mclmcrrt78.dll`. The runtime-inclusive `tscratch_win.zip` link in INSTALL appears broken. Treat TScratch as legacy comparator pending recovery of MCR-inclusive installer; document reproducibility/runtime limitation if it cannot run.
+- 2026-05-04 PyScratch comparator status: official Bitbucket repo `https://bitbucket.org/vladgaal/pyscratch_public.git` is reachable and was cloned locally to `sample_imagej_apps/pyscratch_public/`. Repo includes `README.md`, Python source, bundled Windows dependency wheels for Python 3.7 x64, and `dist/PyScratch.exe` (~109 MB). Running the newly downloaded EXE or dependency installers requires explicit user confirmation. PyScratch README says image filenames should be sequential like `label_001.tif`, and phase-contrast images are recommended; brightfield may need edge-enhancement preprocessing.
+- 2026-05-05 CSMA comparator status: official GitHub repo `https://github.com/AminaSagymbayeva/CSMA_WoundHealing` was cloned locally to `sample_imagej_apps/CSMA_WoundHealing/`. It includes `CSMA_WoundHealingTool-0.1.0.jar`, `src/main/resources/environment.yml`, `requirements_win.txt`, Python processing scripts, and sample dataset. README: install ImageJ + Anaconda, create conda env with `conda env create -f environment.yml` (env name `ImageJCSMA`), then install the jar from ImageJ `Plugins > Install`. Plugin menu entry is `Plugins > CSMA Wound Healing Tool`. License is MIT; citation DOI listed as `10.1109/ACCESS.2025.3561607`.
+- 2026-05-05 CSMA plugin patch: ImageJ plugin initially wrote stack paths like `A1new_0.jpegnull`, so Python silently failed. Patched `sample_imagej_apps/CSMA_WoundHealing/src/main/java/kz/nu/edu/mechbiolab/imagej/PathWriter.java` to resolve slice labels safely and strip trailing `null`. Built `CSMA_WoundHealingTool-0.1.0-patched.jar` using OpenJDK 8 installed into conda env `ImageJCSMA`. Installed patched jar over `C:\Users\Zekeriya\Downloads\Compressed\ij154-win-java8\ImageJ\plugins\CSMA_WoundHealingTool-0.1.0.jar`; original backup is `CSMA_WoundHealingTool-0.1.0.original.bak`.
+- 2026-05-05 CSMA active-stack patch: CSMA was also reading every open ImageJ image window, so a newly opened sequence could reuse/contaminate the previous sequence/output. `PathWriter.java` was patched again to use only `WindowManager.getCurrentImage()` instead of iterating `WindowManager.getIDList()`. Rebuilt and reinstalled the patched jar. Usage rule remains: click the intended image stack window before running `Plugins > CSMA Wound Healing Tool`; close old output windows when switching datasets.
+- 2026-05-05 clean comparator set: created `validation_sets/comparator_clean/` as the new clean working folder. PNG image sets: `images_png/csma_sample_49` (49), `images_png/whad_mcf7_48` (48), `images_png/whad_mcf10a_33` (33), and `images_png/local_phone_9/HK`, `/M8F`, `/MK` (each 0h/24h/48h). Use these PNGs for WHST, CSMA, and Cytomove where possible. Result folders: `results/whst`, `results/csma`, `results/cytomove`, `results/manual_reference`, `results/qc_notes`. Files: `manifest.csv`, `comparator_results_template.csv`, `cleanup_candidates.csv`, `README.md`. Do not delete raw/reference image folders; root cleanup candidates were only listed, not removed.
+- 2026-05-05 MCF10A ordering fix: `validation_sets/comparator_clean/images_png/whad_mcf10a_33` was reordered per user instruction. New frames `001-021` correspond to the old `013-033`/4hrs sequence, then new `022-033` correspond to old `001-012`/27hrs sequence. `manifest.csv` and `comparator_results_template.csv` were updated with `reordered_from_old_index=...` notes.
+- 2026-05-05 CSMA native result import: user added CSMA outputs under `validation_sets/comparator_clean/results/csma/results_area` and `results_width`. CSVs are valid: `quantification_by_area_raw_data.csv` and `quantification_by_width_raw_data.csv`. Created merged table `results/csma/csma_sample_49_area_width_merged.csv` keyed as `csma_sample_49_001..049`; visual QC status `pass_on_native_csma_sample`.
+- 2026-05-05 WHST subset: created `validation_sets/comparator_clean/images_png/csma_sample_11/` for representative WHST measurement from CSMA native sample frames 001, 002, 003, 010, 015, 020, 025, 035, 040, 045, 049. File names include source frame (`csma_sample_11_01_from_001.png`, etc.). Added `csma_sample_11_manifest.csv` and appended rows to clean comparator `manifest.csv` / `comparator_results_template.csv`.
+- 2026-05-05 WHST result import: user added `validation_sets/comparator_clean/results/whst/csma_sample_11_whst_Results.xlsx`. Normalized it to `results/whst/csma_sample_11_whst_results_normalized.csv` and combined with CSMA subset values into `results/csma_sample_11_whst_csma_comparison_template.csv`. This comparison table is ready for Cytomove columns.
+- 2026-05-05 CSMA 11 native run: user also generated CSMA output directly under `images_png/csma_sample_11/results_area` and `results_width`. These differ slightly from extracting 11 points from the 49-frame run because CSMA uses sequential masks. Copied them to `results/csma/csma_sample_11_native_run/`, created `results/csma/csma_sample_11_area_width_native_run.csv`, and updated `results/csma_sample_11_whst_csma_comparison_template.csv` to use the native 11-frame CSMA values.
+- 2026-05-07 WHAD MCF7-11 validation plan: user will validate `validation_sets/comparator_clean/images_png/whad_mcf7_11` with WHST only because CSMA failed visually on non-native image sets. Existing WHST workbook `results/whst/whad_mcf7_11/whad_mcf7_11_whst_Results.xlsx` currently has labels 1-11 but blank measurement cells. Created `results/whad_mcf7_11_whst_cytomove_comparison_template.xlsx` with 11 rows, WHST columns, Cytomove columns, and difference/error formulas. Keep CSMA limited to `csma_sample_11` in first validation.
 - 2026-05-02 layout update: in `prototype/index.html` single-image canvas (`dropZone`) is kept above `groupView` so left-side controls remain accessible while reviewing group cards.
 - 2026-05-02 segmentation stability update: a continuity filter was added after hole-fill/component steps (`enforceWoundContinuity`). It scores connected components by center proximity + axis span + area, and keeps the wound-like continuous component(s) to reduce late time-point drift to side islands.
 - 2026-05-02 version bump: `CYTOMOVE_ALGORITHM_VERSION` updated to `prototype-whst-variance-v0.4` (microscope-mode UI + continuity filtering).
@@ -115,7 +194,8 @@ Başarı kriterleri korunur: Pearson r > 0.9, <10% wound area error, 70%+ kullan
 - `2d85f03` Landing page bilimsel ürün tasarımına taşındı
 - `e3cb468` Canlı sayfada kesilen JS sonu tamamlandı
 - `77f4d93` Canvas animasyonu IIFE yapısına alındı, görsel güçlendirildi
-- *(bekliyor)* `prototype/index.html` tam yeniden yazımı — ImageJ pipeline, drag&drop, export
+- `afe30ee` Group PNG ZIP export flow fix: missing full-resolution overlays are prepared automatically before download
+- `43c7d57` Soft deploy: root landing, `prototype_refactor/`, legacy redirect, old prototype archive
 
 ---
 
@@ -123,10 +203,10 @@ Başarı kriterleri korunur: Pearson r > 0.9, <10% wound area error, 70%+ kullan
 
 | Dosya | Durum | Notlar |
 |-------|-------|--------|
-| `index.html` | Canlı ✅ | Light theme, iki sütun hero, canvas animasyonu, trust layer, OG meta |
-| `ROADMAP.md` | v0.4 ✅ | 18 aylık 5 fazlı plan |
+| `index.html` | Canlı ✅ | Prototype-focused landing, status section, feedback form, canvas animation, OG meta |
+| `ROADMAP.md` | v0.5 ✅ | Soft deploy + private feedback round durumu işlendi |
 | `README.md` | ✅ | GitHub ana sayfası |
-| `AGENT_BRIEF.md` | v1.0 ✅ | Bu dosya |
+| `AGENT_BRIEF.md` | v1.2 ✅ | Bu dosya |
 | `docs/validation-protocol.md` | v0.3 ✅ | Literatür destekli comparator + metric rationale eklendi; WHST primary comparator; CSV/analysis-log şeması genişledi |
 | `docs/validation-dataset-layout.md` | Yeni ✅ | Harici raw dataset yerleşimi: `validation_ref_sets/raw/`; generated outputs: `validation_sets/`; browser TIFF dönüşüm notu |
 | `docs/validation-ref-inventory.csv` | Yeni ✅ | WHAD/CAMAD, CSMA ve local phone subset için commit edilebilir metadata envanteri |
@@ -151,7 +231,10 @@ Başarı kriterleri korunur: Pearson r > 0.9, <10% wound area error, 70%+ kullan
 | `docs/area-calibration-trends.csv` | Üretildi ✅ | 12 aggregate ORT trend satırı; per-image validation değil |
 | `docs/area-calibration-summary.md` | Üretildi ✅ | Calibration bağlantı özeti; 3 sampling-plan satırı seed edildi |
 | `assets/og-image.png` | Canlı ✅ | Sosyal medya link önizleme görseli |
-| `prototype/index.html` | 🔄 v0.4 aktif prototype | WHST-aligned browser lab: microscope mode, scratch orientation, manual fine rotation, angle ruler, rectangular crop, group review, custom local groups, manual brush correction, width profile/QC metrics, CSV/Excel/PNG export |
+| `prototype_refactor/` | Canlı ✅ | Aktif browser lab: split JS/CSS, collapsible panel, group review, manual correction, CSV/Excel/PNG, Plots ZIP, Group PNG ZIP |
+| `prototype/index.html` | Redirect ✅ | Eski URL'yi `prototype_refactor/` yoluna yönlendirir |
+| `old/prototype/index.html` | Arşiv ✅ | Önceki büyük tek dosyalı prototip |
+| `scripts/serve_prototype_refactor.py` | Local dev ✅ | Root landing + prototype routes için `127.0.0.1:8768` helper server |
 
 ---
 
@@ -160,7 +243,7 @@ Başarı kriterleri korunur: Pearson r > 0.9, <10% wound area error, 70%+ kullan
 - **Ton:** Hafif akademik SaaS — ne karanlık startup, ne de klinikal soğuk.
 - **Renkler:** `--bg: #f7faf9`, `--paper: #ffffff`, `--teal: #0f9f8f`
 - **Canvas animasyonu:** IIFE yapısı, `BG = '#f8fbfa'`, `prefers-reduced-motion` desteği var.
-- **İddia dili dikkat:** "Tüm veriler local" → sadece assay görüntüleri için doğru (waitlist email Formspree'ye gider).
+- **İddia dili dikkat:** "Tüm veriler local" → sadece assay görüntüleri için doğru (feedback email/message Formspree'ye gider).
 - **ImageJ referansı:** "Replacement" deme, "alternative" de.
 - **Landing claim dili:** MVP/validation tamamlanmadan `% closure`, "publication-ready" ve mutlak doğruluk iddialarını hero/meta dilinde kullanma; "scratch assay measurements", "figure-ready exports", "validation in progress" tonu korunur.
 | `assets/og-image.png` | Canlı ✅ | Sosyal medya link önizleme görseli |
@@ -233,9 +316,10 @@ Başarı kriterleri korunur: Pearson r > 0.9, <10% wound area error, 70%+ kullan
 - [ ] **Per-image ImageJ ground truth re-measurement** (Düzgün lab tarafı): `docs/ground-truth-sampling-plan.csv` ile 60 imajlık deterministik liste hazır; COMBİNE Excel area/width değerleri seed calibration olarak çıkarıldı, kalan ImageJ ölçümleri hâlâ pending
 - [ ] Üçüncü hücre hattı kararı (HeLa / A549 / başka) — generalizability için
 - [ ] Gerçek mikroskop kamerası ile çekilmiş bir referans set (telefon-okül dışı)
-| `prototype/index.html` | 🔄 v0.4 aktif prototype | ImageJ/WHST-inspired pipeline: variance filter, hole handling, continuity filter, width profile/QC, group review, manual correction, export |
-- [x] Manuel düzeltme arayüzü prototipi: brush add/erase/undo/reset var; bilimsel validation ve UX polish bekliyor
-- [ ] Prototype git commit + Cloudflare Pages test
+- [x] Aktif prototip soft-deployed: `prototype_refactor/`
+- [x] Manuel düzeltme arayüzü prototipi: add/fill/erase/clean/undo/reset var; bilimsel validation ve UX polish devam ediyor
+- [x] Prototype git commit + Cloudflare Pages soft deploy
+- [ ] Canlı/lokal performans profili
 
 ### Validation Veri Seti — Mevcut Arşiv Özeti (2026-04-28)
 
@@ -302,7 +386,7 @@ Dosya yazımında: ya `write_to_file` aracını kullan, ya Python script ile yaz
 
 - Segmentation polarity toggle was removed. The prototype always segments the wound/gap as low-variance area; no `Cell (high var)` user option.
 - View controls were simplified to `Contour` and `Mask` only. `Variance` and `Source` are not exposed in the UI.
-- Threshold offset range is now `-50` to `+50`; presets are centered around the useful observed band: Quick `-30`, Standard `-35`, Fine `-40`.
+- Threshold offset range is now `-100` to `+100`; current presets remain in the useful observed negative band, while the wider range supports difficult phase/brightfield sets and broader auto-calibration candidates.
 - `Min component (px)` range is now `0` to `100,000`, step `1,000`, default `20,000`.
 - `Min component` is applied before `fillHoles()` as an island/noise filter: `threshold -> min component island filter -> fill holes -> final measurement`. Do not move it back after fill-holes; that made it behave like a single on/off threshold.
 - FOV cutoff should not move the crop box. It only affects the segmentation/FOV mask after a crop has been chosen. Crop recalculation happens on new image load, `Reset auto crop`, auto-crop toggle change, or rotation.

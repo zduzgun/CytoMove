@@ -2,7 +2,7 @@
 
 > Hücre biyologları için tarayıcıda çalışan, atıf-hazır wound healing analiz aracı.
 
-**Durum:** Lansman öncesi | **Son güncelleme:** 2026-04-28 | **Sürüm:** v0.4
+**Durum:** Soft deploy / private feedback öncesi | **Son güncelleme:** 2026-05-24 | **Sürüm:** v0.5
 
 ---
 
@@ -22,6 +22,26 @@ Manuel ImageJ tabanlı scratch ölçüm iş akışına; tarayıcıda çalışan 
 
 ---
 
+## Güncel Ürün Durumu (2026-05-24)
+
+Cytomove artık sadece waitlist/landing aşamasında değil. Soft deploy yayında:
+
+- `https://cytomove.com` aktif.
+- `www.cytomove.com` DNS yapılandırıldı.
+- Ana sayfa prototipe yönlendiriyor, public beta iddiası yapmıyor.
+- Feedback/suggestion formu e-posta ile çalışıyor.
+- Kullanılabilir prototip `prototype_refactor/` altında yayında.
+- Eski `prototype/` yolu yeni prototipe yönlendiriyor.
+- Prototipte single image, local multi-image group review, manual correction, CSV/Excel, plot ZIP ve Group PNG ZIP export mevcut.
+- Desktop Alpha hattı başlatıldı: çalışan web prototipinin Electron tabanlı yerel uygulama kopyası `desktop_alpha/` altında. Web sürümüne alternatif değil; büyük dosya/grup iş akışları ve ileride lisanslı modüller için deney alanı.
+- Desktop Alpha 0.1 ürün kararı: tam ücretsiz, zorunlu giriş yok. E-posta/kayıt şimdilik opsiyonel feedback ve güncelleme kanalı olarak kalır. 10 günlük trial veya mail aktivasyonu private beta / ücretli modül aşamasına ertelenir.
+- Landing page, hız ve büyük grup kullanımı için Desktop Alpha'yı önerir; web prototip hızlı kontrol/ön izleme yolu olarak kalır. Public installer hosting henüz açılmadığı için CTA feedback üzerinden Desktop Alpha istemeye yönlendirir.
+- Abonelik yönü: iskelet baştan kurulur ama ücretli kapı Alpha 0.1'de açılmaz. Plan dili Free Alpha / Academic / Commercial olarak hazırlanır; ödeme, 10 günlük trial ve lisans kontrolü private beta veya doğrulanmış ücretli modül aşamasında devreye alınır.
+- Public beta değil. Doğru sonraki adım: 3-5 güvenilir kullanıcıyla "prototype feedback round".
+- Bilinen teknik borç: canlı performans lokale göre yavaş hissediliyor; Faz 2 içinde performans profili ve Web Worker/cache değerlendirmesi yapılmalı.
+
+---
+
 ## Stratejik İlkeler
 
 1. **Atıf büyüme motorudur.** Her analiz çıktısı; methods paragrafı, DOI ve sürüm numarasıyla birlikte gelir. Cytomove kullanan her makale yeni kullanıcı kapısı açar.
@@ -30,6 +50,7 @@ Manuel ImageJ tabanlı scratch ölçüm iş akışına; tarayıcıda çalışan 
 4. **Tek kurucu + YZ.** Mimari, kapsam ve takvim; modern YZ araçlarıyla çalışan tek bir geliştiriciye göre kurgulanmıştır.
 5. **Açıkta inşa.** Yol haritası açık, ürün kodu private kalır.
 6. **Araştırmacı öncelikli fiyatlama.** Ücretsiz katman tam analiz için kullanılabilir. Ücretli katmanlar iş akışı kolaylıkları (toplu analiz, geçmiş, ekip) açar; analiz kalitesi değişmez.
+7. **Core free, pro kontrollü.** Desktop core analiz offline-friendly kalır. Ücretli modüller başladığında lisans/account kontrolü sadece Pro özelliklere uygulanır; internet yoksa kısa grace period verilir, temel analiz kilitlenmez.
 
 ---
 
@@ -53,14 +74,15 @@ Bu kriterler karşılanmadan Faz 3'e geçilmez.
 
 ### Faz 1: Temel Atma (Ay 1-2)
 
-**Hedef:** Yayında ve güvenilir landing page, waitlist, temel marka zemini; tam marka/sosyal/blog işleri beta launch hazırlığına bırakılır.
+**Hedef:** Yayında ve güvenilir landing page, feedback kanalı, temel marka zemini; tam marka/sosyal/blog işleri beta launch hazırlığına bırakılır.
 
 **Çıktılar:**
 - [x] Domain alındı: cytomove.com (Cloudflare Registrar, 2027-04-26'ya kadar, auto-renew aktif)
 - [ ] Cytomove.app ve cytomove.io savunma domainleri (opsiyonel, bütçeye göre)
 - [x] GitHub public repo oluşturuldu: github.com/zduzgun/CytoMove
-- [x] Cloudflare Pages üzerinde landing page yayında (cytomove.pages.dev → cytomove.com propagation devam ediyor)
-- [x] E-posta waitlist formu (Formspree ücretsiz tier, ileride Supabase'e taşınır)
+- [x] Cloudflare Pages üzerinde landing page yayında (`cytomove.pages.dev` + `cytomove.com`)
+- [x] `www.cytomove.com` DNS yapılandırıldı
+- [x] E-posta feedback/suggestion formu (Formspree ücretsiz tier, ileride Supabase'e taşınır)
 - [ ] Marka kimliği (logo, renk paleti, tipografi) — beta launch hazırlığına ertelendi
 - [ ] X/Twitter + LinkedIn varlığı — beta launch hazırlığına ertelendi
 - [ ] İlk halka açık blog yazısı: "Neden Cytomove'u inşa ediyorum" — beta launch hazırlığına ertelendi
@@ -79,7 +101,7 @@ Bu kriterler karşılanmadan Faz 3'e geçilmez.
 
 **KPI'lar:**
 - Landing page yayında: evet
-- Waitlist kaydı: 50+
+- Feedback form mesajı: ilk gerçek kullanıcı sinyalleri
 - Cytomove hakkında kişisel sosyal paylaşım: 5+
 
 **Kapsam dışı:** Analiz mantığı, ödeme, kullanıcı hesabı.
@@ -88,27 +110,32 @@ Bu kriterler karşılanmadan Faz 3'e geçilmez.
 
 ### Faz 2: MVP - Tek Zaman Noktası Analizi + Validation Verisi (Ay 3-5)
 
-**Hedef:** Tamamen tarayıcıda çalışan, kullanılabilir scratch assay analiz aracı + akademik validation veri seti.
+**Hedef:** Tamamen tarayıcıda çalışan, kullanılabilir scratch assay analiz aracı + akademik validation veri seti + küçük private feedback round.
 
 **Ürün çıktıları:**
-- [ ] Görüntü yükleme bileşeni (sürükle-bırak, çoklu dosya)
-- [ ] OpenCV.js scratch tespiti (segmentasyon)
-- [ ] Binary wound mask üzerinden area metrics: wound area, area fraction, field area
-- [ ] Horizontal width profile extraction: mean/median/SD/CV/min/max width, valid row count/fraction
+- [x] Görüntü yükleme bileşeni (sürükle-bırak, çoklu dosya)
+- [x] Pure JS scratch segmentation prototype (OpenCV.js yerine zero-dependency Canvas/typed-array pipeline)
+- [x] Binary wound mask üzerinden area metrics: wound area, area fraction, field area
+- [x] Horizontal width profile extraction: mean/median/SD/CV/min/max width, valid row count/fraction
 - [ ] Yara kapanma yüzdesi hesabı: area-based closure ve width-based closure birlikte
-- [ ] Basic QC warnings: image dimension/FOV mismatch, crop-dependent area fraction, low valid row fraction, area-vs-width discordance
-- [ ] CSV/JSON report schema update: per-image area + width metrics, warnings, recommended primary metric
-- [ ] Preview/export resolution strategy: UI ve auto-calibration icin optimize edilmis working-resolution kullan; bilimsel PNG/CSV export sirasinda ayni ayarlari original full-resolution goruntuye yeniden uygula. Rapor alanlari: `working_resolution_px`, `export_resolution_px`, `resolution_scale`, `metrics_computed_at`.
+- [x] Basic QC warnings: crop-dependent area fraction, low valid row fraction, area-vs-width discordance, fragmented mask, manual correction
+- [x] CSV/Excel report schema: per-image area + width metrics, warnings, recommended primary metric, settings snapshot
+- [x] Preview/export resolution strategy v1: group previews downsample for speed; Group PNG ZIP re-runs/prepares full-resolution overlays before download.
 - [ ] Synthetic binary mask generator + exact geometric tests: clean masks icin wound area, width profile, valid row count/fraction ve closure hesaplari 0 toleransla dogrulanir.
 - [ ] Synthetic crop robustness validation: ayni wound mask uzerinde farkli crop/FOV senaryolari olustur; area fraction hassasiyeti ile mean/median width stabilitesini karsilastir.
 - [ ] Validation tolerance policy: binary synthetic tests = 0 tolerance; realistic synthetic tests = predefined low tolerance; real microscopy tests = expert/manual agreement.
 - [ ] First-wave real-image validation panel: WHAD/CAMAD primary professional time-lapse set, CSMA public comparator set, selected local phone/eyepiece usability subset; RQSA deferred to later robustness/stress validation.
 - [ ] Public raw dataset storage: keep large/raw images under ignored `validation_ref_sets/raw/`, not project root or git. Commit only metadata, scripts, small derived panels, and documentation.
-- [ ] Segmentasyon manuel düzeltme arayüzü
-- [ ] Yan yana görselleştirme (orijinal vs algılanan maske)
-- [ ] Dışa aktarma: PNG figür + CSV veri
-- [ ] Beta test kullanıcı programı (kişisel ağdan 5-10 akademisyen)
-- [ ] Yapılandırılmış geri bildirim döngüsü (Notion / Tally)
+- [x] Segmentasyon manuel düzeltme arayüzü
+- [x] Görselleştirme: contour/mask view, group cards, plot preview modal
+- [x] Dışa aktarma: PNG overlay, Group PNG ZIP, Plots ZIP, CSV, Excel
+- [ ] Performance profile: live vs local load time, analysis time, group render time, export time, cache headers, Web Worker feasibility
+- [x] Desktop Alpha 0.1 deney hattı: mevcut çalışan prototip Electron app olarak paketlendi; web sürüme dokunmadan lokal exe üretildi.
+- [x] Desktop web-link manifest katmanı: `desktop-manifest.json` ile update/module/status mesajı okunur; Feedback/Account/Updates linkleri siteye yönlenir; görüntü/analiz verisi gönderilmez.
+- [x] Abonelik iskeleti kararı: Free Alpha aktif; Academic ve Commercial planları manifest/roadmap düzeyinde planlandı, ödeme/lisans enforce edilmiyor.
+- [ ] Opsiyonel e-posta kayıt akışı: Alpha 0.2 için, zorunlu login olmadan feedback/update signup. App içinden veya web formuna yönlendirme ile başlar.
+- [ ] Private feedback round (3-5 güvenilir kullanıcı; public beta dili kullanılmadan)
+- [ ] Yapılandırılmış geri bildirim döngüsü (Formspree feedback + kısa takip notları; gerekirse Notion/Tally)
 
 **Akademik çıktılar (preprint hazırlığı için):**
 - [ ] Validation veri seti: public professional WHAD/CAMAD + CSMA comparator + selected local phone/eyepiece images
@@ -120,15 +147,15 @@ Bu kriterler karşılanmadan Faz 3'e geçilmez.
 - [x] Validation dataset metadata formatı belirlendi ve `docs/validation-inventory.csv` üretildi (442 satır)
 
 **Tech stack eklemeleri:**
-- OpenCV.js
-- HTML Canvas API
+- HTML Canvas API + typed arrays
+- OpenCV.js yalnızca Faz 3+ registration/advanced processing gerekirse yeniden değerlendirilecek
 - Recharts veya D3 (görselleştirme)
 
 **KPI'lar:**
-- 5+ aktif beta test kullanıcısı
+- 3-5 private feedback kullanıcısı
 - Ortalama analiz süresi: <30 saniye / görüntü
 - Validation veri seti hazır ve paylaşıma uygun
-- Waitlist: 150+
+- Feedback formundan nitelikli sorun/istek sinyali
 
 **Kapsam dışı:** Time-lapse, kullanıcı hesapları, ödemeler, PDF rapor.
 
@@ -263,9 +290,8 @@ Bu kriterler karşılanmadan Faz 3'e geçilmez.
 ## Tech Stack
 
 **Onaylı:**
-- Next.js 14 + TypeScript
-- Tailwind CSS
-- OpenCV.js (tarayıcıda görüntü işleme)
+- Static HTML/CSS/JavaScript for current landing + prototype
+- HTML Canvas API + typed arrays for current browser image processing
 - Cloudflare Pages (hosting, ücretsiz tier)
 - Cloudflare Registrar (domain, cytomove.com)
 - Cloudflare R2 (depolama, Faz 3+)
@@ -276,6 +302,9 @@ Bu kriterler karşılanmadan Faz 3'e geçilmez.
 - Zenodo (DOI / sürümleme)
 
 **Gelecek:**
+- Next.js 14 + TypeScript (SaaS/app shell gerektiğinde)
+- Tailwind CSS (framework tabanlı uygulamaya geçilirse)
+- OpenCV.js (registration veya advanced processing gerçekten gerekirse)
 - Python FastAPI backend (v2+ ML ağırlıklı modüller için)
 - Paddle (uluslararası SaaS için Merchant of Record)
 - Iyzico (Türkiye ödemeleri)
@@ -373,7 +402,7 @@ Her PDF rapora otomatik methods paragrafı + DOI + sürüm gömülecek. Akademis
 | Cytomove ↔ CytoMotion (IonOptix) trademark çakışma riski | Orta | Orta | Faz 5 formal başvuruda gerekirse "Cytomove Pro" gibi modifiye, veya çatı marka altında jenerik tanım olarak bırak |
 | Hücre biyolojisi nişi tek kurucu SaaS için küçük | Orta | Yüksek | Çoklu modül vizyonu Faz 5 sonrasında genişler |
 | Doçentlik süreci dikkat dağıtması | Yüksek | Orta | 18 aylık takvim akademik takvimle hizalı |
-| Büyük mikroskop görüntülerinde OpenCV.js performansı | Orta | Orta | Tarayıcıda yeniden boyutlandırma / parçalı işleme; gerekirse sunucu yedek |
+| Büyük mikroskop görüntülerinde tarayıcı performansı | Orta | Orta | Preview downsample, full-resolution export'u kontrollü tetikle, Web Worker/cache profiling; gerekirse sunucu yedek |
 | Türkiye ödeme sürtünmesi (global kullanıcı) | Orta | Orta | Paddle MoR uluslararası tarafı çözer; Iyzico TR için |
 | YZ hype döngüsü fiyatlama baskısı | Düşük | Orta | Atıf hendeği dayanıklı, YZ ile kolay yer değiştirilemez |
 | Validation veri yetersizliği (preprint için) | Orta | Orta | Faz 2'de validation veri toplama paralel yürütülür, kendi laboratuvar arşivi öncelikli |
@@ -388,7 +417,8 @@ Her PDF rapora otomatik methods paragrafı + DOI + sürüm gömülecek. Akademis
 
 | Tarih | Karar | Gerekçe |
 |-------|-------|---------|
-| 2026-04 | Browser-first mimari (OpenCV.js) | Gizlilik + maliyet + ölçek; sunucu sadece şart olduğunda |
+| 2026-04 | Browser-first mimari | Gizlilik + maliyet + ölçek; sunucu sadece şart olduğunda |
+| 2026-04 | Pure JS / Canvas prototip yaklaşımı | OpenCV.js/WASM indirme ve init gecikmesi MVP prototipi için gereksiz; typed arrays yeterli |
 | 2026-04 | Vercel yerine Cloudflare Pages | Vercel boykotu; CF + R2 + Workers entegre |
 | 2026-04 | Tek kurucu, ortak yok | YZ araçları yeterli; pay korunur; ekip ileride hibe ile |
 | 2026-04 | Wound healing kama ürün olarak seçildi | Tüm hücre biyolojisi laboratuvarlarında ortak; net pain point |
@@ -403,6 +433,10 @@ Her PDF rapora otomatik methods paragrafı + DOI + sürüm gömülecek. Akademis
 | 2026-04-28 | Waitlist: Formspree ücretsiz tier | İlk 2 kayıt alındı; ileride Supabase'e taşınacak |
 | 2026-04-28 | Faz 1 kapanışı: Minimum Credible Landing | OG image, scientific trust layer ve temkinli claim dili tamamlandı; logo/sosyal/blog beta launch hazırlığına ertelendi |
 | 2026-04-29 | Validation inventory generated | 442-image Tier 1 archive inventoried; metadata CSV + coverage summary produced; per-image ImageJ re-measurement remains required |
+| 2026-05-24 | Soft deploy başlatıldı | `cytomove.com` prototipe yönlenen sade landing ile yayında; feedback formu çalışıyor; public beta değil, küçük private feedback round hedefleniyor |
+| 2026-05-24 | Prototip klasör yapısı güncellendi | Aktif prototip `prototype_refactor/`; eski `prototype/` redirect; önceki tek dosyalı prototip `old/prototype/` arşivinde |
+| 2026-05-24 | Group PNG ZIP export düzeltildi | Eksik full-resolution overlay varsa buton otomatik hazırlar ve sonra ZIP indirir; `Plots ZIP` ayrı çalışır |
+| 2026-05-24 | Performans teknik borcu kaydedildi | Canlı prototip lokale göre yavaş hissediliyor; sonraki Faz 2 işi sistematik performans profili ve Web Worker/cache değerlendirmesi |
 
 ---
 
