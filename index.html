@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cytomove — Automated Wound Healing Analysis</title>
+  <title>Cytomove - Automated Wound Healing Analysis</title>
   <meta name="description" content="Browser-based scratch assay measurement for wound healing images. Assay images stay in the browser while validation work is underway.">
-  <meta property="og:title" content="Cytomove — Automated Wound Healing Analysis">
+  <meta property="og:title" content="Cytomove - Automated Wound Healing Analysis">
   <meta property="og:description" content="A privacy-first browser workflow for scratch assay measurement, figure export, and validation-ready reporting.">
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://cytomove.com/assets/og-image.png">
-  <meta name="twitter:title" content="Cytomove — Automated Wound Healing Analysis">
+  <meta name="twitter:title" content="Cytomove - Automated Wound Healing Analysis">
   <meta name="twitter:description" content="Browser-based scratch assay measurement with local assay images and validation in progress.">
   <meta name="twitter:image" content="https://cytomove.com/assets/og-image.png">
   <meta property="og:url" content="https://cytomove.com">
@@ -59,6 +59,8 @@
     .site-header {
       display: flex;
       align-items: center;
+      justify-content: space-between;
+      gap: 18px;
       padding: 8px 0 54px;
     }
 
@@ -83,6 +85,39 @@
       font-size: 19px;
       font-weight: 700;
       letter-spacing: -0.03em;
+    }
+
+    .site-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-link {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 8px 10px;
+      border-radius: 999px;
+      transition: color 0.18s ease, background 0.18s ease;
+    }
+
+    .nav-link:hover {
+      color: var(--ink);
+      background: rgba(255,255,255,0.72);
+    }
+
+    .nav-link.primary {
+      color: #fff;
+      background: var(--ink);
+      border: 1px solid var(--ink);
+      padding-inline: 13px;
+    }
+
+    .nav-link.primary:hover {
+      color: #fff;
+      background: #1b3238;
     }
 
     .hero {
@@ -130,7 +165,7 @@
     h1 {
       max-width: 680px;
       font-size: clamp(38px, 5.8vw, 72px);
-      font-weight: 740;
+      font-weight: 700;
       line-height: 0.98;
       letter-spacing: -0.06em;
       margin-bottom: 24px;
@@ -151,75 +186,51 @@
 
     .subtitle strong {
       color: var(--ink);
-      font-weight: 650;
+      font-weight: 600;
     }
 
-    .form-wrap {
+    .cta-row {
       display: flex;
+      flex-wrap: wrap;
       gap: 10px;
-      width: 100%;
-      max-width: 470px;
-      margin-bottom: 10px;
+      margin-bottom: 24px;
     }
 
-    input[type="email"] {
-      flex: 1;
-      min-width: 0;
-      padding: 14px 15px;
-      background: var(--paper);
-      border: 1px solid var(--line);
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 13px 18px;
       border-radius: 12px;
-      color: var(--ink);
-      font-size: 15px;
-      outline: none;
-      transition: border-color 0.18s ease, box-shadow 0.18s ease;
-      font-family: inherit;
-    }
-
-    input[type="email"]:focus {
-      border-color: rgba(15,159,143,0.55);
-      box-shadow: 0 0 0 4px rgba(15,159,143,0.11);
-    }
-
-    input[type="email"]::placeholder {
-      color: var(--dim);
-    }
-
-    button[type="submit"] {
-      padding: 14px 20px;
-      background: var(--ink);
       border: 1px solid var(--ink);
-      border-radius: 12px;
+      background: var(--ink);
       color: #fff;
+      text-decoration: none;
       font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      white-space: nowrap;
-      font-family: inherit;
+      font-weight: 800;
       letter-spacing: -0.01em;
-      transition: transform 0.12s ease, background 0.18s ease;
+      transition: transform 0.12s ease, background 0.18s ease, border-color 0.18s ease;
     }
 
-    button[type="submit"]:hover {
+    .cta-button:hover {
       background: #1b3238;
+      border-color: #1b3238;
     }
 
-    button[type="submit"]:active {
+    .cta-button:active {
       transform: translateY(1px);
     }
 
-    .form-note,
-    .success {
-      max-width: 470px;
-      color: var(--dim);
-      font-size: 13px;
-      line-height: 1.5;
+    .cta-button.secondary {
+      background: var(--paper);
+      color: var(--ink);
+      border-color: var(--line);
     }
 
-    .success {
-      display: none;
-      color: var(--teal-dark);
-      font-weight: 650;
+    .cta-button.secondary:hover {
+      background: var(--teal-soft);
+      border-color: #c8ece6;
     }
 
     .trust-row {
@@ -264,7 +275,7 @@
       background: #fbfdfc;
       color: var(--muted);
       font-size: 13px;
-      font-weight: 650;
+      font-weight: 600;
     }
 
     .window-dots {
@@ -333,7 +344,7 @@
     .metric-value {
       color: var(--ink);
       font-size: 18px;
-      font-weight: 760;
+      font-weight: 700;
       letter-spacing: -0.03em;
     }
 
@@ -359,6 +370,32 @@
       color: #d7e7e4;
       font-size: 13px;
       line-height: 1.55;
+    }
+
+    .prototype-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-top: 12px;
+      padding: 13px 15px;
+      border: 1px solid #c8ece6;
+      border-radius: 17px;
+      background: var(--teal-soft);
+      text-decoration: none;
+    }
+
+    .prototype-strip strong {
+      display: block;
+      color: var(--teal-dark);
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+
+    .prototype-strip span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
     }
 
     .section {
@@ -460,6 +497,113 @@
       line-height: 1.6;
     }
 
+    .feedback-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 0.78fr) minmax(360px, 1fr);
+      gap: 22px;
+      align-items: start;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: rgba(255,255,255,0.68);
+    }
+
+    .feedback-copy h2 {
+      max-width: 420px;
+      margin-bottom: 12px;
+    }
+
+    .feedback-copy p {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .feedback-form {
+      display: grid;
+      gap: 12px;
+    }
+
+    .field-group {
+      display: grid;
+      gap: 7px;
+    }
+
+    .field-group label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .field-group input,
+    .field-group textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--paper);
+      color: var(--ink);
+      font: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .field-group input {
+      min-height: 46px;
+      padding: 12px 14px;
+    }
+
+    .field-group textarea {
+      min-height: 120px;
+      padding: 13px 14px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    .field-group input:focus,
+    .field-group textarea:focus {
+      border-color: rgba(15,159,143,0.55);
+      box-shadow: 0 0 0 4px rgba(15,159,143,0.11);
+    }
+
+    .feedback-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .feedback-actions button {
+      min-height: 46px;
+      padding: 13px 18px;
+      border: 1px solid var(--ink);
+      border-radius: 12px;
+      background: var(--ink);
+      color: #fff;
+      cursor: pointer;
+      font: inherit;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      transition: transform 0.12s ease, background 0.18s ease, opacity 0.18s ease;
+    }
+
+    .feedback-actions button:hover {
+      background: #1b3238;
+    }
+
+    .feedback-actions button:active {
+      transform: translateY(1px);
+    }
+
+    .feedback-status {
+      color: var(--dim);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
     footer {
       display: flex;
       justify-content: space-between;
@@ -487,10 +631,12 @@
     @media (max-width: 900px) {
       body { padding: 20px; }
       .site-header { padding-bottom: 34px; }
+      .site-header { align-items: flex-start; }
+      .site-nav { flex-wrap: wrap; justify-content: flex-end; }
       .hero { grid-template-columns: 1fr; gap: 34px; }
       .section-header { display: block; }
       .section-header p { margin-top: 12px; }
-      .steps, .evidence-grid { grid-template-columns: 1fr; }
+      .steps, .evidence-grid, .feedback-panel { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 560px) {
@@ -507,7 +653,7 @@
       .page {
         width: 100%;
         max-width: 358px;
-        margin: 0;
+        margin: 0 auto;
         overflow: hidden;
       }
 
@@ -521,6 +667,7 @@
       .analysis-body,
       .canvas-wrap,
       .report-preview,
+      .feedback-panel,
       .steps,
       .evidence-grid,
       footer {
@@ -557,12 +704,25 @@
         word-break: break-word;
       }
 
-      .form-wrap {
+      .site-header {
         flex-direction: column;
       }
 
-      button[type="submit"] {
+      .site-nav {
         width: 100%;
+        justify-content: flex-start;
+      }
+
+      .cta-row,
+      .prototype-strip,
+      .feedback-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .feedback-panel {
+        padding: 18px;
+        border-radius: 20px;
       }
 
       .product-card {
@@ -623,6 +783,12 @@
         </span>
         <span class="logo-text">Cytomove</span>
       </div>
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a class="nav-link" href="#workflow-title">Workflow</a>
+        <a class="nav-link" href="#evidence-title">Status</a>
+        <a class="nav-link" href="#feedback-title">Feedback</a>
+        <a class="nav-link primary" href="prototype_refactor/">Open prototype</a>
+      </nav>
     </header>
 
     <main>
@@ -630,25 +796,21 @@
         <div class="hero-copy">
           <div class="eyebrow">
             <span class="eyebrow-dot"></span>
-            Early beta waitlist
+            Prototype workspace
           </div>
 
-          <h1>Automated scratch assay quantification, <em>in your browser.</em></h1>
+          <h1>Scratch assay analysis, <em>in your browser.</em></h1>
 
           <p class="subtitle">
-            Upload wound healing assay images and get <strong>browser-based scratch assay measurements</strong>,
-            figure-ready exports, and methods text for reproducible reporting. Cytomove is
-            designed for cell migration analysis without sending assay images to a server.
+            Cytomove is a browser-based workspace for wound healing images:
+            load images, review the wound mask, and export area/width measurements
+            without sending assay images to a server.
           </p>
 
-          <form class="form-wrap" id="waitlistForm"
-                action="https://formspree.io/f/mdayrwqe"
-                method="POST">
-            <input type="email" name="email" placeholder="researcher@lab.edu" required autocomplete="email" />
-            <button type="submit">Join waitlist</button>
-          </form>
-          <p class="form-note" id="formNote">Early access for cell migration researchers. No spam.</p>
-          <p class="success" id="successMsg">You're on the list — we'll be in touch!</p>
+          <div class="cta-row" aria-label="Primary actions">
+            <a class="cta-button" href="prototype_refactor/">Open analysis prototype</a>
+            <a class="cta-button secondary" href="#evidence-title">Check status</a>
+          </div>
 
           <div class="trust-row" aria-label="Product highlights">
             <span class="trust-chip">
@@ -662,14 +824,14 @@
                 <rect x="2" y="1.5" width="10" height="11" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
                 <path d="M4.5 5h5M4.5 7h4M4.5 9h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
               </svg>
-              Methods-oriented output
+              PNG, CSV, Excel export
             </span>
             <span class="trust-chip">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                 <path d="M2 10l3-3 2 2 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
                 <rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.1"/>
               </svg>
-              ImageJ workflow alternative
+              Validation in progress
             </span>
           </div>
         </div>
@@ -683,7 +845,7 @@
           <div class="analysis-body">
             <div class="canvas-wrap">
               <canvas id="woundCanvas" width="580" height="170"
-                aria-label="Animated scratch assay showing two cell monolayers migrating to close a wound gap"></canvas>
+                aria-label="Animated scratch assay showing two cell monolayers migrating to close a wound gap">Animated scratch assay demo showing wound closure</canvas>
             </div>
             <div class="metrics">
               <div class="metric">
@@ -696,80 +858,118 @@
               </div>
               <div class="metric">
                 <span class="metric-label">Status</span>
-                <span class="metric-value">Beta soon</span>
+                <span class="metric-value">Prototype</span>
               </div>
             </div>
             <div class="report-preview">
-              <span>Methods text</span>
+              <span>Current focus</span>
               <p>
-                Wound area was quantified using a browser-based Cytomove workflow,
-                with versioned analysis settings and figure-ready exports.
+                Improve segmentation robustness, compare against ImageJ/manual
+                references, and prepare a small private beta.
               </p>
             </div>
+            <a class="prototype-strip" href="prototype_refactor/" aria-label="Open Cytomove prototype">
+              <span>
+                <strong>Prototype is available</strong>
+                Try the current browser-based segmentation workspace.
+              </span>
+              <strong>Open</strong>
+            </a>
           </div>
         </aside>
       </section>
 
       <section class="section" aria-labelledby="workflow-title">
         <div class="section-header">
-          <h2 id="workflow-title">From image to reproducible measurement.</h2>
+          <h2 id="workflow-title">A focused analysis workflow.</h2>
           <p>
-            Cytomove focuses on the narrow workflow researchers repeat often:
-            measure wound area, review the segmentation, and export results
-            that are easy to cite and reproduce.
+            The prototype is intentionally narrow: image input, segmentation review,
+            manual correction, and export.
           </p>
         </div>
         <div class="steps">
           <article class="step">
             <div class="step-num">01</div>
-            <h3>Upload scratch assay images</h3>
-            <p>Start with single time-point wound healing images directly in the browser.</p>
+            <h3>Load images</h3>
+            <p>Use single images or grouped time-point images directly in the browser.</p>
           </article>
           <article class="step">
             <div class="step-num">02</div>
-            <h3>Review detected wound area</h3>
-            <p>Compare the source image with the detected mask before using the measurement.</p>
+            <h3>Review the mask</h3>
+            <p>Inspect the contour, adjust settings, and correct missed regions when needed.</p>
           </article>
           <article class="step">
             <div class="step-num">03</div>
-            <h3>Export figures and methods</h3>
-            <p>Generate figure-ready outputs and methods text for reproducible reporting.</p>
+            <h3>Export results</h3>
+            <p>Download overlays, plots, CSV, or Excel tables for downstream analysis.</p>
           </article>
         </div>
       </section>
-      <section class="section evidence" aria-labelledby="evidence-title">
+      <section class="section" aria-labelledby="evidence-title">
         <div class="section-header">
-          <h2 id="evidence-title">Built for cautious scientific adoption.</h2>
+          <h2 id="evidence-title">Where the project stands.</h2>
           <p>
-            Cytomove is being developed by a cell biologist for researchers who need
-            transparent, repeatable scratch assay measurements before they trust automation.
+            Cytomove is not ready for broad public beta yet. The next sensible step is
+            a small private beta after validation and the main UX issues settle.
           </p>
         </div>
         <div class="evidence-grid">
           <article class="evidence-item">
             <span>01</span>
-            <h3>Assay images stay in the browser</h3>
-            <p>Image analysis is designed to run client-side; waitlist emails are handled separately through Formspree.</p>
+            <h3>Prototype usable now</h3>
+            <p>The browser workspace supports local images, group review, manual correction, and export.</p>
           </article>
           <article class="evidence-item">
             <span>02</span>
-            <h3>Validation is in progress</h3>
-            <p>The current validation plan compares Cytomove measurements with ImageJ/manual reference measurements before beta claims are expanded.</p>
+            <h3>Validation still active</h3>
+            <p>Measurements are being compared with ImageJ/manual references before stronger claims are made.</p>
           </article>
           <article class="evidence-item">
             <span>03</span>
-            <h3>Designed by a cell biologist</h3>
-            <p>Founded by Dr. Zekeriya Duzgun, Giresun University Faculty of Medicine, Medical Biology.</p>
+            <h3>Private beta next</h3>
+            <p>Target a small trusted group first, then public beta after reproducibility checks pass.</p>
           </article>
+        </div>
+      </section>
+      <section class="section" aria-labelledby="feedback-title">
+        <div class="feedback-panel">
+          <div class="feedback-copy">
+            <h2 id="feedback-title">Help shape the prototype.</h2>
+            <p>
+              Send a short note about missing features, difficult images,
+              validation needs, or anything that would make Cytomove more useful
+              in a real scratch assay workflow.
+            </p>
+          </div>
+          <form class="feedback-form" id="feedbackForm"
+                action="https://formspree.io/f/mdayrwqe"
+                method="POST">
+            <input type="hidden" name="source" value="cytomove-landing-feedback">
+            <input type="hidden" name="_subject" value="Cytomove feedback">
+            <div class="field-group">
+              <label for="feedbackMessage">Suggestion</label>
+              <textarea id="feedbackMessage" name="message" placeholder="Tell me what to improve, what failed, or what you need next." required></textarea>
+            </div>
+            <div class="field-group">
+              <label for="feedbackEmail">Email</label>
+              <input id="feedbackEmail" type="email" name="email" placeholder="researcher@lab.edu" required autocomplete="email">
+            </div>
+            <div class="feedback-actions">
+              <button type="submit">Send feedback</button>
+              <p class="feedback-status" id="feedbackStatus" role="status" aria-live="polite">
+                Your message goes directly to the Cytomove inbox.
+              </p>
+            </div>
+          </form>
         </div>
       </section>
     </main>
 
     <footer>
-      <p>© 2026 Cytomove</p>
+      <p>Copyright 2026 Cytomove</p>
       <p>
-        <a href="https://github.com/zduzgun/CytoMove">GitHub</a>
-        &nbsp;·&nbsp;
+        <a href="https://github.com/zduzgun/CytoMove" target="_blank" rel="noopener noreferrer">GitHub</a>
+        &nbsp;/&nbsp;
         <a href="mailto:zekeriya.duzgun@giresun.edu.tr">Contact</a>
       </p>
     </footer>
@@ -875,6 +1075,14 @@
         if (running) requestAnimationFrame(frame);
       }
 
+      if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function (entries) {
+          var wasRunning = running;
+          running = entries[0].isIntersecting;
+          if (running && !wasRunning) requestAnimationFrame(frame);
+        }, { threshold: 0.1 }).observe(canvas);
+      }
+
       /* reduced motion: tek statik kare */
       if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         running = false;
@@ -885,36 +1093,57 @@
       }
     }());
 
-    /* ── Waitlist form ── */
-    const form       = document.getElementById('waitlistForm');
-    const note       = document.getElementById('formNote');
-    const successMsg = document.getElementById('successMsg');
+    (function () {
+      var form = document.getElementById('feedbackForm');
+      if (!form) return;
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = form.querySelector('button');
-      btn.textContent = 'Sending…';
-      btn.disabled = true;
+      var status = document.getElementById('feedbackStatus');
+      var button = form.querySelector('button[type="submit"]');
+      var defaultStatus = status ? status.textContent : '';
+      var defaultButton = button ? button.textContent : 'Send feedback';
 
-      try {
-        const res = await fetch(form.action, {
-          method:  'POST',
-          body:    new FormData(form),
-          headers: { 'Accept': 'application/json' },
-        });
-        if (res.ok) {
-          form.style.display        = 'none';
-          note.style.display        = 'none';
-          successMsg.style.display  = 'block';
-        } else {
-          btn.textContent = 'Try again';
-          btn.disabled    = false;
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        if (!button) return;
+
+        button.disabled = true;
+        button.textContent = 'Sending...';
+        button.style.opacity = '0.72';
+        if (status) {
+          status.textContent = 'Sending your feedback...';
+          status.style.color = '';
         }
-      } catch {
-        btn.textContent = 'Try again';
-        btn.disabled    = false;
-      }
-    });
+
+        fetch(form.action, {
+          method: 'POST',
+          body: new FormData(form),
+          headers: { 'Accept': 'application/json' }
+        }).then(function (response) {
+          if (!response.ok) throw new Error('Form service returned ' + response.status);
+          form.reset();
+          if (status) {
+            status.textContent = 'Thanks, your feedback was sent.';
+            status.style.color = 'var(--teal-dark)';
+          }
+        }).catch(function () {
+          if (status) {
+            status.textContent = 'Could not send right now. Please try again or email directly.';
+            status.style.color = '#b42318';
+          }
+        }).finally(function () {
+          button.disabled = false;
+          button.textContent = defaultButton;
+          button.style.opacity = '1';
+          window.setTimeout(function () {
+            if (status && status.style.color !== '#b42318') {
+              status.textContent = defaultStatus;
+              status.style.color = '';
+            }
+          }, 5000);
+        });
+      });
+    }());
+
   </script>
 </body>
 </html>
