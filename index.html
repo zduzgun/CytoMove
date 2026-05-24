@@ -3,48 +3,55 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cytomove - Automated Wound Healing Analysis</title>
-  <meta name="description" content="Browser-based scratch assay measurement for wound healing images. Assay images stay in the browser while validation work is underway.">
-  <meta property="og:title" content="Cytomove - Automated Wound Healing Analysis">
-  <meta property="og:description" content="A privacy-first browser workflow for scratch assay measurement, figure export, and validation-ready reporting.">
+  <title>Cytomove - Browser Wound Healing Analysis</title>
+  <meta name="description" content="Local-first browser workspace for wound healing scratch assay images, group review, manual correction, plots, and export.">
+  <meta property="og:title" content="Cytomove - Browser Wound Healing Analysis">
+  <meta property="og:description" content="Analyze scratch assay images in your browser. Images stay local while validation work continues.">
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://cytomove.com/assets/og-image.png">
-  <meta name="twitter:title" content="Cytomove - Automated Wound Healing Analysis">
-  <meta name="twitter:description" content="Browser-based scratch assay measurement with local assay images and validation in progress.">
-  <meta name="twitter:image" content="https://cytomove.com/assets/og-image.png">
   <meta property="og:url" content="https://cytomove.com">
   <meta name="twitter:card" content="summary_large_image">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' stroke='%2314b8a6' stroke-width='2' fill='none'/><circle cx='10' cy='16' r='4' fill='%2314b8a6' fill-opacity='0.3' stroke='%2314b8a6' stroke-width='1'/><circle cx='22' cy='16' r='4' fill='%2314b8a6' fill-opacity='0.3' stroke='%2314b8a6' stroke-width='1'/><path d='M17 13l3 3-3 3' stroke='%2314b8a6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
+  <meta name="twitter:title" content="Cytomove - Browser Wound Healing Analysis">
+  <meta name="twitter:description" content="Local-first scratch assay analysis with group review, plots, and export.">
+  <meta name="twitter:image" content="https://cytomove.com/assets/og-image.png">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' stroke='%230f9f8f' stroke-width='2' fill='white'/><circle cx='10' cy='16' r='4' fill='%23bdeee8' stroke='%230f9f8f' stroke-width='1.4'/><circle cx='22' cy='16' r='4' fill='%23bdeee8' stroke='%230f9f8f' stroke-width='1.4'/><path d='M14 12.7L18.5 16 14 19.3' stroke='%2308766c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     :root {
       --bg: #f7faf9;
       --paper: #ffffff;
-      --paper-soft: #f1f7f6;
+      --soft: #eef7f5;
+      --soft-2: #f3f7f6;
       --ink: #102027;
-      --muted: #58706f;
-      --dim: #849696;
-      --line: #dce8e6;
+      --muted: #526d6b;
+      --dim: #7e9290;
+      --line: #d8e6e3;
       --teal: #0f9f8f;
       --teal-dark: #08766c;
-      --teal-soft: #e5f7f4;
+      --blue: #2f6fed;
       --amber: #b7791f;
-      --shadow: 0 24px 70px rgba(15, 44, 42, 0.12);
+      --rose: #b42318;
+      --shadow: 0 22px 58px rgba(16, 32, 39, 0.10);
+      --radius: 18px;
+      --radius-sm: 10px;
     }
 
-    html, body {
-      background:
-        radial-gradient(circle at 12% 10%, rgba(15,159,143,0.10), transparent 30%),
-        linear-gradient(180deg, #fbfdfc 0%, var(--bg) 60%, #eef6f4 100%);
-      color: var(--ink);
-      font-family: -apple-system, 'Segoe UI', system-ui, BlinkMacSystemFont, sans-serif;
-      -webkit-font-smoothing: antialiased;
-      min-height: 100vh;
+    html {
+      scroll-behavior: smooth;
     }
 
     body {
-      padding: 26px;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
     }
 
     a {
@@ -52,7 +59,7 @@
     }
 
     .page {
-      width: min(1160px, 100%);
+      width: min(1180px, calc(100% - 40px));
       margin: 0 auto;
     }
 
@@ -60,209 +67,171 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 18px;
-      padding: 8px 0 54px;
+      gap: 24px;
+      padding: 22px 0;
     }
 
     .logo {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 11px;
+      gap: 10px;
+      text-decoration: none;
     }
 
     .logo-mark {
-      width: 34px;
-      height: 34px;
+      width: 36px;
+      height: 36px;
       display: grid;
       place-items: center;
       border: 1px solid var(--line);
-      border-radius: 11px;
+      border-radius: 12px;
       background: var(--paper);
-      box-shadow: 0 8px 24px rgba(16, 32, 39, 0.05);
+      box-shadow: 0 8px 22px rgba(16, 32, 39, 0.06);
     }
 
     .logo-text {
       font-size: 19px;
-      font-weight: 700;
-      letter-spacing: -0.03em;
+      font-weight: 800;
+      letter-spacing: -0.02em;
     }
 
     .site-nav {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
     }
 
     .nav-link {
       color: var(--muted);
       text-decoration: none;
       font-size: 13px;
-      font-weight: 700;
-      padding: 8px 10px;
+      font-weight: 750;
+      padding: 9px 11px;
       border-radius: 999px;
-      transition: color 0.18s ease, background 0.18s ease;
     }
 
     .nav-link:hover {
       color: var(--ink);
-      background: rgba(255,255,255,0.72);
+      background: rgba(255, 255, 255, 0.82);
     }
 
     .nav-link.primary {
-      color: #fff;
+      color: #ffffff;
       background: var(--ink);
-      border: 1px solid var(--ink);
-      padding-inline: 13px;
-    }
-
-    .nav-link.primary:hover {
-      color: #fff;
-      background: #1b3238;
+      padding-inline: 15px;
     }
 
     .hero {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(430px, 0.88fr);
-      gap: 58px;
+      grid-template-columns: minmax(0, 0.9fr) minmax(420px, 1.1fr);
+      gap: 46px;
       align-items: center;
-      padding-bottom: 58px;
+      padding: 58px 0 54px;
+      border-top: 1px solid var(--line);
     }
 
-    .hero-copy,
-    .product-card {
+    .hero-copy {
       min-width: 0;
     }
 
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--teal-dark);
-      background: var(--teal-soft);
-      border: 1px solid #c8ece6;
-      border-radius: 999px;
-      padding: 7px 12px;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      margin-bottom: 22px;
-    }
-
-    .eyebrow-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: var(--teal);
-      animation: blink 2.4s ease-in-out infinite;
-    }
-
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.35; }
-    }
-
     h1 {
-      max-width: 680px;
-      font-size: clamp(38px, 5.8vw, 72px);
-      font-weight: 700;
+      max-width: 650px;
+      font-size: clamp(42px, 5.8vw, 76px);
       line-height: 0.98;
-      letter-spacing: -0.06em;
-      margin-bottom: 24px;
+      letter-spacing: -0.055em;
+      font-weight: 760;
     }
 
-    h1 em {
-      color: var(--teal-dark);
-      font-style: normal;
-    }
-
-    .subtitle {
-      max-width: 620px;
+    .hero-lead {
+      max-width: 590px;
+      margin-top: 24px;
       color: var(--muted);
       font-size: 18px;
       line-height: 1.7;
-      margin-bottom: 30px;
     }
 
-    .subtitle strong {
+    .hero-lead strong {
       color: var(--ink);
-      font-weight: 600;
+      font-weight: 700;
     }
 
     .cta-row {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
-      margin-bottom: 24px;
+      margin-top: 30px;
     }
 
-    .cta-button {
+    .button {
+      min-height: 48px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 46px;
-      padding: 13px 18px;
-      border-radius: 12px;
+      gap: 9px;
       border: 1px solid var(--ink);
+      border-radius: 12px;
       background: var(--ink);
-      color: #fff;
+      color: #ffffff;
+      padding: 13px 18px;
       text-decoration: none;
       font-size: 15px;
-      font-weight: 800;
+      font-weight: 820;
       letter-spacing: -0.01em;
-      transition: transform 0.12s ease, background 0.18s ease, border-color 0.18s ease;
+      transition: transform 0.14s ease, background 0.18s ease, border-color 0.18s ease;
     }
 
-    .cta-button:hover {
-      background: #1b3238;
-      border-color: #1b3238;
+    .button:hover {
+      background: #1d343a;
+      border-color: #1d343a;
     }
 
-    .cta-button:active {
+    .button:active {
       transform: translateY(1px);
     }
 
-    .cta-button.secondary {
-      background: var(--paper);
+    .button.secondary {
       color: var(--ink);
+      background: transparent;
       border-color: var(--line);
     }
 
-    .cta-button.secondary:hover {
-      background: var(--teal-soft);
-      border-color: #c8ece6;
+    .button.secondary:hover {
+      background: #ffffff;
+      border-color: #c8d9d6;
     }
 
-    .trust-row {
+    .proof-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 26px;
+      gap: 8px;
+      margin-top: 24px;
     }
 
-    .trust-chip {
+    .proof-chip {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      color: var(--muted);
-      background: rgba(255,255,255,0.7);
+      gap: 7px;
       border: 1px solid var(--line);
       border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--muted);
       padding: 8px 11px;
       font-size: 13px;
+      font-weight: 680;
     }
 
-    .trust-chip svg {
+    .proof-chip svg {
       color: var(--teal);
-      flex-shrink: 0;
+      flex: 0 0 auto;
     }
 
-    .product-card {
-      background: var(--paper);
-      border: 1px solid var(--line);
-      border-radius: 26px;
-      box-shadow: var(--shadow);
+    .product-shell {
+      min-width: 0;
       overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
     }
 
     .product-bar {
@@ -270,12 +239,12 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      padding: 15px 18px;
+      padding: 13px 15px;
       border-bottom: 1px solid var(--line);
       background: #fbfdfc;
       color: var(--muted);
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 12px;
+      font-weight: 740;
     }
 
     .window-dots {
@@ -287,237 +256,239 @@
       width: 8px;
       height: 8px;
       border-radius: 999px;
-      background: #c8d7d4;
+      background: #c4d4d1;
     }
 
-    .browser-pill {
-      color: var(--teal-dark);
-      background: var(--teal-soft);
-      border: 1px solid #c8ece6;
-      border-radius: 999px;
-      padding: 5px 9px;
-      font-size: 12px;
-    }
-
-    .analysis-body {
-      padding: 18px;
-    }
-
-    .canvas-wrap {
-      position: relative;
-      overflow: hidden;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: #f8fbfa;
-    }
-
-    canvas {
-      display: block;
-      width: 100%;
-      background: #f8fbfa;
-    }
-
-    .metrics {
+    .product-body {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-top: 12px;
+      grid-template-columns: 170px minmax(0, 1fr);
+      min-height: 438px;
     }
 
-    .metric {
-      border: 1px solid var(--line);
-      border-radius: 15px;
-      padding: 13px;
-      background: #fbfdfc;
+    .mini-sidebar {
+      border-right: 1px solid var(--line);
+      background: #f8fbfa;
+      padding: 16px 14px;
     }
 
-    .metric-label {
-      display: block;
+    .mini-section-title {
       color: var(--dim);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      margin-bottom: 6px;
-    }
-
-    .metric-value {
-      color: var(--ink);
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-    }
-
-    .report-preview {
-      margin-top: 12px;
-      padding: 15px;
-      background: #102027;
-      border-radius: 17px;
-      color: #e5f7f4;
-    }
-
-    .report-preview span {
-      display: block;
-      color: #8fcac2;
-      font-size: 11px;
-      font-weight: 700;
+      font-size: 10px;
+      font-weight: 850;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-
-    .report-preview p {
-      color: #d7e7e4;
-      font-size: 13px;
-      line-height: 1.55;
-    }
-
-    .prototype-strip {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      margin-top: 12px;
-      padding: 13px 15px;
-      border: 1px solid #c8ece6;
-      border-radius: 17px;
-      background: var(--teal-soft);
-      text-decoration: none;
-    }
-
-    .prototype-strip strong {
-      display: block;
-      color: var(--teal-dark);
-      font-size: 13px;
-      margin-bottom: 2px;
-    }
-
-    .prototype-strip span {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.35;
-    }
-
-    .section {
-      border-top: 1px solid var(--line);
-      padding: 42px 0 8px;
-    }
-
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      gap: 24px;
-      align-items: end;
-      margin-bottom: 18px;
-    }
-
-    h2 {
-      max-width: 520px;
-      font-size: clamp(26px, 3vw, 38px);
-      line-height: 1.08;
-      letter-spacing: -0.04em;
-    }
-
-    .section-header p {
-      max-width: 430px;
-      color: var(--muted);
-      line-height: 1.65;
-      font-size: 15px;
-    }
-
-    .steps {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px;
-    }
-
-    .desktop-callout {
-      display: grid;
-      grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
-      gap: 18px;
-      align-items: stretch;
-      border: 1px solid #c8ece6;
-      border-radius: 22px;
-      padding: 20px;
-      background: linear-gradient(135deg, rgba(224,245,243,0.82), rgba(255,255,255,0.86));
-      box-shadow: var(--shadow-soft);
-    }
-
-    .desktop-callout h2 {
-      max-width: 720px;
       margin-bottom: 10px;
     }
 
-    .desktop-callout p {
+    .mini-control {
+      display: grid;
+      gap: 7px;
+      margin-bottom: 17px;
+    }
+
+    .mini-control span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 730;
+    }
+
+    .mini-pill {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--paper);
+      padding: 8px 9px;
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .mini-pill.active {
+      border-color: rgba(15, 159, 143, 0.38);
+      background: var(--soft);
+      color: var(--teal-dark);
+    }
+
+    .mini-range {
+      height: 7px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--teal) 0 62%, #d4e2df 62%);
+    }
+
+    .workspace-preview {
+      min-width: 0;
+      padding: 16px;
+    }
+
+    .preview-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+
+    .preview-title {
+      font-size: 13px;
+      font-weight: 850;
+      color: var(--ink);
+    }
+
+    .preview-meta {
+      margin-top: 3px;
+      color: var(--dim);
+      font-size: 11px;
+      font-weight: 650;
+    }
+
+    .preview-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .icon-dot {
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .canvas-frame {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #f8fbfa;
+    }
+
+    #woundCanvas {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .preview-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 9px;
+      margin-top: 10px;
+    }
+
+    .preview-metric {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fbfdfc;
+      padding: 11px;
+    }
+
+    .preview-metric span {
+      display: block;
+      color: var(--dim);
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+
+    .preview-metric strong {
+      display: block;
+      color: var(--ink);
+      font-size: 16px;
+      letter-spacing: -0.03em;
+    }
+
+    .section {
+      padding: 54px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .section.compact {
+      padding: 42px 0;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 28px;
+      margin-bottom: 24px;
+    }
+
+    h2 {
+      max-width: 560px;
+      font-size: clamp(28px, 3.4vw, 44px);
+      line-height: 1.06;
+      letter-spacing: -0.045em;
+      font-weight: 760;
+    }
+
+    .section-head p {
+      max-width: 455px;
       color: var(--muted);
       font-size: 15px;
       line-height: 1.65;
     }
 
-    .desktop-card {
+    .capability-grid {
       display: grid;
-      gap: 10px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .capability {
+      min-height: 138px;
       border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 16px;
-      background: var(--paper);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.66);
+      padding: 17px;
     }
 
-    .desktop-card strong {
-      color: var(--ink);
+    .capability svg {
+      width: 25px;
+      height: 25px;
+      color: var(--teal-dark);
+      margin-bottom: 14px;
+    }
+
+    .capability h3 {
       font-size: 15px;
+      letter-spacing: -0.015em;
+      margin-bottom: 7px;
     }
 
-    .desktop-card span {
+    .capability p {
       color: var(--muted);
       font-size: 13px;
-      line-height: 1.5;
-    }
-
-    .desktop-list {
-      display: grid;
-      gap: 8px;
-      margin: 15px 0 18px;
-      color: var(--muted);
-      font-size: 14px;
       line-height: 1.55;
-      list-style: none;
     }
 
-    .desktop-list li {
-      position: relative;
-      padding-left: 18px;
-    }
-
-    .desktop-list li::before {
-      content: "";
-      position: absolute;
-      left: 0;
-      top: 0.72em;
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: var(--teal);
+    .workflow {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
     }
 
     .step {
-      background: rgba(255,255,255,0.76);
       border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 18px;
+      border-radius: var(--radius);
+      background: var(--paper);
+      padding: 20px;
     }
 
-    .step-num {
+    .step-number {
       color: var(--teal-dark);
       font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
+      font-weight: 850;
+      letter-spacing: 0.07em;
       text-transform: uppercase;
       margin-bottom: 18px;
     }
 
     .step h3 {
-      font-size: 17px;
+      font-size: 18px;
       letter-spacing: -0.02em;
       margin-bottom: 8px;
     }
@@ -525,67 +496,59 @@
     .step p {
       color: var(--muted);
       font-size: 14px;
-      line-height: 1.6;
+      line-height: 1.62;
     }
-    .evidence-grid {
+
+    .split-panel {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px;
+      grid-template-columns: minmax(0, 0.88fr) minmax(360px, 1fr);
+      gap: 24px;
+      align-items: stretch;
     }
 
-    .evidence-item {
-      background: var(--paper);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 18px;
-    }
-
-    .evidence-item span {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 28px;
-      height: 28px;
-      border-radius: 999px;
-      background: var(--teal-soft);
-      color: var(--teal-dark);
-      font-size: 11px;
-      font-weight: 800;
-      margin-bottom: 16px;
-    }
-
-    .evidence-item h3 {
-      font-size: 17px;
-      letter-spacing: -0.02em;
-      margin-bottom: 8px;
-    }
-
-    .evidence-item p {
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
+    .quiet-panel,
     .feedback-panel {
-      display: grid;
-      grid-template-columns: minmax(0, 0.78fr) minmax(360px, 1fr);
-      gap: 22px;
-      align-items: start;
-      padding: 24px;
       border: 1px solid var(--line);
-      border-radius: 24px;
-      background: rgba(255,255,255,0.68);
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.72);
+      padding: 24px;
     }
 
-    .feedback-copy h2 {
-      max-width: 420px;
+    .quiet-panel h2,
+    .feedback-panel h2 {
+      font-size: clamp(26px, 3vw, 38px);
       margin-bottom: 12px;
     }
 
-    .feedback-copy p {
+    .quiet-panel p,
+    .feedback-panel p {
       color: var(--muted);
       font-size: 15px;
       line-height: 1.7;
+    }
+
+    .status-list {
+      display: grid;
+      gap: 9px;
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 14px;
+      list-style: none;
+    }
+
+    .status-list li {
+      display: flex;
+      gap: 9px;
+    }
+
+    .status-list li::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      margin-top: 0.65em;
+      border-radius: 999px;
+      background: var(--teal);
+      flex: 0 0 auto;
     }
 
     .feedback-form {
@@ -601,7 +564,7 @@
     .field-group label {
       color: var(--muted);
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 850;
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
@@ -611,7 +574,7 @@
       width: 100%;
       border: 1px solid var(--line);
       border-radius: 12px;
-      background: var(--paper);
+      background: #ffffff;
       color: var(--ink);
       font: inherit;
       font-size: 14px;
@@ -625,46 +588,41 @@
     }
 
     .field-group textarea {
-      min-height: 120px;
+      min-height: 118px;
       padding: 13px 14px;
-      resize: vertical;
       line-height: 1.55;
+      resize: vertical;
     }
 
     .field-group input:focus,
     .field-group textarea:focus {
-      border-color: rgba(15,159,143,0.55);
-      box-shadow: 0 0 0 4px rgba(15,159,143,0.11);
+      border-color: rgba(15, 159, 143, 0.55);
+      box-shadow: 0 0 0 4px rgba(15, 159, 143, 0.11);
     }
 
     .feedback-actions {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       gap: 12px;
-      flex-wrap: wrap;
     }
 
     .feedback-actions button {
       min-height: 46px;
-      padding: 13px 18px;
       border: 1px solid var(--ink);
       border-radius: 12px;
       background: var(--ink);
-      color: #fff;
+      color: #ffffff;
+      padding: 13px 18px;
       cursor: pointer;
       font: inherit;
       font-size: 15px;
-      font-weight: 800;
+      font-weight: 820;
       letter-spacing: -0.01em;
-      transition: transform 0.12s ease, background 0.18s ease, opacity 0.18s ease;
     }
 
     .feedback-actions button:hover {
-      background: #1b3238;
-    }
-
-    .feedback-actions button:active {
-      transform: translateY(1px);
+      background: #1d343a;
     }
 
     .feedback-status {
@@ -677,11 +635,10 @@
       display: flex;
       justify-content: space-between;
       gap: 18px;
-      border-top: 1px solid var(--line);
       color: var(--dim);
       font-size: 13px;
-      margin-top: 46px;
-      padding: 22px 0 8px;
+      border-top: 1px solid var(--line);
+      padding: 24px 0 34px;
     }
 
     footer a {
@@ -694,145 +651,161 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .eyebrow-dot { animation: none; }
+      html {
+        scroll-behavior: auto;
+      }
     }
 
-    @media (max-width: 900px) {
-      body { padding: 20px; }
-      .site-header { padding-bottom: 34px; }
-      .site-header { align-items: flex-start; }
-      .site-nav { flex-wrap: wrap; justify-content: flex-end; }
-      .hero { grid-template-columns: 1fr; gap: 34px; }
-      .section-header { display: block; }
-      .section-header p { margin-top: 12px; }
-      .steps, .evidence-grid, .feedback-panel, .desktop-callout { grid-template-columns: 1fr; }
+    @media (max-width: 980px) {
+      .hero,
+      .split-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .product-body {
+        grid-template-columns: 150px minmax(0, 1fr);
+      }
+
+      .capability-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .workflow {
+        grid-template-columns: 1fr;
+      }
     }
 
-    @media (max-width: 560px) {
+    @media (max-width: 680px) {
       html,
       body {
-        width: 100%;
         overflow-x: hidden;
       }
 
       body {
-        padding: 16px;
+        padding: 0 14px;
       }
 
       .page {
         width: 100%;
-        max-width: 358px;
-        margin: 0 auto;
-        overflow: hidden;
-      }
-
-      main,
-      .hero,
-      .hero-copy,
-      .product-card,
-      .section,
-      .section-header,
-      .section-header p,
-      .analysis-body,
-      .canvas-wrap,
-      .report-preview,
-      .feedback-panel,
-      .steps,
-      .evidence-grid,
-      footer {
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
-      }
-
-      .hero {
-        grid-template-columns: minmax(0, 1fr);
-        gap: 34px;
-      }
-
-      h1 {
-        font-size: 31px;
-        line-height: 1.1;
-        letter-spacing: -0.035em;
-        overflow-wrap: anywhere;
-      }
-
-      h1 em {
-        display: block;
-      }
-
-      .subtitle {
-        font-size: 16px;
-        line-height: 1.65;
-        overflow-wrap: break-word;
-      }
-
-      .subtitle strong,
-      .report-preview p {
-        overflow-wrap: anywhere;
-        word-break: break-word;
+        max-width: none;
+        padding: 0;
       }
 
       .site-header {
+        align-items: flex-start;
         flex-direction: column;
       }
 
       .site-nav {
         width: 100%;
-        justify-content: flex-start;
-      }
-
-      .cta-row,
-      .prototype-strip,
-      .feedback-actions {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .feedback-panel {
-        padding: 18px;
-        border-radius: 20px;
-      }
-
-      .product-card {
-        border-radius: 22px;
-        overflow: hidden;
-      }
-
-      .product-bar {
-        gap: 8px;
-        padding: 13px 14px;
-        font-size: 12px;
-      }
-
-      .product-bar > span:not(.browser-pill) {
+        flex-wrap: wrap;
         min-width: 0;
       }
 
-      .browser-pill {
-        display: none;
+      .nav-link.primary {
+        width: calc(100vw - 56px);
       }
 
-      .analysis-body {
-        padding: 12px;
+      .hero {
+        padding-top: 38px;
       }
 
-      canvas,
-      #woundCanvas {
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        height: auto;
+      .hero,
+      .hero-copy,
+      .product-shell,
+      .product-body,
+      .workspace-preview,
+      .section,
+      .split-panel,
+      .quiet-panel,
+      .feedback-panel {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
       }
 
-      .metrics,
-      .steps,
-      .evidence-grid {
+      .hero-copy,
+      .product-shell {
+        max-width: calc(100vw - 56px);
+        margin-right: 0;
+      }
+
+      h1 {
+        max-width: 100%;
+        font-size: 28px;
+        line-height: 1.12;
+        letter-spacing: -0.02em;
+        overflow-wrap: break-word;
+      }
+
+      .hero-lead {
+        font-size: 16px;
+        max-width: 100%;
+        overflow-wrap: break-word;
+      }
+
+      .hero-lead strong {
+        display: block;
+        margin: 4px 0;
+      }
+
+      .button {
+        width: calc(100vw - 56px);
+        max-width: calc(100vw - 56px);
+      }
+
+      .product-body {
         grid-template-columns: 1fr;
       }
 
-      footer {
+      .mini-sidebar {
+        display: none;
+      }
+
+      .preview-head {
         flex-direction: column;
+      }
+
+      .product-bar {
+        align-items: flex-start;
+        justify-content: flex-start;
+      }
+
+      .product-bar > span:last-child {
+        display: none;
+      }
+
+      .preview-metrics,
+      .capability-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .section-head {
+        display: block;
+      }
+
+      .section-head p {
+        margin-top: 12px;
+      }
+
+      .split-panel,
+      footer,
+      .feedback-actions {
+        display: block;
+      }
+
+      .feedback-panel {
+        margin-top: 14px;
+      }
+
+      .feedback-actions button,
+      .feedback-status {
+        width: 100%;
+      }
+
+      .feedback-status {
+        display: block;
+        margin-top: 10px;
       }
     }
   </style>
@@ -840,226 +813,284 @@
 <body>
   <div class="page">
     <header class="site-header">
-      <div class="logo" aria-label="Cytomove">
+      <a class="logo" href="/" aria-label="Cytomove home">
         <span class="logo-mark">
-          <svg width="24" height="24" viewBox="0 0 30 30" fill="none" aria-hidden="true">
-            <circle cx="15" cy="15" r="13.5" stroke="#0f9f8f" stroke-width="1.4"/>
-            <circle cx="9.5" cy="15" r="3.8" fill="rgba(15,159,143,0.14)" stroke="#0f9f8f" stroke-width="1"/>
-            <circle cx="20.5" cy="15" r="3.8" fill="rgba(15,159,143,0.14)" stroke="#0f9f8f" stroke-width="1"/>
-            <line x1="13.7" y1="15" x2="16.3" y2="15" stroke="#0f9f8f" stroke-width="1.1" stroke-dasharray="1.8 1.5"/>
-            <path d="M15.8 12.8l2.5 2.2-2.5 2.2" stroke="#0f9f8f" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <svg width="25" height="25" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <circle cx="16" cy="16" r="13" stroke="#0f9f8f" stroke-width="1.8"/>
+            <ellipse cx="10.5" cy="16" rx="4" ry="4" fill="#bdeee8" stroke="#0f9f8f" stroke-width="1.4"/>
+            <ellipse cx="21.5" cy="16" rx="4" ry="4" fill="#bdeee8" stroke="#0f9f8f" stroke-width="1.4"/>
+            <path d="M14 12.5L18.5 16 14 19.5" stroke="#08766c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </span>
         <span class="logo-text">Cytomove</span>
-      </div>
+      </a>
+
       <nav class="site-nav" aria-label="Primary navigation">
-        <a class="nav-link" href="#workflow-title">Workflow</a>
-        <a class="nav-link" href="#desktop-alpha-title">Desktop Alpha</a>
-        <a class="nav-link" href="#evidence-title">Status</a>
-        <a class="nav-link" href="#feedback-title">Feedback</a>
-        <a class="nav-link primary" href="prototype_refactor/">Open prototype</a>
+        <a class="nav-link" href="#capabilities">Features</a>
+        <a class="nav-link" href="#desktop-alpha">Desktop Alpha</a>
+        <a class="nav-link" href="#request">Request</a>
+        <a class="nav-link primary" href="prototype_refactor/">Open Web App</a>
       </nav>
     </header>
 
     <main>
       <section class="hero">
         <div class="hero-copy">
-          <div class="eyebrow">
-            <span class="eyebrow-dot"></span>
-            Prototype workspace
-          </div>
-
-          <h1>Scratch assay analysis, <em>local first.</em></h1>
-
-          <p class="subtitle">
-            Cytomove analyzes wound healing images without uploading assay data.
-            Use the web prototype for quick checks; use the Desktop Alpha for faster
-            local group work and heavier export workflows.
+          <h1>Scratch assay analysis in your browser.</h1>
+          <p class="hero-lead">
+            Cytomove is a local-first wound healing analysis workspace for
+            <strong>single images, groups, masks, plots, and exports</strong>.
+            Your microscopy images stay on your device.
           </p>
 
           <div class="cta-row" aria-label="Primary actions">
-            <a class="cta-button" href="#desktop-alpha-title">Use Desktop Alpha</a>
-            <a class="cta-button secondary" href="prototype_refactor/">Open web prototype</a>
+            <a class="button" href="prototype_refactor/">
+              Open Web App
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M4 12 12 4M6.5 4H12v5.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </a>
+            <a class="button secondary" href="#request">Request Desktop Alpha</a>
           </div>
 
-          <div class="trust-row" aria-label="Product highlights">
-            <span class="trust-chip">
+          <div class="proof-row" aria-label="Product highlights">
+            <span class="proof-chip">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M3 7.2l2.2 2.2L11 3.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M3 7.2 5.2 9.4 11 3.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              Assay images stay local
+              No image upload
             </span>
-            <span class="trust-chip">
+            <span class="proof-chip">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <rect x="2" y="1.5" width="10" height="11" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+                <path d="M2 10 5 7l2 2 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Area and width metrics
+            </span>
+            <span class="proof-chip">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <rect x="2" y="2" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.3"/>
                 <path d="M4.5 5h5M4.5 7h4M4.5 9h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
               </svg>
-              Desktop recommended for speed
-            </span>
-            <span class="trust-chip">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M2 10l3-3 2 2 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-                <rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.1"/>
-              </svg>
-              Validation in progress
+              CSV, Excel, PNG, ZIP
             </span>
           </div>
         </div>
 
-        <aside class="product-card" aria-label="Cytomove analysis preview">
+        <aside class="product-shell" aria-label="Cytomove web app preview">
           <div class="product-bar">
             <div class="window-dots" aria-hidden="true"><span></span><span></span><span></span></div>
-            <span>Analysis preview</span>
-            <span class="browser-pill">Local-first</span>
+            <span>Cytomove Web App</span>
+            <span>Local analysis</span>
           </div>
-          <div class="analysis-body">
-            <div class="canvas-wrap">
-              <canvas id="woundCanvas" width="580" height="170"
-                aria-label="Animated scratch assay showing two cell monolayers migrating to close a wound gap">Animated scratch assay demo showing wound closure</canvas>
-            </div>
-            <div class="metrics">
-              <div class="metric">
-                <span class="metric-label">Measurement</span>
-                <span class="metric-value">Wound area</span>
+          <div class="product-body">
+            <div class="mini-sidebar" aria-hidden="true">
+              <div class="mini-section-title">Review mode</div>
+              <div class="mini-control">
+                <div class="mini-pill active"><span>Single</span><span>Ready</span></div>
+                <div class="mini-pill"><span>Group</span><span>3 files</span></div>
               </div>
-              <div class="metric">
-                <span class="metric-label">Export</span>
-                <span class="metric-value">PNG + CSV</span>
+              <div class="mini-section-title">Segmentation</div>
+              <div class="mini-control">
+                <span>Threshold</span>
+                <div class="mini-range"></div>
               </div>
-              <div class="metric">
-                <span class="metric-label">Status</span>
-                <span class="metric-value">Prototype</span>
+              <div class="mini-control">
+                <span>Manual correction</span>
+                <div class="mini-pill active"><span>Add scan</span><span>On</span></div>
+              </div>
+              <div class="mini-section-title">Export</div>
+              <div class="mini-control">
+                <div class="mini-pill"><span>PNG</span><span>CSV</span></div>
+                <div class="mini-pill"><span>Plots</span><span>ZIP</span></div>
               </div>
             </div>
-            <div class="report-preview">
-              <span>Current focus</span>
-              <p>
-                Improve segmentation robustness, compare against ImageJ/manual
-                references, test the Desktop Alpha with real groups, and prepare a
-                small private beta.
-              </p>
+
+            <div class="workspace-preview">
+              <div class="preview-head">
+                <div>
+                  <div class="preview-title">20211222_133321.jpg</div>
+                  <div class="preview-meta">2806 x 3547 px - brightfield - contour overlay</div>
+                </div>
+                <div class="preview-actions" aria-hidden="true">
+                  <span class="icon-dot"></span>
+                  <span class="icon-dot"></span>
+                  <span class="icon-dot"></span>
+                </div>
+              </div>
+              <div class="canvas-frame">
+                <canvas id="woundCanvas" width="700" height="330" aria-label="Animated scratch assay segmentation preview"></canvas>
+              </div>
+              <div class="preview-metrics">
+                <div class="preview-metric">
+                  <span>Wound area</span>
+                  <strong>29.84%</strong>
+                </div>
+                <div class="preview-metric">
+                  <span>Mean width</span>
+                  <strong>555.6 px</strong>
+                </div>
+                <div class="preview-metric">
+                  <span>QC score</span>
+                  <strong>Review</strong>
+                </div>
+              </div>
             </div>
-            <a class="prototype-strip" href="prototype_refactor/" aria-label="Open Cytomove prototype">
-              <span>
-                <strong>Web prototype remains available</strong>
-                Good for quick checks; Desktop Alpha is recommended for heavier groups.
-              </span>
-              <strong>Open</strong>
-            </a>
           </div>
         </aside>
       </section>
 
-      <section class="section" aria-labelledby="desktop-alpha-title">
-        <div class="desktop-callout">
-          <div>
-            <h2 id="desktop-alpha-title">Desktop Alpha is the faster local path.</h2>
-            <p>
-              The web prototype is useful for quick review, but large images, multi-file
-              groups, and ZIP exports feel better in the Windows Desktop Alpha. It runs
-              the current Cytomove workflow locally and keeps the same privacy posture:
-              assay images are not uploaded.
-            </p>
-            <ul class="desktop-list">
-              <li>Full free alpha: no mandatory account or login.</li>
-              <li>Recommended for group analysis, plots, and full-resolution overlay exports.</li>
-              <li>Optional email feedback keeps you in the update loop before private beta.</li>
-            </ul>
-            <div class="cta-row" aria-label="Desktop Alpha actions">
-              <a class="cta-button" href="#feedback-title">Request Desktop Alpha</a>
-              <a class="cta-button secondary" href="prototype_refactor/">Try web prototype</a>
-            </div>
-          </div>
-          <div class="desktop-card" aria-label="Desktop Alpha status">
-            <strong>Current desktop policy</strong>
-            <span>Alpha 0.1 is free and offline-friendly. Future paid modules may use account licensing, but the core analysis path stays local-first.</span>
-            <strong>Web connection</strong>
-            <span>The app can read Cytomove status/update messages from the website. It does not upload microscopy images or analysis results.</span>
-          </div>
+      <section class="section" id="capabilities" aria-labelledby="capabilities-title">
+        <div class="section-head">
+          <h2 id="capabilities-title">Everything needed for a practical web review.</h2>
+          <p>
+            The web app is the default entry point. It is meant for quick local analysis,
+            figure checks, grouped time courses, and export without installing anything.
+          </p>
+        </div>
+
+        <div class="capability-grid">
+          <article class="capability">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 3v10M8 7l4-4 4 4M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h3>Local image input</h3>
+            <p>Drag and drop one image or multiple time-point images. PNG, JPEG, BMP, GIF, and WebP are browser-friendly.</p>
+          </article>
+
+          <article class="capability">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M8 5v4M15 10v4M11 15v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            <h3>Segmentation controls</h3>
+            <p>Brightfield and phase presets, threshold level, variance radius, component filtering, FOV crop, and rotation tools.</p>
+          </article>
+
+          <article class="capability">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 17c4-9 10-9 14 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M4 6c5 5 11 5 16 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M12 5v14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-dasharray="2 3"/>
+            </svg>
+            <h3>Area and width metrics</h3>
+            <p>Wound area percentage, mean and median width, width spread, valid rows, area-width fit, and closure summaries.</p>
+          </article>
+
+          <article class="capability">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 20h16M6 16l3-4 3 2 5-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M17 7h3v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h3>Group plots</h3>
+            <p>Review grouped images, preview time-course cards, open area and width plots, and export plot ZIP files.</p>
+          </article>
+
+          <article class="capability">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 19 19 4M8 5l11 11M5 8l11 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            <h3>Manual correction</h3>
+            <p>Add scan, fill area, erase scan, clean specks, undo edits, and reset correction when the automatic mask needs review.</p>
+          </article>
+
+          <article class="capability">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.8"/>
+              <path d="M8 10h8M8 14h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            <h3>QC guidance</h3>
+            <p>Segmentation quality score, warnings, component counts, continuity checks, and recommended primary metric.</p>
+          </article>
+
+          <article class="capability">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 4v10M8 10l4 4 4-4M5 20h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h3>Export formats</h3>
+            <p>Download PNG overlays, group PNG ZIPs, plot ZIPs, CSV data, and Excel-compatible tables.</p>
+          </article>
+
+          <article class="capability">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 3 5 6v5c0 4.6 2.9 8 7 10 4.1-2 7-5.4 7-10V6l-7-3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+              <path d="M9 12l2 2 4-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h3>Privacy posture</h3>
+            <p>Analysis runs in the browser. The current web workflow does not upload assay images to a backend.</p>
+          </article>
         </div>
       </section>
 
-      <section class="section" aria-labelledby="workflow-title">
-        <div class="section-header">
-          <h2 id="workflow-title">A focused analysis workflow.</h2>
-          <p>
-            The current workflow is intentionally practical: image input,
-            segmentation review, manual correction, and export.
-          </p>
+      <section class="section compact" aria-labelledby="workflow-title">
+        <div class="section-head">
+          <h2 id="workflow-title">Three simple steps.</h2>
+          <p>Open the web app, load images, review the output, then export the pieces you need.</p>
         </div>
-        <div class="steps">
+
+        <div class="workflow">
           <article class="step">
-            <div class="step-num">01</div>
+            <div class="step-number">01</div>
             <h3>Load images</h3>
-            <p>Use single images or grouped time-point images in the web prototype or Desktop Alpha.</p>
+            <p>Use the toolbar or drag and drop. One file opens single mode; multiple files create a group.</p>
           </article>
           <article class="step">
-            <div class="step-num">02</div>
-            <h3>Review the mask</h3>
-            <p>Inspect the contour, adjust settings, and correct missed regions when needed.</p>
+            <div class="step-number">02</div>
+            <h3>Review and correct</h3>
+            <p>Check contours or masks, adjust segmentation, crop, rotate, and apply manual correction if needed.</p>
           </article>
           <article class="step">
-            <div class="step-num">03</div>
+            <div class="step-number">03</div>
             <h3>Export results</h3>
-            <p>Download overlays, plots, CSV, or Excel tables; Desktop Alpha is preferred for heavier ZIP exports.</p>
+            <p>Save overlays, plots, CSV, or Excel tables for reporting and validation notes.</p>
           </article>
         </div>
       </section>
-      <section class="section" aria-labelledby="evidence-title">
-        <div class="section-header">
-          <h2 id="evidence-title">Where the project stands.</h2>
-          <p>
-            Cytomove is not ready for broad public beta yet. The next sensible step is
-            Desktop Alpha feedback from a small trusted group while validation continues.
-          </p>
-        </div>
-        <div class="evidence-grid">
-          <article class="evidence-item">
-            <span>01</span>
-            <h3>Prototype usable now</h3>
-            <p>The web workspace supports local images, group review, manual correction, and export.</p>
-          </article>
-          <article class="evidence-item">
-            <span>02</span>
-            <h3>Validation still active</h3>
-            <p>Measurements are being compared with ImageJ/manual references before stronger claims are made.</p>
-          </article>
-          <article class="evidence-item">
-            <span>03</span>
-            <h3>Desktop Alpha first</h3>
-            <p>Use a small trusted group to test speed, exports, and real multi-image workflows before public beta.</p>
-          </article>
-        </div>
-      </section>
-      <section class="section" aria-labelledby="feedback-title">
-        <div class="feedback-panel">
-          <div class="feedback-copy">
-            <h2 id="feedback-title">Help shape the Desktop Alpha.</h2>
+
+      <section class="section compact" id="desktop-alpha" aria-labelledby="desktop-alpha-title">
+        <div class="split-panel">
+          <div class="quiet-panel">
+            <h2 id="desktop-alpha-title">Desktop Alpha is by request.</h2>
             <p>
-              Request the Windows Desktop Alpha, send difficult image notes, or tell
-              me what would make Cytomove more useful in a real scratch assay workflow.
+              The web app stays the main public path. The Windows Desktop Alpha is available
+              for trusted testers who need faster local group workflows or heavier ZIP exports.
             </p>
+            <ul class="status-list">
+              <li>Alpha 0.1 is free, local-first, and does not require mandatory login.</li>
+              <li>Desktop access is shared manually for feedback and real-lab testing.</li>
+              <li>Private beta and account licensing can come later, after validation and tester feedback.</li>
+            </ul>
+            <div class="cta-row">
+              <a class="button secondary" href="#request">Request access</a>
+            </div>
           </div>
-          <form class="feedback-form" id="feedbackForm"
-                action="https://formspree.io/f/mdayrwqe"
-                method="POST">
-            <input type="hidden" name="source" value="cytomove-landing-feedback">
-            <input type="hidden" name="_subject" value="Cytomove feedback">
-            <div class="field-group">
-              <label for="feedbackMessage">Suggestion</label>
-              <textarea id="feedbackMessage" name="message" placeholder="Request Desktop Alpha, describe a difficult image, or tell me what you need next." required></textarea>
-            </div>
-            <div class="field-group">
-              <label for="feedbackEmail">Email</label>
-              <input id="feedbackEmail" type="email" name="email" placeholder="researcher@lab.edu" required autocomplete="email">
-            </div>
-            <div class="feedback-actions">
-              <button type="submit">Send feedback</button>
-              <p class="feedback-status" id="feedbackStatus" role="status" aria-live="polite">
-                Your message goes directly to the Cytomove inbox.
-              </p>
-            </div>
-          </form>
+
+          <div class="feedback-panel" id="request">
+            <h2>Request access or send feedback.</h2>
+            <p>
+              Ask for the Desktop Alpha, report a difficult image, or suggest what would
+              make Cytomove more useful in your scratch assay workflow.
+            </p>
+            <form class="feedback-form" id="feedbackForm"
+                  action="https://formspree.io/f/mdayrwqe"
+                  method="POST">
+              <input type="hidden" name="source" value="cytomove-landing-feedback">
+              <input type="hidden" name="_subject" value="Cytomove feedback">
+              <div class="field-group">
+                <label for="feedbackMessage">Message</label>
+                <textarea id="feedbackMessage" name="message" placeholder="Request Desktop Alpha, describe your image set, or share a feature idea." required></textarea>
+              </div>
+              <div class="field-group">
+                <label for="feedbackEmail">Email</label>
+                <input id="feedbackEmail" type="email" name="email" placeholder="researcher@lab.edu" required autocomplete="email">
+              </div>
+              <div class="feedback-actions">
+                <button type="submit">Send request</button>
+                <span class="feedback-status" id="feedbackStatus" role="status" aria-live="polite">
+                  Your message goes directly to the Cytomove inbox.
+                </span>
+              </div>
+            </form>
+          </div>
         </div>
       </section>
     </main>
@@ -1075,120 +1106,115 @@
   </div>
 
   <script>
-    /* ── Wound healing animation ── */
     (function () {
       var canvas = document.getElementById('woundCanvas');
       if (!canvas) return;
       var ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      var W = 580, H = 170;
-      canvas.width  = W;
-      canvas.height = H;
-
-      var ROWS = 4, COLS = 9, SP = 27, CYCLE = 340;
-      var BG = '#f8fbfa';
-
-      function rnd(a, b) { return a + Math.random() * (b - a); }
-
-      var cells = [];
-      for (var i = 0; i < ROWS * COLS; i++) {
-        cells.push({
-          dr: rnd(-2, 2), dc: rnd(-2, 2),
-          s:  rnd(9, 13),
-          op: rnd(0.6, 1.0),
-          nx: rnd(-3, 3), ny: rnd(-3, 3),
-          ph: Math.random() * Math.PI * 2
-        });
-      }
+      var W = canvas.width;
+      var H = canvas.height;
+      var cycle = 360;
+      var t = 0;
+      var running = true;
 
       function ease(x) {
         return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
       }
 
-      function drawCell(x, y, s, op, nx, ny, shim) {
+      function cell(x, y, r, a) {
         ctx.beginPath();
-        ctx.arc(x, y, s, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(20,184,166,' + (op * 0.18) + ')';
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(15,159,143,' + a + ')';
         ctx.fill();
-        ctx.strokeStyle = 'rgba(45,212,191,' + (op * (0.5 + shim * 0.3)) + ')';
+        ctx.strokeStyle = 'rgba(8,118,108,0.35)';
         ctx.lineWidth = 1;
         ctx.stroke();
         ctx.beginPath();
-        ctx.arc(x + nx, y + ny, s * 0.32, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(45,212,191,' + (op * 0.5) + ')';
+        ctx.arc(x + r * 0.18, y - r * 0.12, r * 0.32, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.58)';
         ctx.fill();
       }
 
-      var t = 0;
-      var running = true;
-
-      function frame() {
-        /* background */
-        ctx.fillStyle = BG;
+      function draw() {
+        ctx.fillStyle = '#f8fbfa';
         ctx.fillRect(0, 0, W, H);
 
-        var half = CYCLE * 0.63, rest = CYCLE - half;
-        var prog = t < half ? ease(t / half) : 1 - ease((t - half) / rest);
+        var prog = t < cycle * 0.72 ? ease(t / (cycle * 0.72)) : 1 - ease((t - cycle * 0.72) / (cycle * 0.28));
+        var gap = 230 - 118 * prog;
+        var leftEdge = W / 2 - gap / 2;
+        var rightEdge = W / 2 + gap / 2;
 
-        var gap = 158 - (158 - 10) * prog;
-        var cx  = W / 2;
-        var wL  = cx - gap / 2;
-        var wR  = cx + gap / 2;
+        ctx.fillStyle = '#eef7f5';
+        ctx.fillRect(0, 0, W, H);
 
-        for (var r = 0; r < ROWS; r++) {
-          for (var c = 0; c < COLS; c++) {
-            var d   = cells[r * COLS + c];
-            var shim = Math.sin(t * 0.034 + d.ph) * 0.5 + 0.5;
-            var ry  = 18 + r * SP + (r % 2 ? SP * 0.44 : 0);
-            drawCell(wL - (COLS - c) * SP + SP * 0.5 + d.dc, ry + d.dr, d.s, d.op, d.nx, d.ny, shim);
-            drawCell(wR +           c  * SP + SP * 0.5 + d.dc, ry + d.dr, d.s, d.op, d.nx, d.ny, shim);
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(leftEdge, 22, gap, H - 44);
+        ctx.fillStyle = 'rgba(255,255,255,0.82)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(16,32,39,0.16)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 4]);
+        ctx.stroke();
+        ctx.restore();
+
+        for (var row = 0; row < 8; row++) {
+          for (var col = 0; col < 11; col++) {
+            var y = 42 + row * 31 + Math.sin((t + row * 9 + col * 4) * 0.035) * 2;
+            var offset = (row % 2) * 14;
+            var r = 8 + ((row + col) % 3);
+            cell(leftEdge - 22 - col * 25 - offset, y, r, 0.22);
+            cell(rightEdge + 22 + col * 25 + offset, y, r, 0.22);
           }
         }
 
-        /* wound label */
-        if (gap > 44) {
-          var a = Math.min(1, (gap - 34) / 55);
-          ctx.save();
-          ctx.font = '10px system-ui,sans-serif';
-          ctx.fillStyle = 'rgba(148,163,184,' + (a * 0.7) + ')';
-          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillText('wound area', cx, H / 2);
-          ctx.strokeStyle = 'rgba(148,163,184,' + (a * 0.25) + ')';
-          ctx.lineWidth = 0.5;
-          ctx.setLineDash([3, 3]);
-          ctx.beginPath(); ctx.moveTo(wL + 4, H / 2 - 13); ctx.lineTo(wR - 4, H / 2 - 13); ctx.stroke();
-          ctx.setLineDash([]);
-          ctx.restore();
-        }
-
-        /* % counter */
         ctx.save();
-        ctx.font = '500 11px system-ui,sans-serif';
-        ctx.fillStyle = 'rgba(45,212,191,0.85)';
-        ctx.textAlign = 'right'; ctx.textBaseline = 'top';
-        ctx.fillText(Math.round(prog * 100) + '% closed', W - 10, 9);
+        ctx.strokeStyle = '#102027';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        for (var i = 0; i < 34; i++) {
+          var yy = 28 + i * ((H - 56) / 33);
+          var lx = leftEdge + Math.sin(i * 1.8 + t * 0.025) * 7;
+          var rx = rightEdge + Math.cos(i * 1.6 + t * 0.02) * 7;
+          if (i === 0) ctx.moveTo(lx, yy); else ctx.lineTo(lx, yy);
+          ctx.moveTo(rx, yy);
+          ctx.lineTo(rx + Math.sin(i) * 2, yy + 0.1);
+        }
+        ctx.stroke();
         ctx.restore();
 
-        t = (t + 1) % CYCLE;
-        if (running) requestAnimationFrame(frame);
+        ctx.fillStyle = '#102027';
+        ctx.font = '700 13px system-ui, sans-serif';
+        ctx.fillText('Contour overlay', 18, 26);
+        ctx.fillStyle = '#526d6b';
+        ctx.font = '650 12px system-ui, sans-serif';
+        ctx.fillText(Math.round(30 - prog * 8) + '% wound area', 18, 46);
+
+        ctx.fillStyle = '#0f9f8f';
+        ctx.font = '750 12px system-ui, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText('local preview', W - 18, 26);
+        ctx.textAlign = 'left';
+
+        t = (t + 1) % cycle;
+        if (running) requestAnimationFrame(draw);
       }
 
       if ('IntersectionObserver' in window) {
         new IntersectionObserver(function (entries) {
           var wasRunning = running;
           running = entries[0].isIntersecting;
-          if (running && !wasRunning) requestAnimationFrame(frame);
+          if (running && !wasRunning) requestAnimationFrame(draw);
         }, { threshold: 0.1 }).observe(canvas);
       }
 
-      /* reduced motion: tek statik kare */
       if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         running = false;
-        t = Math.floor(CYCLE * 0.28);
-        frame();
+        t = 90;
+        draw();
       } else {
-        requestAnimationFrame(frame);
+        requestAnimationFrame(draw);
       }
     }());
 
@@ -1199,7 +1225,7 @@
       var status = document.getElementById('feedbackStatus');
       var button = form.querySelector('button[type="submit"]');
       var defaultStatus = status ? status.textContent : '';
-      var defaultButton = button ? button.textContent : 'Send feedback';
+      var defaultButton = button ? button.textContent : 'Send request';
 
       form.addEventListener('submit', function (event) {
         event.preventDefault();
@@ -1209,7 +1235,7 @@
         button.textContent = 'Sending...';
         button.style.opacity = '0.72';
         if (status) {
-          status.textContent = 'Sending your feedback...';
+          status.textContent = 'Sending your request...';
           status.style.color = '';
         }
 
@@ -1221,7 +1247,7 @@
           if (!response.ok) throw new Error('Form service returned ' + response.status);
           form.reset();
           if (status) {
-            status.textContent = 'Thanks, your feedback was sent.';
+            status.textContent = 'Thanks, your request was sent.';
             status.style.color = 'var(--teal-dark)';
           }
         }).catch(function () {
@@ -1242,7 +1268,6 @@
         });
       });
     }());
-
   </script>
 </body>
 </html>

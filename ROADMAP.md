@@ -2,7 +2,7 @@
 
 > Hücre biyologları için tarayıcıda çalışan, atıf-hazır wound healing analiz aracı.
 
-**Durum:** Soft deploy / private feedback öncesi | **Son güncelleme:** 2026-05-24 | **Sürüm:** v0.5
+**Durum:** Soft deploy / private feedback öncesi | **Son güncelleme:** 2026-05-24 | **Sürüm:** v0.6
 
 ---
 
@@ -28,14 +28,15 @@ Cytomove artık sadece waitlist/landing aşamasında değil. Soft deploy yayınd
 
 - `https://cytomove.com` aktif.
 - `www.cytomove.com` DNS yapılandırıldı.
-- Ana sayfa prototipe yönlendiriyor, public beta iddiası yapmıyor.
+- Ana sayfa web app-first olacak şekilde sadeleştirildi: birincil CTA `Open Web App`, Desktop Alpha ise request-only tester hattı; public beta iddiası yapılmıyor.
 - Feedback/suggestion formu e-posta ile çalışıyor.
 - Kullanılabilir prototip `prototype_refactor/` altında yayında.
 - Eski `prototype/` yolu yeni prototipe yönlendiriyor.
 - Prototipte single image, local multi-image group review, manual correction, CSV/Excel, plot ZIP ve Group PNG ZIP export mevcut.
 - Desktop Alpha hattı başlatıldı: çalışan web prototipinin Electron tabanlı yerel uygulama kopyası `desktop_alpha/` altında. Web sürümüne alternatif değil; büyük dosya/grup iş akışları ve ileride lisanslı modüller için deney alanı.
 - Desktop Alpha 0.1 ürün kararı: tam ücretsiz, zorunlu giriş yok. E-posta/kayıt şimdilik opsiyonel feedback ve güncelleme kanalı olarak kalır. 10 günlük trial veya mail aktivasyonu private beta / ücretli modül aşamasına ertelenir.
-- Landing page, hız ve büyük grup kullanımı için Desktop Alpha'yı önerir; web prototip hızlı kontrol/ön izleme yolu olarak kalır. Public installer hosting henüz açılmadığı için CTA feedback üzerinden Desktop Alpha istemeye yönlendirir.
+- Güncel landing page, web app'i ana public yol olarak konumlandırır ve gerçek web app yeteneklerini listeler: local image input, single/group review, segmentation controls, area/width metrics, mask/contour review, manual correction, QC guidance, plots, PNG/CSV/Excel/ZIP export, and no assay image upload.
+- Desktop Alpha tester dağıtımı installer yerine portable ZIP ile yapılır. `npm run pack:win` ZIP üretir ve `TESTER_README.txt` ekler; public installer/code signing sonraya bırakılır.
 - Abonelik yönü: iskelet baştan kurulur ama ücretli kapı Alpha 0.1'de açılmaz. Plan dili Free Alpha / Academic / Commercial olarak hazırlanır; ödeme, 10 günlük trial ve lisans kontrolü private beta veya doğrulanmış ücretli modül aşamasında devreye alınır.
 - Public beta değil. Doğru sonraki adım: 3-5 güvenilir kullanıcıyla "prototype feedback round".
 - Bilinen teknik borç: canlı performans lokale göre yavaş hissediliyor; Faz 2 içinde performans profili ve Web Worker/cache değerlendirmesi yapılmalı.
@@ -437,6 +438,8 @@ Her PDF rapora otomatik methods paragrafı + DOI + sürüm gömülecek. Akademis
 | 2026-05-24 | Prototip klasör yapısı güncellendi | Aktif prototip `prototype_refactor/`; eski `prototype/` redirect; önceki tek dosyalı prototip `old/prototype/` arşivinde |
 | 2026-05-24 | Group PNG ZIP export düzeltildi | Eksik full-resolution overlay varsa buton otomatik hazırlar ve sonra ZIP indirir; `Plots ZIP` ayrı çalışır |
 | 2026-05-24 | Performans teknik borcu kaydedildi | Canlı prototip lokale göre yavaş hissediliyor; sonraki Faz 2 işi sistematik performans profili ve Web Worker/cache değerlendirmesi |
+| 2026-05-24 | Landing page web app-first sadeleştirildi | Ana CTA `Open Web App`; Desktop Alpha request-only hatta alındı; web app yetenekleri net listelendi. |
+| 2026-05-24 | Desktop Alpha tester paketi ZIP olarak seçildi | Installer/code signing sonraya bırakıldı; güvenilir testçiler için portable ZIP ve `TESTER_README.txt` yeterli. |
 
 ---
 

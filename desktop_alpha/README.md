@@ -23,7 +23,12 @@ npm start
 npm run pack:win
 ```
 
-This creates `desktop_alpha/release/win-unpacked/Cytomove Desktop Alpha.exe`.
+This creates:
+
+- `desktop_alpha/release/win-unpacked/Cytomove Desktop Alpha.exe`
+- `desktop_alpha/release/Cytomove-Desktop-Alpha-<version>-win-x64.zip`
+
+Send the ZIP to testers, not the `.exe` alone. The executable needs the adjacent Electron runtime files.
 
 Installer builds can be revisited later with:
 

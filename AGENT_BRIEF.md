@@ -2,7 +2,7 @@
 <!-- Her oturuma bu dosyayı okuyarak başla. README.md ve ROADMAP.md ile birlikte kullan. -->
 
 **Son güncelleme:** 2026-05-24
-**Versiyon:** 1.2
+**Versiyon:** 1.3
 
 ---
 
@@ -40,7 +40,8 @@ Anahtar fark: assay görüntüleri sunucuya gönderilmez, analiz tamamen client-
 
 - Soft deploy is live on `https://cytomove.com`.
 - `www.cytomove.com` DNS is configured and resolves successfully.
-- Root `index.html` is now a prototype-focused landing page, not a waitlist page.
+- Root `index.html` is now a simplified web-app-first landing page, not a waitlist page.
+- Primary landing CTA is `Open Web App` -> `prototype_refactor/`. Desktop Alpha is intentionally quieter and request-only through the feedback form.
 - Landing page has a feedback/suggestion form. Test mail delivery was confirmed by the user.
 - Current prototype lives at `prototype_refactor/`.
 - Legacy `prototype/` is a redirect page to `prototype_refactor/`.
@@ -55,7 +56,8 @@ Anahtar fark: assay görüntüleri sunucuya gönderilmez, analiz tamamen client-
 - Soft-deploy communication stance: do not market as public beta yet. Use "prototype feedback round" / small private feedback group language.
 - Desktop Alpha strategy decision (2026-05-24): keep Alpha 0.1 fully free and no mandatory login. Email/account capture should start as optional feedback/update signup, not as a hard gate. A 10-day trial / email activation / license check belongs to private beta or paid module phase, not the first alpha. Long-term model: core analysis stays free/offline-friendly; paid modules can require account/license with a short offline grace period.
 - Desktop Alpha web-link layer exists: app can read `https://cytomove.com/desktop-manifest.json` for update/module/status messaging and has Feedback / Account / Updates links. This is not a license system and must not upload assay images or analysis outputs.
-- Landing page positioning update (2026-05-24): root site now recommends Desktop Alpha for faster local group analysis and heavier ZIP/export workflows, while keeping the web prototype available for quick checks. Desktop Alpha is requested through the feedback form for now; do not imply a public downloadable installer until release hosting is decided.
+- Landing page positioning update (2026-05-24): root site now presents the browser web app as the main public path and lists the actual web app capabilities: local image input, single/group review, segmentation controls, area/width metrics, mask/contour review, manual correction, QC guidance, plots, PNG/CSV/Excel/ZIP exports, and no assay image upload. Desktop Alpha remains request-only for trusted testers and heavier local workflows; do not imply a public downloadable installer until release hosting is decided.
+- Desktop Alpha packaging update (2026-05-24): tester distribution uses a portable ZIP, not a standalone EXE. `npm run pack:win` creates `desktop_alpha/release/Cytomove-Desktop-Alpha-<version>-win-x64.zip` and includes `TESTER_README.txt`. Installer/code-signing can wait until later.
 - Subscription direction (2026-05-24): build the subscription/account skeleton early, but do not start hard gating in Alpha 0.1. Public language can mention planned Free Alpha / Academic / Commercial paths, while actual payment, 10-day trial, and license enforcement wait until private beta or validated paid modules. Academic/commercial differentiation should not compromise the privacy claim: assay images remain local.
 
 ---
