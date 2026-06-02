@@ -1,8 +1,59 @@
 # AGENT_BRIEF.md — Cytomove Operasyonel Hafıza
-<!-- Her oturuma bu dosyayı okuyarak başla. README.md ve ROADMAP.md ile birlikte kullan. -->
+<!-- HERHANGİ bir AI asistanı (Claude, Codex/GPT, vb.) için ortak operasyonel hafıza.
+     Her oturuma bu dosyayı okuyarak başla; sonunda STATUS'u güncelle ve commit et.
+     README.md ve ROADMAP.md ile birlikte kullan. -->
 
-**Son güncelleme:** 2026-05-24
-**Versiyon:** 1.3
+**Son güncelleme:** 2026-06-02
+**Versiyon:** 1.7
+
+---
+
+## ⭐ STATUS (her oturum sonunda ÜZERİNE YAZ — append etme)
+
+- **Aktif iş kolu:** Faz 2/3 — bioRxiv preprint submission hazırlığı.
+- **Son tamamlanan:** Codex review fix pass: manuscript source-of-truth yolu düzeltildi (`scripts/build_manuscript_docx.py`), commit playbook `git add -A` yerine seçici staging'e çekildi, preload sürümü yeniden `package.json` kaynaklı yapıldı.
+- **TEK sıradaki aksiyon:** Zenodo deposit'ini YAYINLA (DOI `10.5281/zenodo.20486820` şu an muhtemelen sadece rezerve) → sonra bioRxiv'e gönder.
+- **Source-of-truth dosyalar:** manuscript = `docs/manuscript-cytomove-submission.md` + `scripts/build_manuscript_docx.py` → `docs/Cytomove_manuscript_submission.docx` (aşağıdaki Source-of-Truth tablosuna bak). Sayısal gerçek = `validation_sets/comparator_clean/results/validation_master.xlsx`. Strateji = `ROADMAP.md`.
+- **Açık uyarı / BEKLEYEN:** Büyük commit bekliyor (~62 dosya). `.git/index.lock` yalnızca aktif git süreci yoksa silinmeli; 2026-06-02'de aktif `git.exe` süreçleri görüldü. LibreOffice `docs/.~lock.*` PDF'i tutuyor. Commit kullanıcı makinesinde yapılacak; güvenli seçici staging reçetesi `docs/COMMIT_PLAYBOOK.md`'de.
+
+---
+
+## 🤝 Cross-Agent Handoff Protokolü (Claude + Codex/GPT ortak)
+
+Hangi ajan olursan ol, bu 3 adımı uygula:
+
+1. **Oku:** `git log --oneline -5` + bu dosyanın STATUS bloğu. (Son durumu 30 saniyede gör.)
+2. **Çalış:** Source-of-Truth tablosundaki kanonik dosyaları düzenle; türetilen çıktıları (docx/pdf) elle düzenleme, üreticisinden yeniden üret.
+3. **Kapat:** STATUS bloğunu ÜZERİNE YAZ + anlamlı mesajla **commit et** (mesaj başına ajan adını koy, ör. `[claude]` / `[codex]`). Commit'ler asıl cross-agent hafızadır.
+
+> Not: Bu dosya ajan-bağımsızdır. Codex/GPT'ye de "önce AGENT_BRIEF.md oku, sonunda güncelle + commit et" talimatı verilmeli.
+
+---
+
+## 📌 Source of Truth / Build Pipeline
+
+| Çıktı | Kanonik kaynak | Nasıl üretilir | Elle düzenle? |
+|-------|----------------|----------------|---------------|
+| `docs/Cytomove_manuscript_submission.docx` | `docs/manuscript-cytomove-submission.md` + `scripts/build_manuscript_docx.py` | `python scripts\build_manuscript_docx.py` | **HAYIR** — markdown + generator üzerinden üret |
+| `docs/Cytomove_manuscript_submission.pdf` | yukarıdaki docx | `soffice --headless --convert-to pdf` | HAYIR |
+| `docs/manuscript-cytomove-submission.md` | insan-okur AYNA | generator ile elle senkron tutulur | Evet ama docx ile senkronla |
+| Sayısal sonuçlar (MAPE/r vb.) | `validation_sets/comparator_clean/results/validation_master.xlsx` | scriptler | Sadece xlsx |
+| `docs/references/cytomove-preprint.bib` | kendisi | elle | Evet |
+| Zenodo paketi | `docs/Cytomove_zenodo_deposit_enriched.zip` | `.zenodo.json` + dosyalar | zip'i yeniden derle |
+| Strateji/faz | `ROADMAP.md` | elle | Evet |
+
+**⚠️ Kritik:** Manuscript'in kanonik metni `docs/manuscript-cytomove-submission.md`, kanonik DOCX üreticisi `scripts/build_manuscript_docx.py`'dir. DOCX/PDF'i elle düzenleme; düzeltmeyi markdown'da yap, gerekiyorsa generator'ı güncelle, sonra çıktıları yeniden üret.
+
+---
+
+## 🐛 Operasyonel Gotcha'lar (tek liste)
+
+- **Manuscript build:** `docs/Cytomove_manuscript_submission.docx` için mevcut üretici `scripts/build_manuscript_docx.py`'dir; eski notlardaki `outputs/build_manuscript.js` / `node build_manuscript.js` rotasını kullanma.
+- **PDF dosya kilidi:** Kullanıcı PDF'i görüntüleyicide açıksa `soffice` üzerine yazamaz ("Io Abort Code:27" / "Permission denied"). Yeni ada (`_v2.pdf`) yaz ya da kullanıcıdan kapatmasını iste.
+- **Türkçe klasör adı `COMBİNE`:** dotted-capital-İ; kodda/yolda `COMBINE` değil `COMBİNE` kullan.
+- **`github_token.txt`** repo kökünde — asla stage/commit etme; history'e düşerse revoke.
+- **Ham görüntüler** (`wound healing/`, `validation_ref_sets/`, `validation_sets/`) ignored kalmalı; commit etme.
+- **PowerShell here-string** `@'...'@` içinde `</script>`/HTML tag bozulabilir; dosya yazımında write tool ya da Python kullan.
 
 ---
 
@@ -16,10 +67,51 @@ Yeni oturumda şu sırayla ilerle:
 4. `README.md` — public proje özeti (metin/tanıtım işi varsa)
 5. `index.html` — sadece landing page kodu değişecekse
 6. `docs/validation-protocol.md` — validation/MVP işi varsa
-7. Kullanıcıya sor: *"Son oturumdan bu yana değişen bir şey var mı?"*
+7. `docs/manuscript-cytomove-submission.md` + `docs/biorxiv-submission-checklist.md` — preprint/manuscript işi varsa (aktif submission build)
+8. Kullanıcıya sor: *"Son oturumdan bu yana değişen bir şey var mı?"*
 
 **⚠️ Asla:** `github_token.txt` veya herhangi bir token içeren dosyayı stage/commit etme.
 **⚠️ Asla:** `wound healing/` klasöründeki ham görüntüleri git'e commit etme. Boyut + olası yayın hakkı sorunları.
+
+---
+
+## 2026-06-01 Oturum: bioRxiv Preprint Submission Build ⭐
+
+Bu oturum tamamen manuscript/preprint hazırlığına ayrıldı. Sonraki oturum buradan devam etmeli.
+
+**Ne yapıldı:**
+- Mevcut 7 dağınık manuscript taslağı incelendi; v4 (literature_format) en olgun olarak belirlendi ama yalnızca Pearson r'ye yaslanıp MAPE'yi atmıştı (zayıf).
+- **Yeni, tek source-of-truth submission manuscript yazıldı:** referans yayın derinliğinde (WHST/PLOS ONE modeli), tam IMRAD, gerçek 9-aşamalı algoritma Methods bölümü (`prototype-whst-variance-v0.4` pipeline), genişletilmiş Introduction/Discussion.
+- **MAPE dürüstçe ama QC çerçevesinde geri eklendi** (kullanıcı talebi: "göze sokma"). Table 3 = MAPE + median + max + Pearson r birlikte. WHAD-MCF7 area MAPE %15'in tamamen near-closure frame'lerden geldiği (frame 046: 1399 vs 2553 px = %82 göreli, median sadece %6.6) açıkça yazıldı. Pearson r "trend istatistiği, frame-level doğruluk kanıtı değil" olarak çerçevelendi.
+- **Submission docx + PDF üretildi** (18 sayfa, 8 gömülü figür, 3 tablo). Aktif build yolu: `docs/manuscript-cytomove-submission.md` → `scripts/build_manuscript_docx.py` → `docs/Cytomove_manuscript_submission.docx`.
+- **4 metadata kesinleşti:** ORCID `0000-0001-6420-6292`; Funding = "no external funding"; CSMA atıfı doğru (Pham et al. 2025); **WHAD/CAMAD atıfı düzeltildi → doğru lead author Iheme et al. 2024** (placeholder'daki "Sarmad" yanlıştı; Zenodo 12806149'dan doğrulandı, Version 1.0.0-alpha, CC BY 4.0). `.bib`'e `iheme2024whadcamad` eklendi (10 kayıt).
+- **Zenodo deposit paketi hazırlandı:** `docs/Cytomove_zenodo_deposit.zip` (validation_master.xlsx + figürler PDF/SVG + manuscript PDF + `.zenodo.json` + README). Submit talimatları `docs/zenodo-submit-instructions.md`.
+- **Eski taslaklar arşivlendi:** 7 docx + 2 eski md kaynağı → `docs/old/manuscript_drafts/`. Kök `docs/`'ta artık tek aktif set.
+
+**Manuscript editorial review pass (2026-06-01, aynı gün — kullanıcıyla madde madde):**
+- A1: luminance etiketi düzeltildi → **BT.709/sRGB** (kod 0.2126/0.7152/0.0722; "Rec. 601" yanlıştı).
+- B1: figürler okuma sırasına göre yeniden numaralandırıldı (1–5; görsel-karşılaştırma=Fig4, time-course=Fig5). B2: Figure 3 metne çağrıldı.
+- C1: referanslar alfabetik (Iheme 4. sıraya). C2: Schindelin tam 16 yazar.
+- D1: **Zenodo DOI 10.5281/zenodo.20486820** Data & Code Availability'e işlendi (placeholder kaldırıldı).
+- D2: figür caption'larında görseller için **WHAD-MCF7**; dataset resmi adı **WHAD/CAMAD** korundu (§2.5, Table 2, ref, provenance).
+- D3: yuvarlama (2,550 px / "just over a thousand").
+- D4: **tüm em-dash'ler silindi** (parantez/virgül). Kalan "–" sadece referans sayfa aralıkları.
+- E: yazılım iddiaları (desktop kod, preset isimleri, manuel modlar, export alanları) kullanıcı tarafından onaylandı.
+- Zamir: tek yazar için **kişisel olmayan biçim** seçildi; tüm anlatıcı "we" → pasif/impersonal ("This work presents…", "Cytomove was evaluated…", "…was found to contain…"). provenance'taki "the author" kasıtlı, korundu.
+- docx + PDF yeniden üretildi, markdown senkron. **Aktif generator `scripts/build_manuscript_docx.py`; eski `build_manuscript.js` null-byte notu bu repodaki mevcut build yolu için geçerli değil.**
+
+**Stratejik karar (kullanıcı onayı):** Venue = **temkinli bio-preprint → bioRxiv ŞİMDİ**. Teknik/IEEE Access sürümü (çoklu-araç benchmark, Dice/IoU ground-truth, runtime/complexity) Faz 3'e ertelendi — mevcut kanıt (n=31, tek comparator WHST) IEEE teknik makalesi için yetersiz; bio-preprint çerçevesi elindeki veriyle uyumlu.
+
+**Sıradaki adımlar (bir sonraki oturum):**
+1. DOI (`10.5281/zenodo.20486820`) manuscript'e işlendi ✓. **Zenodo deposit'ini YAYINLA** ki DOI gerçekten çözülsün (şu an muhtemelen sadece rezerve). Upload paketi: `docs/Cytomove_zenodo_deposit_enriched.zip`.
+2. Deposit içindeki manuscript PDF'ini güncel sürümle tazele + enriched ZIP'i yeniden derle (editorial pass sonrası değişti).
+3. bioRxiv'e gönder: New Results, Bioinformatics, CC BY 4.0. (Kullanıcı hesabı gerekir; agent submit edemez, Chrome ile birlikte yürütülebilir.)
+4. bioRxiv DOI gelince README + cytomove.com + IHSC bildirisine ekle.
+5. IHSC bildiri özeti eski WHAD-MCF7 MAPE 7.01% kullanıyor → güncel 15.03%/median 6.6% ile düzelt.
+
+**Aktif submission dosyaları (`docs/`):** `Cytomove_manuscript_submission.docx` / `.pdf`, `manuscript-cytomove-submission.md` (kaynak), `references/cytomove-preprint.bib`, `manuscript_figures/` (+ `_docx_optimized/` JPG'ler), `zenodo_deposit/` + zip, `biorxiv-submission-checklist.md`, `preprint-readiness-plan.md`, `zenodo-submit-instructions.md`.
+
+**⚠️ Repo'da bu oturum dahil çok sayıda commit edilmemiş değişiklik birikti; henüz commit edilmedi.**
 
 ---
 
@@ -59,6 +151,7 @@ Anahtar fark: assay görüntüleri sunucuya gönderilmez, analiz tamamen client-
 - Landing page positioning update (2026-05-24): root site now presents the browser web app as the main public path and lists the actual web app capabilities: local image input, single/group review, segmentation controls, area/width metrics, mask/contour review, manual correction, QC guidance, plots, PNG/CSV/Excel/ZIP exports, and browser-local image handling. Desktop Alpha remains request-only for trusted testers and heavier local workflows; do not imply a public downloadable installer until release hosting is decided.
 - SEO foundation update (2026-05-24): root title/meta now targets "wound healing scratch assay analysis"; first content page lives at `wound-healing-scratch-assay-analysis/`; `robots.txt` and `sitemap.xml` exist. Next SEO step is Google Search Console verification + sitemap submission, then additional educational pages around ImageJ alternatives and measurement workflows.
 - Desktop Alpha packaging update (2026-05-24): tester distribution uses a portable ZIP, not a standalone EXE. `npm run pack:win` creates `desktop_alpha/release/Cytomove-Desktop-Alpha-<version>-win-x64.zip` and includes `TESTER_README.txt`. Installer/code-signing can wait until later.
+- Desktop Alpha trial gate update (2026-05-25): Alpha 0.1 tester builds show a first-run welcome screen and keep a local 30-day alpha window in Electron `userData`. After expiry or clock rollback detection, analysis is locked behind a thank-you/update screen that links to cytomove.com. This is an alpha tester control, not paid licensing.
 - Subscription direction (2026-05-24): build the subscription/account skeleton early, but do not start hard gating in Alpha 0.1. Public language can mention planned Free Alpha / Academic / Commercial paths, while actual payment, 10-day trial, and license enforcement wait until private beta or validated paid modules. Academic/commercial differentiation should not compromise the privacy claim: assay images remain local.
 
 ---
@@ -89,6 +182,8 @@ Başka ajan veya belgelere CellVerse anlatısını geri sokma.
 **Faz 2 — MVP + Validation + private feedback iş kolu aktif (2026-05-24)**
 Validation protokolü v0.4 yönünde kalır: sentetik binary mask doğrulaması, sentetik microscopy-like robustness ve gerçek görüntü validasyonu üç katmanlı yürür. Prototip artık soft-deployed browser workspace seviyesinde: browser-only segmentasyon, group review, custom local group, manual brush correction, width profile metrikleri, QC uyarıları, CSV/Excel export, plot ZIP ve full-resolution Group PNG ZIP export bulunur.
 Başarı kriterleri korunur: Pearson r > 0.9, <10% wound area error, 70%+ kullanıcı kabul oranı; ancak width mean/median ve QC/recommended-primary-metric artık area ile birlikte birinci sınıf çıktıdır. Public beta değildir; sıradaki doğru adım küçük bir private feedback round ve performans profillemesidir.
+
+**Faz 3 preprint işi öne çekildi (2026-06-01):** bioRxiv submission-ready manuscript hazır (yukarıdaki 2026-06-01 oturum bloğuna bak). Gönderim henüz yapılmadı; Zenodo upload + DOI sonra bioRxiv submit kalan adımlar.
 
 ---
 
@@ -263,6 +358,10 @@ Başarı kriterleri korunur: Pearson r > 0.9, <10% wound area error, 70%+ kullan
 | Pricing: Free / Researcher $9 / Lab $29 | Akademik pazara uygun |
 | Validation dataset lisansı: CC BY 4.0 | Açık bilim ilkesiyle uyumlu |
 | CellVerse üst marka kararı ertelendi | Faz 5'e — şimdi sadece Cytomove |
+| Preprint manuscript: tek source-of-truth submission build (2026-06-01) | 7 dağınık taslak yerine literatür-formatında tek docx; eskiler `docs/old/manuscript_drafts/`'e arşivlendi |
+| MAPE QC çerçevesinde geri eklendi (2026-06-01) | Sadece Pearson r zayıf; MAPE+median+max birlikte, near-closure inflasyonu açıkça yazıldı; "göze sokma" tonu korundu |
+| Venue: temkinli bio-preprint → bioRxiv şimdi (2026-06-01) | n=31/tek comparator IEEE teknik makalesi için yetersiz; teknik/IEEE sürümü Faz 3'e ertelendi |
+| WHAD/CAMAD atıfı düzeltildi: Iheme et al. 2024 (2026-06-01) | Placeholder "Sarmad" yanlıştı; Zenodo 12806149'dan doğrulandı (v1.0.0-alpha, CC BY 4.0) |
 | Landing page dili: sadece İngilizce (2026-04-28) | Akademik global kitle; casual area değil |
 | Marka tonu: akademik (2026-04-28) | Klinik/kurumsal değil, ama startup oyunculuğu da değil |
 | Faz 2 başlangıç stratejisi: validation set önce (2026-04-28) | Set olmadan Pearson r > 0.9 iddiası kurulamaz; algoritma yanlış dağılıma optimize edilme riski |
@@ -360,7 +459,7 @@ Başarı kriterleri korunur: Pearson r > 0.9, <10% wound area error, 70%+ kullan
 - OpenCV.js → Faz 3'te gerekirse registration için değerlendirilebilir
 
 **ImageJ Wound Healing Size Tool pipeline'ı (JS'de):**
-1. `toGray()` — BT.601 luminance (0.2126R + 0.7152G + 0.0722B)
+1. `toGray()` — BT.709/sRGB luminance (0.2126R + 0.7152G + 0.0722B) [NOT BT.601; BT.601 olsaydı 0.299/0.587/0.114 olurdu]
 2. `fovMask()` — FOV cutoff ile siyah köşe/dairesel alan maskeleme
 3. `enhanceContrast()` — P1/P99 percentile clip + normalize
 4. `varianceFilter()` — **integral image (summed area table)** ile O(1) per-pixel local variance; ImageJ `Variance... radius=R` ile eşdeğer

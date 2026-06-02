@@ -1,0 +1,46 @@
+{
+  "title": "Cytomove: validation data, figures, and analysis artifacts for a browser-local scratch wound healing assay quantification workflow",
+  "upload_type": "dataset",
+  "description": "<p>Supporting validation artifacts for the Cytomove preprint, a browser-local and reviewable workflow for scratch wound healing assay quantification. This deposit provides the frozen numerical source of truth, input provenance, author-acquired phone images, intermediate measurement outputs, and figures used in the manuscript so that the reported Cytomove-versus-WHST comparison can be inspected and reproduced.</p><p><b>Contents:</b></p><ul><li><code>validation_master.xlsx</code> &mdash; paired WHST and Cytomove per-frame measurements (area and width), dataset-level diagnostic statistics (MAPE, median, max, mean signed error, Pearson r), the discrepancy-resolution table, and manuscript notes, across five image sets (csma_sample_11, whad_mcf7_11, cell_phone_HK/M8F/MK; 31 paired measurements).</li><li><code>selected_input_manifest.csv</code> &mdash; per-frame provenance for the 31 validation measurements, including selected file identifiers, source dataset/origin, redistribution status, license/rights notes, and derived-output locations.</li><li><code>input_images/author_phone/</code> &mdash; the 9 author-acquired smartphone-through-eyepiece raw JPG images used in the phone validation sets.</li><li><code>derived_outputs/</code> &mdash; frozen Cytomove group-metric exports and WHST result workbooks used to build the paired validation summary.</li><li><code>deposit_file_manifest.csv</code> &mdash; file-level deposit manifest with size and SHA-256 checksum.</li><li><code>figures/</code> &mdash; manuscript figures (Figures 1-5 and Supplementary Figures S1-S2) in PDF and SVG vector formats.</li><li><code>Cytomove_manuscript_submission.pdf</code> &mdash; the corresponding preprint manuscript.</li></ul><p><b>Image provenance:</b> WHAD-MCF7 phase-contrast source images were derived from the WHAD/CAMAD dataset (Iheme et al., 2024, Zenodo, CC BY 4.0, doi:10.5281/zenodo.12806149). CSMA sample images and output context were derived from the public CSMA WoundHealing repository and the associated publication (Pham et al., 2025, IEEE Access, doi:10.1109/ACCESS.2025.3561607). Smartphone-through-eyepiece brightfield images were acquired by the author. Raw third-party WHAD/CAMAD and CSMA image archives are not redistributed here; exact selected third-party frame identifiers are provided in <code>selected_input_manifest.csv</code>, and readers should obtain raw third-party images from their original sources under their own licenses. The author-acquired phone images used in the validation are included in this deposit.</p><p>The Cytomove prototype is maintained at https://github.com/zduzgun/CytoMove and a live web version is available at https://cytomove.com .</p>",
+  "creators": [
+    {
+      "name": "Düzgün, Zekeriya",
+      "affiliation": "Department of Medical Biology, Faculty of Medicine, Giresun University, Giresun, Türkiye",
+      "orcid": "0000-0001-6420-6292"
+    }
+  ],
+  "access_right": "open",
+  "license": "cc-by-4.0",
+  "keywords": [
+    "scratch assay",
+    "wound healing assay",
+    "cell migration",
+    "image analysis",
+    "browser-based analysis",
+    "segmentation",
+    "reproducibility",
+    "Cytomove",
+    "ImageJ",
+    "WHST"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "10.5281/zenodo.12806149",
+      "relation": "references",
+      "scheme": "doi",
+      "resource_type": "dataset"
+    },
+    {
+      "identifier": "10.1109/ACCESS.2025.3561607",
+      "relation": "references",
+      "scheme": "doi",
+      "resource_type": "publication-article"
+    },
+    {
+      "identifier": "https://github.com/zduzgun/CytoMove",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ],
+  "notes": "Add the bioRxiv preprint DOI as a related identifier (relation: isSupplementTo) once the preprint is posted."
+}

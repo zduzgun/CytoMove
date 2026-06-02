@@ -333,6 +333,49 @@
       </section>
     </div>
   </main>
+  <div class="trial-gate" id="trialGate" hidden>
+    <section class="trial-card" id="trialWelcome" role="dialog" aria-modal="true" aria-labelledby="trialWelcomeTitle" hidden>
+      <div class="trial-kicker">Desktop Alpha</div>
+      <h1 class="trial-title" id="trialWelcomeTitle">Welcome to Cytomove Desktop Alpha</h1>
+      <p class="trial-text">
+        Thank you for testing Cytomove. This build is actively developed and should be used as a research-assist tool while you review the output before scientific decisions.
+      </p>
+      <div class="trial-meter">
+        <div>
+          <span class="trial-label">Alpha access</span>
+          <strong>30 days</strong>
+        </div>
+        <div>
+          <span class="trial-label">Remaining</span>
+          <strong id="trialDaysRemaining">30 days</strong>
+        </div>
+        <div>
+          <span class="trial-label">Ends</span>
+          <strong id="trialExpiresAt">-</strong>
+        </div>
+      </div>
+      <div class="trial-actions">
+        <button class="btn primary" id="trialStartAnalysis" type="button">Start local analysis</button>
+        <button class="btn" id="trialVisitSite" type="button">Visit cytomove.com</button>
+      </div>
+    </section>
+
+    <section class="trial-card trial-card-expired" id="trialExpired" role="dialog" aria-modal="true" aria-labelledby="trialExpiredTitle" hidden>
+      <div class="trial-kicker">Testing window ended</div>
+      <h1 class="trial-title" id="trialExpiredTitle">Thank you for testing Cytomove Desktop Alpha</h1>
+      <p class="trial-text" id="trialExpiredReason">
+        This alpha build has reached its 30-day testing window.
+      </p>
+      <p class="trial-text">
+        Please visit cytomove.com for updates, the next private beta build, or access instructions.
+      </p>
+      <div class="trial-actions">
+        <button class="btn primary" id="trialExpiredVisit" type="button">Open cytomove.com</button>
+        <button class="btn" id="trialExpiredFeedback" type="button">Send feedback</button>
+        <button class="btn" id="trialCloseApp" type="button">Close app</button>
+      </div>
+    </section>
+  </div>
   <script src="app.js"></script>
 </body>
 </html>

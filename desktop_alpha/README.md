@@ -8,6 +8,16 @@ It does not replace the web version and does not change `prototype_refactor/`.
 Images are opened from the user's computer and analyzed locally inside the desktop app window.
 This alpha does not add a backend upload path.
 
+## Alpha Trial Gate
+
+Desktop Alpha 0.1 now shows a welcome screen on first launch and keeps a local 30-day alpha testing window.
+The local state is stored in Electron `userData` as `desktop-alpha-trial.json` with `firstRunAt`, `lastSeenAt`, `installId`, and `trialVersion`.
+
+After the 30-day window, the analysis surface is locked and the app shows a thank-you/update screen with links back to cytomove.com.
+The gate also pauses if the local system clock appears to move backwards by more than five minutes.
+
+This is an alpha tester control, not a paid licensing system. Real subscription/license enforcement is still planned for private beta or paid modules.
+
 ## Run Locally
 
 From this folder:
@@ -43,6 +53,6 @@ On some Windows machines, installer packaging may require developer-mode symlink
 - The renderer is a copied snapshot of the current `prototype_refactor/` app.
 - The first alpha intentionally keeps all current prototype controls and exports.
 - Electron dependencies are not vendored in this repository; run `npm install` before starting or packaging.
-- Alpha 0.1 is intentionally full free with no mandatory login.
+- Alpha 0.1 is intentionally full free with no mandatory login, but portable tester builds use a 30-day local alpha window.
 - Email/account capture should stay optional until private beta. The intended path is: optional feedback/update signup first, then 10-day trial or mail activation later for private beta or paid modules.
 - The web manifest/update panel is not a license system and does not upload assay images or analysis results.

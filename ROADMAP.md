@@ -2,7 +2,7 @@
 
 > Hücre biyologları için tarayıcıda çalışan, atıf-hazır wound healing analiz aracı.
 
-**Durum:** Soft deploy / private feedback öncesi | **Son güncelleme:** 2026-05-24 | **Sürüm:** v0.6
+**Durum:** Soft deploy + preprint submission-ready | **Son güncelleme:** 2026-06-01 | **Sürüm:** v0.7
 
 ---
 
@@ -38,6 +38,7 @@ Cytomove artık sadece waitlist/landing aşamasında değil. Soft deploy yayınd
 - Güncel landing page, web app'i ana public yol olarak konumlandırır ve gerçek web app yeteneklerini listeler: local image input, single/group review, segmentation controls, area/width metrics, mask/contour review, manual correction, QC guidance, plots, PNG/CSV/Excel/ZIP export ve browser-local image handling.
 - SEO temeli başlatıldı: root title/meta "wound healing scratch assay analysis" arama niyetine hizalandı; `wound-healing-scratch-assay-analysis/` rehber sayfası, `robots.txt` ve `sitemap.xml` eklendi. Sonraki adım Google Search Console doğrulaması ve sitemap submit.
 - Desktop Alpha tester dağıtımı installer yerine portable ZIP ile yapılır. `npm run pack:win` ZIP üretir ve `TESTER_README.txt` ekler; public installer/code signing sonraya bırakılır.
+- Desktop Alpha 0.1 tester build'i ilk açılışta karşılama ekranı gösterir ve yerel 30 günlük alpha kullanım penceresi tutar. Süre dolunca veya saat geri alma algılanırsa analiz ekranı kilitlenir, cytomove.com güncelleme/feedback ekranına yönlendiren teşekkür ekranı kalır. Bu lisans/abonelik sistemi değil, trusted tester kontrolüdür.
 - Abonelik yönü: iskelet baştan kurulur ama ücretli kapı Alpha 0.1'de açılmaz. Plan dili Free Alpha / Academic / Commercial olarak hazırlanır; ödeme, 10 günlük trial ve lisans kontrolü private beta veya doğrulanmış ücretli modül aşamasında devreye alınır.
 - Public beta değil. Doğru sonraki adım: 3-5 güvenilir kullanıcıyla "prototype feedback round".
 - Bilinen teknik borç: canlı performans lokale göre yavaş hissediliyor; Faz 2 içinde performans profili ve Web Worker/cache değerlendirmesi yapılmalı.
@@ -134,6 +135,7 @@ Bu kriterler karşılanmadan Faz 3'e geçilmez.
 - [ ] Performance profile: live vs local load time, analysis time, group render time, export time, cache headers, Web Worker feasibility
 - [x] Desktop Alpha 0.1 deney hattı: mevcut çalışan prototip Electron app olarak paketlendi; web sürüme dokunmadan lokal exe üretildi.
 - [x] Desktop web-link manifest katmanı: `desktop-manifest.json` ile update/module/status mesajı okunur; Feedback/Account/Updates linkleri siteye yönlenir; görüntü/analiz verisi gönderilmez.
+- [x] Desktop Alpha 30 günlük tester kapısı: ilk açılış karşılama ekranı, local trial state, saat geri alma kontrolü ve süre sonu teşekkür/update ekranı eklendi. Bu private beta lisans sistemi değildir.
 - [x] Abonelik iskeleti kararı: Free Alpha aktif; Academic ve Commercial planları manifest/roadmap düzeyinde planlandı, ödeme/lisans enforce edilmiyor.
 - [ ] Opsiyonel e-posta kayıt akışı: Alpha 0.2 için, zorunlu login olmadan feedback/update signup. App içinden veya web formuna yönlendirme ile başlar.
 - [ ] Private feedback round (3-5 güvenilir kullanıcı; public beta dili kullanılmadan)
@@ -191,11 +193,15 @@ Bu kriterler karşılanmadan Faz 3'e geçilmez.
 - [ ] İlk DOI alındı (v1.0.0)
 
 **Akademik çıktılar:**
-- [ ] **bioRxiv preprint atıldı** (Ay 8 hedefi)
-  - Başlık adayı: "Cytomove: A browser-based, privacy-preserving tool for automated wound healing assay quantification"
-  - 8-12 sayfa, IMRAD yapısı
-  - GitHub link, cytomove.com URL, Zenodo DOI v1.0.0
+- [~] **bioRxiv preprint hazırlığı (2026-06-01): submission-ready manuscript build tamamlandı, gönderim bekliyor**
+  - Başlık: "Cytomove: a browser-local and reviewable workflow for scratch wound healing assay quantification"
+  - 18 sayfa, tam IMRAD, 8 gömülü figür, 3 tablo; gerçek algoritma Methods + MAPE (QC-çerçeveli) dahil
+  - Dosyalar: `docs/Cytomove_manuscript_submission.docx`/`.pdf`, kaynak `docs/manuscript-cytomove-submission.md`
+  - Metadata kesin: ORCID 0000-0001-6420-6292, no external funding, CC BY 4.0, kategori New Results / Bioinformatics
+  - Validation = WHST karşılaştırması (5 set, 31 eşli ölçüm); CSMA area MAPE %4.1, WHAD-MCF7 median %6.6
+  - **Bekleyen gönderim adımları:** (1) Zenodo'ya validation paketi yükle (`docs/Cytomove_zenodo_deposit.zip` hazır) + DOI al; (2) DOI'yi Data Availability'e işle; (3) bioRxiv'e gönder; (4) DOI'yi README/site/bildiriye ekle
   - DOI 3-5 günde online
+- [ ] **Teknik/IEEE sürümü (ertelendi):** IEEE Access düzeyinde makale için çoklu-araç benchmark (TScratch/PyScratch/CSMA/WHST), Dice/IoU ground-truth, runtime/complexity gerekli — mevcut kanıtla yetersiz, bu faz içinde ek değerlendirme ile kurulur
 - [ ] Cross-listing: arXiv (cs.CV) ek olarak yüklendi (opsiyonel ama atıf için faydalı)
 - [ ] ResearchGate, ORCID, kişisel akademik web sayfasına eklendi
 - [ ] Türk akademik X/Twitter topluluğunda paylaşım
@@ -442,6 +448,11 @@ Her PDF rapora otomatik methods paragrafı + DOI + sürüm gömülecek. Akademis
 | 2026-05-24 | Landing page web app-first sadeleştirildi | Ana CTA `Open Web App`; Desktop Alpha request-only hatta alındı; web app yetenekleri net listelendi. |
 | 2026-05-24 | Desktop Alpha tester paketi ZIP olarak seçildi | Installer/code signing sonraya bırakıldı; güvenilir testçiler için portable ZIP ve `TESTER_README.txt` yeterli. |
 | 2026-05-24 | SEO foundation başlatıldı | Root title/meta hedef keyword'e hizalandı; ilk wound healing scratch assay analysis rehberi, robots.txt ve sitemap.xml eklendi. |
+| 2026-06-01 | Preprint submission build tamamlandı | 7 dağınık taslak yerine tek literatür-formatında submission docx/pdf (18 s, 8 figür, 3 tablo, gerçek algoritma Methods); eski taslaklar `docs/old/manuscript_drafts/`'e arşivlendi |
+| 2026-06-01 | MAPE QC-çerçevesinde geri eklendi | Sadece Pearson r yetersiz; MAPE+median+max birlikte raporlandı, near-closure inflasyonu açıklandı; "göze sokma" tonu korundu |
+| 2026-06-01 | Venue kararı: temkinli bio-preprint → bioRxiv şimdi | n=31/tek comparator IEEE Access teknik makalesi için yetersiz; teknik sürüm Faz 3'e ertelendi, paralel yürür |
+| 2026-06-01 | WHAD/CAMAD atıfı düzeltildi → Iheme et al. 2024 | Placeholder "Sarmad" yanlıştı; Zenodo 12806149'dan doğrulandı (v1.0.0-alpha, CC BY 4.0) |
+| 2026-06-01 | Zenodo deposit paketi hazırlandı | `docs/Cytomove_zenodo_deposit.zip` + `.zenodo.json`; validation_master + figürler; upload + DOI gönderim öncesi adım |
 
 ---
 

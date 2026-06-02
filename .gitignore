@@ -17,3 +17,17 @@ Cytomove - Segmentation Lab.pdf
 find_backup.py
 desktop_alpha/node_modules/
 desktop_alpha/release/
+
+# LibreOffice / soffice geçici ve kilit dosyaları
+.~lock.*#
+*.tmp
+docs/lu*.tmp
+
+# Harici klonlanmış comparator araç repoları (kendi .git'leri var)
+sample_imagej_apps/CSMA_WoundHealing/
+sample_imagej_apps/pyscratch_public/
+
+# Düzenleyici/ajan geçici dosyaları
+docs/.~lock*
+docs/zi9SJotS
+docs/Cytomove_manuscript_submission_v2.pdf

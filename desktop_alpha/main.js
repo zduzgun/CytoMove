@@ -1,8 +1,82 @@
+const crypto = require('node:crypto');
+const fs = require('node:fs');
 const path = require('node:path');
 const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
 
 const APP_TITLE = 'Cytomove Desktop Alpha';
 const DESKTOP_MANIFEST_URL = 'https://cytomove.com/desktop-manifest.json';
+const TRIAL_DURATION_DAYS = 30;
+const TRIAL_DURATION_MS = TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000;
+const CLOCK_ROLLBACK_GRACE_MS = 5 * 60 * 1000;
+const TRIAL_STATE_FILE = 'desktop-alpha-trial.json';
+const TRIAL_VERSION = 'alpha-0.1';
+
+function trialStatePath() {
+  return path.join(app.getPath('userData'), TRIAL_STATE_FILE);
+}
+
+function toIso(ms) {
+  return new Date(ms).toISOString();
+}
+
+function parseTime(value) {
+  const ms = Date.parse(value || '');
+  return Number.isFinite(ms) ? ms : null;
+}
+
+function makeInstallId() {
+  return typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
+}
+
+function readTrialStateFile() {
+  try {
+    return JSON.parse(fs.readFileSync(trialStatePath(), 'utf8'));
+  } catch (_error) {
+    return null;
+  }
+}
+
+function writeTrialStateFile(nextState) {
+  fs.mkdirSync(app.getPath('userData'), { recursive: true });
+  fs.writeFileSync(trialStatePath(), JSON.stringify(nextState, null, 2), 'utf8');
+}
+
+function getDesktopTrialState() {
+  const nowMs = Date.now();
+  const saved = readTrialStateFile() || {};
+  const savedFirstRunMs = parseTime(saved.firstRunAt);
+  const savedLastSeenMs = parseTime(saved.lastSeenAt);
+  const firstRunMs = savedFirstRunMs || nowMs;
+  const lastSeenMs = savedLastSeenMs || nowMs;
+  const clockInvalid = nowMs + CLOCK_ROLLBACK_GRACE_MS < lastSeenMs;
+  const effectiveNowMs = clockInvalid ? lastSeenMs : nowMs;
+  const expiresMs = firstRunMs + TRIAL_DURATION_MS;
+  const expired = effectiveNowMs >= expiresMs;
+  const storedLastSeenMs = Math.max(nowMs, lastSeenMs);
+  const installId = typeof saved.installId === 'string' && saved.installId ? saved.installId : makeInstallId();
+  const nextState = {
+    installId,
+    trialVersion: TRIAL_VERSION,
+    firstRunAt: toIso(firstRunMs),
+    lastSeenAt: toIso(storedLastSeenMs)
+  };
+
+  writeTrialStateFile(nextState);
+
+  return {
+    source: 'local-user-data',
+    installId,
+    trialVersion: TRIAL_VERSION,
+    durationDays: TRIAL_DURATION_DAYS,
+    firstRunAt: toIso(firstRunMs),
+    lastSeenAt: toIso(storedLastSeenMs),
+    now: toIso(nowMs),
+    expiresAt: toIso(expiresMs),
+    daysRemaining: Math.max(0, Math.ceil((expiresMs - effectiveNowMs) / (24 * 60 * 60 * 1000))),
+    expired,
+    clockInvalid
+  };
+}
 
 function createMainWindow() {
   const mainWindow = new BrowserWindow({
@@ -88,6 +162,13 @@ ipcMain.handle('cytomove:open-external', async (_event, url) => {
   const parsed = new URL(String(url));
   if (!['https:', 'http:'].includes(parsed.protocol)) throw new Error('Only web links can be opened.');
   await shell.openExternal(parsed.toString());
+  return true;
+});
+
+ipcMain.handle('cytomove:get-trial-state', async () => getDesktopTrialState());
+
+ipcMain.handle('cytomove:close-app', async () => {
+  app.quit();
   return true;
 });
 

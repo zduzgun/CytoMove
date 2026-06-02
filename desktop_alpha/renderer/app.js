@@ -141,7 +141,19 @@
     desktopModuleList:  document.getElementById('desktopModuleList'),
     desktopFeedback:    document.getElementById('desktopFeedback'),
     desktopAccount:     document.getElementById('desktopAccount'),
-    desktopUpdate:      document.getElementById('desktopUpdate')
+    desktopUpdate:      document.getElementById('desktopUpdate'),
+    appShell:           document.querySelector('.app'),
+    trialGate:          document.getElementById('trialGate'),
+    trialWelcome:       document.getElementById('trialWelcome'),
+    trialExpired:       document.getElementById('trialExpired'),
+    trialDaysRemaining: document.getElementById('trialDaysRemaining'),
+    trialExpiresAt:     document.getElementById('trialExpiresAt'),
+    trialStartAnalysis: document.getElementById('trialStartAnalysis'),
+    trialVisitSite:     document.getElementById('trialVisitSite'),
+    trialExpiredReason: document.getElementById('trialExpiredReason'),
+    trialExpiredVisit:  document.getElementById('trialExpiredVisit'),
+    trialExpiredFeedback: document.getElementById('trialExpiredFeedback'),
+    trialCloseApp:      document.getElementById('trialCloseApp')
   };
 
   // Helpers
@@ -229,6 +241,74 @@
       window.cytomoveDesktop.openExternal(url).catch(err=>setLog(`<strong>Link open failed.</strong> ${escHtml(err.message||err)}`));
     } else {
       window.open(url,'_blank','noopener');
+    }
+  }
+
+  function formatTrialDate(value) {
+    const date=new Date(value);
+    if(Number.isNaN(date.getTime())) return '-';
+    return date.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
+  }
+
+  function trialWelcomeKey(trial) {
+    const version=window.cytomoveDesktop?.version||'dev';
+    return `cytomove.desktopAlpha.welcomeSeen.${version}.${trial?.trialVersion||'alpha'}`;
+  }
+
+  function hasSeenTrialWelcome(trial) {
+    try {
+      return localStorage.getItem(trialWelcomeKey(trial))==='1';
+    } catch(_error) {
+      return false;
+    }
+  }
+
+  function markTrialWelcomeSeen(trial) {
+    try {
+      localStorage.setItem(trialWelcomeKey(trial),'1');
+    } catch(_error) {}
+  }
+
+  function showTrialPanel(kind, trial) {
+    if(!el.trialGate) return;
+    el.trialGate.hidden=false;
+    el.trialWelcome.hidden=kind!=='welcome';
+    el.trialExpired.hidden=kind!=='expired';
+    if(kind==='expired') el.appShell?.classList.add('trial-locked');
+    else el.appShell?.classList.remove('trial-locked');
+
+    if(el.trialDaysRemaining) {
+      const days=Math.max(0,Number(trial?.daysRemaining)||0);
+      el.trialDaysRemaining.textContent=`${days} day${days===1?'':'s'}`;
+    }
+    if(el.trialExpiresAt) el.trialExpiresAt.textContent=formatTrialDate(trial?.expiresAt);
+    if(el.trialExpiredReason) {
+      el.trialExpiredReason.textContent=trial?.clockInvalid
+        ? 'The system clock appears to have been moved backwards, so this alpha build is paused for safety.'
+        : 'This alpha build has reached its 30-day testing window.';
+    }
+  }
+
+  function hideTrialPanel() {
+    if(!el.trialGate) return;
+    el.trialGate.hidden=true;
+    el.trialWelcome.hidden=true;
+    el.trialExpired.hidden=true;
+    el.appShell?.classList.remove('trial-locked');
+  }
+
+  async function initTrialGate() {
+    if(!window.cytomoveDesktop?.getTrialState) return;
+    try {
+      const trial=await window.cytomoveDesktop.getTrialState();
+      if(trial.expired||trial.clockInvalid) {
+        showTrialPanel('expired',trial);
+        return;
+      }
+      if(!hasSeenTrialWelcome(trial)) showTrialPanel('welcome',trial);
+    } catch(err) {
+      console.warn(err);
+      setLog(`<strong>Trial check failed.</strong> ${escHtml(err.message||err)} Local analysis remains available.`);
     }
   }
 
@@ -4189,6 +4269,17 @@
     if(el.desktopFeedback) el.desktopFeedback.addEventListener('click',()=>openDesktopLink('feedback'));
     if(el.desktopAccount) el.desktopAccount.addEventListener('click',()=>openDesktopLink('account'));
     if(el.desktopUpdate) el.desktopUpdate.addEventListener('click',()=>openDesktopLink('update'));
+    if(el.trialStartAnalysis) el.trialStartAnalysis.addEventListener('click',()=>{
+      window.cytomoveDesktop?.getTrialState?.().then(trial=>markTrialWelcomeSeen(trial)).catch(()=>{});
+      hideTrialPanel();
+    });
+    if(el.trialVisitSite) el.trialVisitSite.addEventListener('click',()=>openDesktopLink('update'));
+    if(el.trialExpiredVisit) el.trialExpiredVisit.addEventListener('click',()=>openDesktopLink('update'));
+    if(el.trialExpiredFeedback) el.trialExpiredFeedback.addEventListener('click',()=>openDesktopLink('feedback'));
+    if(el.trialCloseApp) el.trialCloseApp.addEventListener('click',()=>{
+      if(window.cytomoveDesktop?.closeApp) window.cytomoveDesktop.closeApp();
+      else window.close();
+    });
     el.modeToggle.addEventListener('click',e=>{
       const btn=e.target.closest('[data-mode]');if(!btn)return;
       setMode(btn.dataset.mode);
@@ -4457,5 +4548,6 @@
   bindEvents();
   setupDelayedTooltips();
   loadDesktopManifest();
+  initTrialGate();
   if(isFileProtocol()) setLog('<strong>Desktop Alpha:</strong> use Open/drag-drop for local images. Analysis runs on this computer.');
 
