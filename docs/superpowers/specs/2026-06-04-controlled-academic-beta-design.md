@@ -32,6 +32,14 @@ Full beta use requires registration and email verification. Registered users can
 
 Academic institutional email users should receive free academic beta access after verification. General email users enter manual review before full access. Commercial-looking domains should be routed to commercial contact rather than automatic free access.
 
+Supported sign-in methods for the beta:
+
+- ORCID sign-in or ORCID account linking, used as the strongest research-identity signal.
+- Google sign-in, used for low-friction account creation and returning-user login.
+- Email magic link, used as a fallback for users who do not want to use ORCID or Google.
+
+ORCID should not be treated as automatic proof of academic eligibility by itself, because ORCID iDs can be created by many types of users. The access decision should combine ORCID linkage, verified email domain, institution, role, and intended use.
+
 ## User States
 
 - `demo`: no account; limited trial experience.
@@ -45,13 +53,17 @@ Academic institutional email users should receive free academic beta access afte
 ## Registration Flow
 
 1. User clicks "Apply for full beta access".
-2. User enters email, name, institution, country, role, and intended use.
-3. System classifies the email domain:
+2. User chooses ORCID, Google, or email magic link.
+3. User enters or confirms email, name, institution, country, role, and intended use.
+4. If the user did not start with ORCID, the interface offers optional ORCID linking to strengthen the academic profile.
+5. System classifies the email domain and academic signals:
    - Academic domain: send verification email, then grant `academic_verified`.
+   - Academic domain plus ORCID: send verification email, then grant `academic_verified` with high confidence.
    - General consumer email: send verification email, then set `manual_review`.
+   - ORCID plus general consumer email: send verification email, then set `manual_review` unless the stated institution and intended use are clearly non-commercial.
    - Commercial-looking domain: send verification email, then set `commercial_contact` or manual review depending on wording.
-4. User accepts beta terms before full access.
-5. Full access opens only after the user reaches `academic_verified` or `approved_noncommercial`.
+6. User accepts beta terms before full access.
+7. Full access opens only after the user reaches `academic_verified` or `approved_noncommercial`.
 
 ## Admin Workflow
 
@@ -80,12 +92,22 @@ Public wording should avoid "open source" and use "source-available non-commerci
 
 Recommended backend direction: use a managed auth/database provider for the beta rather than building identity from scratch.
 
+Preferred auth provider direction:
+
+- Use a managed auth provider that supports Google sign-in and email magic links out of the box.
+- Add ORCID through a custom OAuth/OIDC provider if the chosen backend supports it cleanly.
+- Store the ORCID iD as linked identity metadata, not as the sole authorization rule.
+- Keep authorization in Cytomove's own beta profile table so access can be manually overridden.
+
 Minimum data model:
 
 - users/auth identity;
 - beta profile: email, name, institution, role, country, intended use;
+- linked identity providers: ORCID, Google, email;
+- ORCID iD when available;
 - access status;
 - domain classification;
+- academic signal score or classification notes;
 - accepted terms version and timestamp;
 - admin notes.
 
@@ -109,8 +131,11 @@ The analysis engine should remain client-side. Authentication should gate access
 ### Milestone 3: Registration And Classification
 
 - Add registration form.
+- Add ORCID, Google, and email magic-link sign-in options.
 - Add email verification.
+- Add optional ORCID linking prompt for Google/email users.
 - Add domain classification.
+- Store ORCID iD and linked-provider metadata when available.
 - Store beta profile and terms acceptance.
 
 ### Milestone 4: Manual Review
@@ -129,6 +154,7 @@ The analysis engine should remain client-side. Authentication should gate access
 
 - Whether demo users can export a small watermarked CSV/PNG or no export at all.
 - Which academic-domain list/provider to use for automatic approval.
+- Which backend provider should handle ORCID custom OAuth/OIDC most cleanly.
 - Whether consumer-email users can upload institutional proof during manual review.
 - Whether desktop alpha should share the same account state or remain separate initially.
 
