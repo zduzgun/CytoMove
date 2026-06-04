@@ -3,18 +3,19 @@
      Her oturuma bu dosyayı okuyarak başla; sonunda STATUS'u güncelle ve commit et.
      README.md ve ROADMAP.md ile birlikte kullan. -->
 
-**Son güncelleme:** 2026-06-02
-**Versiyon:** 1.7
+**Son güncelleme:** 2026-06-04
+**Versiyon:** 2.0
 
 ---
 
 ## ⭐ STATUS (her oturum sonunda ÜZERİNE YAZ — append etme)
 
-- **Aktif iş kolu:** Faz 2/3 — bioRxiv preprint submission hazırlığı.
-- **Son tamamlanan:** Codex review fix pass: manuscript source-of-truth yolu düzeltildi (`scripts/build_manuscript_docx.py`), commit playbook `git add -A` yerine seçici staging'e çekildi, preload sürümü yeniden `package.json` kaynaklı yapıldı.
-- **TEK sıradaki aksiyon:** Zenodo deposit'ini YAYINLA (DOI `10.5281/zenodo.20486820` şu an muhtemelen sadece rezerve) → sonra bioRxiv'e gönder.
-- **Source-of-truth dosyalar:** manuscript = `docs/manuscript-cytomove-submission.md` + `scripts/build_manuscript_docx.py` → `docs/Cytomove_manuscript_submission.docx` (aşağıdaki Source-of-Truth tablosuna bak). Sayısal gerçek = `validation_sets/comparator_clean/results/validation_master.xlsx`. Strateji = `ROADMAP.md`.
-- **Açık uyarı / BEKLEYEN:** Büyük commit bekliyor (~62 dosya). `.git/index.lock` yalnızca aktif git süreci yoksa silinmeli; 2026-06-02'de aktif `git.exe` süreçleri görüldü. LibreOffice `docs/.~lock.*` PDF'i tutuyor. Commit kullanıcı makinesinde yapılacak; güvenli seçici staging reçetesi `docs/COMMIT_PLAYBOOK.md`'de.
+- **Aktif iş kolu:** Faz 2/3 — **hakemli dergi submission hazırlığı**. Venue değişti: bioRxiv yerine (ya da öncesinde) **CMPB = Computer Methods and Programs in Biomedicine**, makale tipi **Original Software Publication (OSP)**. UBYT 2026 ödülü kabul hâlinde **30.878 TL** (hibrit; abonelik yoluyla APC'siz yayımlanabilir → ödül net).
+- **Son tamamlanan (2026-06-03):** (a) Manuscript bütünlük denetimi + bozuk docx/md onarımı (eksik 4 referans + çift figür bloğu + dosya-sonu kesilmesi düzeltildi); (b) `validation_master.xlsx` ↔ ham veri tam çapraz kontrol (TEMİZ, hata yok); (c) CMPB OSP submission paketi üretildi → `PUBLICATION/1-Computer Methods and Programs in Biomedicine/`.
+- **TEK sıradaki aksiyon:** Kodu GitHub'da **source-available, ticari olmayan akademik/araştırma kullanımı** lisansıyla public yap; ticari kullanım public lisans altında kullanılamaz ve ayrı yazılı ticari lisans gerektirir → CMPB/preprint metinlerinde "open source/AGPL" değil "source-available non-commercial" kullan → CMPB için referansları **Vancouver numaralı stile** çevir → submit. (Bağımsız olarak Zenodo deposit DOI `10.5281/zenodo.20486820` hâlâ YAYINLANMALI.)
+- **Controlled Academic Beta kararı (2026-06-04):** Public beta yerine **login'siz demo + kayıtlı tam kullanım** modeli seçildi. Akademik kullanım beta boyunca ücretsiz; tam erişim için kayıt gerekir. Akademik e-posta/ORCID güçlü akademik sinyal sayılır, genel e-posta manuel onaya düşer, ticari kullanıcılar ayrı lisans görüşmesine yönlendirilir. Beta tasarım kaynağı: `docs/superpowers/specs/2026-06-04-controlled-academic-beta-design.md`. İlgili commit'ler: `5b1bf33` (ilk beta design), `daf48f7` (ORCID + Google + magic link sign-in design).
+- **Source-of-truth dosyalar:** manuscript = `docs/manuscript-cytomove-submission.md` + `scripts/build_manuscript_docx.py`. ⚠️ **Generator OUT adı DEĞİŞTİ → `docs/manuscript-cytomove-submission.docx`** (eski `Cytomove_manuscript_submission.docx` değil). Sayısal gerçek = `validation_sets/comparator_clean/results/validation_master.xlsx` (bu oturumda ham veriyle doğrulandı). CMPB submission kaynağı = `PUBLICATION/1-.../manuscript/cytomove-osp-cmpb.md`. Strateji = `ROADMAP.md`.
+- **Açık uyarı / BEKLEYEN:** (1) `docs/manuscript-cytomove-submission.md` bir noktada **dosya sonundan kesilmişti** (Schindelin yarım + Schneider & Suarez-Arnedo kayıp); 2026-06-03'te orijinal metinden onarıldı, artık 10 referans tam — codex bunu tekrar bozmamak için tail'i kontrol etsin. (2) Büyük commit hâlâ bekliyor. (3) LibreOffice `docs/.~lock.*` ve `PUBLICATION/.../manuscript/.~lock.*` PDF kilidi olabilir. Güvenli staging reçetesi `docs/COMMIT_PLAYBOOK.md`'de.
 
 ---
 
@@ -34,8 +35,9 @@ Hangi ajan olursan ol, bu 3 adımı uygula:
 
 | Çıktı | Kanonik kaynak | Nasıl üretilir | Elle düzenle? |
 |-------|----------------|----------------|---------------|
-| `docs/Cytomove_manuscript_submission.docx` | `docs/manuscript-cytomove-submission.md` + `scripts/build_manuscript_docx.py` | `python scripts\build_manuscript_docx.py` | **HAYIR** — markdown + generator üzerinden üret |
-| `docs/Cytomove_manuscript_submission.pdf` | yukarıdaki docx | `soffice --headless --convert-to pdf` | HAYIR |
+| `docs/manuscript-cytomove-submission.docx` ⚠️(OUT adı 2026-06-03'te değişti) | `docs/manuscript-cytomove-submission.md` + `scripts/build_manuscript_docx.py` | `python scripts\build_manuscript_docx.py` | **HAYIR** — markdown + generator üzerinden üret |
+| `docs/manuscript-cytomove-submission.pdf` | yukarıdaki docx | `soffice --headless --convert-to pdf` | HAYIR |
+| `PUBLICATION/1-.../manuscript/Cytomove_CMPB_OSP_manuscript.docx` (CMPB OSP) | `PUBLICATION/1-.../manuscript/cytomove-osp-cmpb.md` | `pandoc` (figürler `../figures/` mutlak yol ile gömülür) + `soffice` PDF | **HAYIR** — md'de düzenle, yeniden üret |
 | `docs/manuscript-cytomove-submission.md` | insan-okur AYNA | generator ile elle senkron tutulur | Evet ama docx ile senkronla |
 | Sayısal sonuçlar (MAPE/r vb.) | `validation_sets/comparator_clean/results/validation_master.xlsx` | scriptler | Sadece xlsx |
 | `docs/references/cytomove-preprint.bib` | kendisi | elle | Evet |
@@ -54,6 +56,7 @@ Hangi ajan olursan ol, bu 3 adımı uygula:
 - **`github_token.txt`** repo kökünde — asla stage/commit etme; history'e düşerse revoke.
 - **Ham görüntüler** (`wound healing/`, `validation_ref_sets/`, `validation_sets/`) ignored kalmalı; commit etme.
 - **PowerShell here-string** `@'...'@` içinde `</script>`/HTML tag bozulabilir; dosya yazımında write tool ya da Python kullan.
+- **⚠️ YandexDisk senkron kesilmesi:** `D:\YandexDisk\...` altındaki dosyalar (manuscript md'leri dahil) yazımdan sonra bazen **dosya sonundan kesiliyor** (2026-06-03'te hem `docs/manuscript-cytomove-submission.md` hem `PUBLICATION/.../cytomove-osp-cmpb.md` sonu kayboldu — referans/tablo bölümleri uçtu). Her büyük yazımdan SONRA dosyayı yeniden okuyup tail'i (References/Tables sonu) doğrula; gerekiyorsa eksik kuyruğu geri yaz.
 
 ---
 
@@ -75,7 +78,44 @@ Yeni oturumda şu sırayla ilerle:
 
 ---
 
-## 2026-06-01 Oturum: bioRxiv Preprint Submission Build ⭐
+## 2026-06-03 Oturum: Manuscript bütünlük denetimi + CMPB OSP submission paketi ⭐ (EN GÜNCEL)
+
+Bu oturum [claude] ile yürütüldü. Üç iş yapıldı: (1) docx/md bütünlük denetimi + onarım, (2) validation_master ham veri çapraz kontrolü, (3) CMPB Original Software Publication submission paketi.
+
+**1) Manuscript bütünlük denetimi + onarım (`docs/manuscript-cytomove-submission.*`):**
+- Tespit edilen hatalar: docx'te **10 yerine 6 referans** vardı (WHST/Suarez-Arnedo, CSMA/Pham, ImageJ/Schneider, Fiji/Schindelin kayıptı); **figür caption bloğu iki kez** basılıyordu (md'nin `## Figures` metni + sonda gömülü figürler); kapakta dahili build iskelesi vardı.
+- Kök neden: `scripts/build_manuscript_docx.py` md'nin `## Figures` bölümünü hem gövdeye basıp hem sonda tekrar ekliyordu; ayrıca hedef docx eski/bozuk bir build'di.
+- **Script kalıcı olarak onarıldı:** OUT → `docs/manuscript-cytomove-submission.docx`; `## Figures` caption bloğu gövdede bastırılıyor (caption'lar yine yakalanıp gömülü figürlerde kullanılıyor); kapak iskelesi kaldırıldı.
+- İçerik düzeltmeleri (md kaynağında): "a few hundred pixels" → **"a few thousand pixels"** (3 yer; gerçek kalıntı yara ~1.400–2.550 px), ve yeni **Ethics Statement** bölümü eklendi (insan/hayvan deneği yok; MCF-7 kareleri CC BY 4.0).
+- ⚠️ **Kritik:** Çalışma sırasında md dosyası **sonundan kesilmiş** bulundu (Schindelin yarım, Schneider+Suarez-Arnedo yok). İlk okunan tam metinden 3 referans **kelimesi kelimesine geri yüklendi**. md artık 10 referans tam, düzgün bitiyor. Codex: md tail'ini (References sonu) düzenlemeden önce kontrol et.
+- docx + PDF yeniden üretildi: 1 Figures bölümü, 7 figür, 3 tablo, 10 referans, Ethics Statement var; tüm Table 3 sayıları sağlam.
+
+**2) `validation_master.xlsx` ↔ ham veri çapraz kontrolü — TEMİZ:**
+- `summary` sayfasındaki tüm MAPE/median/max/signed/Pearson değerleri `paired_measurements`'tan yeniden hesaplananlarla birebir eşleşti.
+- `paired_measurements` ↔ ham kaynaklar birebir: WHAD (`cytomove_..._group_metrics.csv` + WHST `Results.xlsx`), CSMA (`csma_sample_11_whst_csma_comparison_template.xlsx`; template `csma_area_px` ↔ Figure 5 `native_run` CSV birebir), üç cep telefonu seti (ham WHST xlsx). **Sayısal hata yok.**
+
+**3) Venue kararı + CMPB OSP paketi:**
+- `UBYT_DERGİ_LİSTESİ/ubyt_2026_liste_v2.xlsx` (11.640 dergi) incelendi; ödeme MEP/etki ile artıyor, 55.000 TL tavan. Uygun + yüksek ödemeli gerçekçi venue = **CMPB (30.878 TL)**; emsal: PyScratch CMPB'de yayımlandı. Kullanıcı CMPB'yi seçti.
+- **Lisans/format kararı (kullanıcı, 2026-06-04 güncellemesi):** kodun ticari amaçla kullanılmasını istemiyor. Bu nedenle AGPL/open-source çizgisi bırakıldı; hedef model **source-available, ticari olmayan akademik/araştırma kullanımı + ticari kullanım için ayrı yazılı lisans**. Bu OSI anlamında "open source" değildir; makale ve repo dilinde "source-available" kullanılmalı.
+- Üretilen klasör: **`PUBLICATION/1-Computer Methods and Programs in Biomedicine/`**
+  - `manuscript/` → `cytomove-osp-cmpb.md` (kaynak) + `Cytomove_CMPB_OSP_manuscript.docx` + `.pdf`. OSP yapısı: Abstract → Required Metadata/**Code metadata tablosu** → Motivation and significance → Software description (mimari+işlevler) → Illustrative examples (doğrulama) → Impact → Conclusions → Ethics/Funding/Competing interest/CRediT → Refs → Figures → Tables.
+  - `cover_letter/` → `Cytomove_CMPB_cover_letter.docx` (+ md).
+  - `figures/` → `Figure1.png … Figure6.png, FigureS1.png` (yüksek çöz.).
+  - `LICENSE` + `LICENSING_STRATEGY.md` → PolyForm Noncommercial 1.0.0 modelini izleyen source-available non-commercial research-use modeli + ticari lisans gerekliliği.
+  - `SUBMISSION_CHECKLIST.md` → gönderim öncesi bloklar + red gelirse `2-...` sıradaki dergiler.
+- **Referanslar 30'a genişletildi (2026-06-03):** OSP makalesindeki 10 referans → **30** (PubMed ile DOI/yıl doğrulanmış gerçek kaynaklar: Friedl&Gilmour 2009, Topman 2012, Zordan 2011, Otsu 1979, Crow 1984, Viola&Jones 2001, Soille 2003, Ronneberger/U-Net 2015, Schmidt/StarDist 2018, Stringer/Cellpose 2021, Berg/ilastik 2019, Carpenter+Stirling/CellProfiler, Ouyang/ImJoy 2019, von Chamier 2021, Bland&Altman 1986, Dice 1945, Taha&Hanbury 2015, Maier-Hein 2024, Wilkinson/FAIR 2016). Tümü metin-içi atıfla bağlı, yetim yok. docx/pdf yeniden üretildi (3 tablo, 7 figür, 30 referans). ⚠️ Ana `docs/manuscript-cytomove-submission.md` hâlâ 10 referanslı — iki dosya artık ayrıştı; OSP sürümü güncel ve aktif olan.
+
+**Sıradaki adımlar (bir sonraki oturum / codex):**
+1. **Kodu source-available non-commercial research-use modeliyle GitHub'da public yap** — C4 artık AGPL/open-source değil, "source-available non-commercial licence following the PolyForm Noncommercial License 1.0.0 model; commercial use is not permitted under the public licence and requires a separate written commercial licence" olmalı.
+2. CMPB için referansları **Vancouver numaralı** stile çevir (OSP md şu an yazar-tarih); highlights + graphical abstract hazırla.
+3. (Bağımsız) Zenodo deposit'i YAYINLA → DOI çözülsün.
+4. Gerekirse `cytomove-osp-cmpb.md`'yi düzenle, sonra pandoc+soffice ile docx/pdf'i yeniden üret (elle docx düzenleme YOK).
+
+**⚠️ Bu oturumun tüm değişiklikleri (script onarımı, md onarımı, PUBLICATION/ klasörü) henüz commit edilmedi.**
+
+---
+
+## 2026-06-01 Oturum: bioRxiv Preprint Submission Build
 
 Bu oturum tamamen manuscript/preprint hazırlığına ayrıldı. Sonraki oturum buradan devam etmeli.
 
