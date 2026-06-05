@@ -9,6 +9,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <script src="../auth/supabase-config.js"></script>
+  <script src="../auth/cytomove-auth.js"></script>
 </head>
 <body>
   <main class="app">
@@ -330,15 +332,46 @@
       var params = new URLSearchParams(window.location.search);
       var isDemo = params.get('mode') === 'demo';
       var banner = document.getElementById('demoModeBanner');
+      var bannerText = banner ? banner.querySelector('span') : null;
+      var bannerStrong = banner ? banner.querySelector('strong') : null;
       var exportIds = ['exportPng', 'exportGroupPng', 'exportPlots', 'exportCsv', 'exportExcel'];
+      var exportsRequireAccess = false;
+      var exportGateMessage = 'Full CSV, Excel, PNG, and ZIP exports require registered beta access.';
 
-      if (isDemo && banner) {
+      function showGateBanner(title, message) {
+        if (!banner) return;
+        if (bannerStrong) bannerStrong.textContent = title;
+        if (bannerText) bannerText.textContent = message;
         banner.hidden = false;
       }
-      if (!isDemo) return;
 
-      document.documentElement.dataset.accessMode = 'demo';
+      if (isDemo) {
+        exportsRequireAccess = true;
+        document.documentElement.dataset.accessMode = 'demo';
+        showGateBanner('Demo mode', 'Load local images and review overlays without signing in. Full CSV, Excel, PNG, and ZIP exports require registered beta access.');
+      } else if (window.CytomoveAuth && window.CytomoveAuth.isConfigured()) {
+        document.documentElement.dataset.accessMode = 'checking';
+        window.CytomoveAuth.getAccessSnapshot().then(function (snapshot) {
+          if (snapshot.approved) {
+            document.documentElement.dataset.accessMode = 'full';
+            return;
+          }
+          exportsRequireAccess = true;
+          document.documentElement.dataset.accessMode = snapshot.signedIn ? 'pending' : 'signed-out';
+          exportGateMessage = snapshot.signedIn
+            ? 'Your beta access is signed in but not approved yet. Full CSV, Excel, PNG, and ZIP exports require approved academic beta access.'
+            : 'Sign in from the Academic Beta gateway to request full CSV, Excel, PNG, and ZIP export access.';
+          showGateBanner(snapshot.signedIn ? 'Access pending' : 'Sign in required', exportGateMessage);
+        }).catch(function (error) {
+          exportsRequireAccess = true;
+          document.documentElement.dataset.accessMode = 'auth-error';
+          exportGateMessage = error.message || String(error);
+          showGateBanner('Auth check failed', exportGateMessage);
+        });
+      }
+
       document.addEventListener('click', function (event) {
+        if (!exportsRequireAccess) return;
         var exportButton = exportIds
           .map(function (id) { return document.getElementById(id); })
           .filter(Boolean)
@@ -350,7 +383,7 @@
 
         var logMsg = document.getElementById('logMsg');
         if (logMsg) {
-          logMsg.innerHTML = '<strong>Demo mode:</strong> full CSV, Excel, PNG, and ZIP exports require registered beta access.';
+          logMsg.innerHTML = '<strong>Beta access:</strong> ' + exportGateMessage;
         }
         if (banner) banner.hidden = false;
       }, true);
