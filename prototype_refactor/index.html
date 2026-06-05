@@ -34,6 +34,12 @@
       </div>
     </header>
 
+    <div class="demo-banner" id="demoModeBanner" hidden>
+      <strong>Demo mode</strong>
+      <span>Load local images and review overlays without signing in. Full CSV, Excel, PNG, and ZIP exports will require registered beta access.</span>
+      <a href="../beta-gateway/">Sign in for full beta</a>
+    </div>
+
     <div class="layout">
       <aside class="sidebar">
         <div class="sidebar-inner">
@@ -319,6 +325,37 @@
       </section>
     </div>
   </main>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var isDemo = params.get('mode') === 'demo';
+      var banner = document.getElementById('demoModeBanner');
+      var exportIds = ['exportPng', 'exportGroupPng', 'exportPlots', 'exportCsv', 'exportExcel'];
+
+      if (isDemo && banner) {
+        banner.hidden = false;
+      }
+      if (!isDemo) return;
+
+      document.documentElement.dataset.accessMode = 'demo';
+      document.addEventListener('click', function (event) {
+        var exportButton = exportIds
+          .map(function (id) { return document.getElementById(id); })
+          .filter(Boolean)
+          .find(function (button) { return button.contains(event.target); });
+
+        if (!exportButton) return;
+        event.preventDefault();
+        event.stopPropagation();
+
+        var logMsg = document.getElementById('logMsg');
+        if (logMsg) {
+          logMsg.innerHTML = '<strong>Demo mode:</strong> full CSV, Excel, PNG, and ZIP exports require registered beta access.';
+        }
+        if (banner) banner.hidden = false;
+      }, true);
+    }());
+  </script>
   <script src="app.js"></script>
 </body>
 </html>

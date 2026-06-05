@@ -14,6 +14,67 @@ The privacy claim remains central: scratch assay images should stay local to the
 
 ## Access Model
 
+### Gateway Screen
+
+The app entry gateway should use a Split Choice layout. The public landing page remains separate; users see this gateway only when they choose to launch/open Cytomove.
+
+Visual direction:
+
+- Use a calm branded screen that carries the existing Cytomove landing-page language rather than a generic clinical white login screen.
+- Keep the tone scientific, restrained, and trustworthy; avoid a sales-heavy SaaS hero.
+- Preserve the current local-first/research-tool identity through concise copy, quiet typography, and subtle references to segmentation review/overlay workflow.
+- Use two balanced choice panels for the main decision, with `Sign in with email` and `Continue to demo` given equal visual dignity.
+- Keep privacy and access constraints visible below the choices without turning them into a warning block.
+
+Gateway headline:
+
+- `Cytomove Controlled Academic Beta`
+- Supporting line: `Reviewable scratch wound healing analysis in your browser.`
+
+Primary choices:
+
+- `Sign in with email`
+  - Use Google or a magic link to request or enter full beta access.
+  - Academic use is free during beta.
+  - Full export and full workflow are available only after approved beta access.
+- `Continue to demo`
+  - Try Cytomove without signing in.
+  - Load a local image, inspect the segmentation overlay, and view core measurements.
+  - Full CSV, Excel, PNG, and ZIP exports require registered beta access.
+
+Trust strip:
+
+- Images stay local in your browser.
+- Full export requires registered beta access.
+- Academic beta is free.
+- Commercial use requires a separate licence.
+
+Gateway Wireframe V1:
+
+- Header:
+  - Left: Cytomove logo/wordmark.
+  - Right: `Privacy` and `Beta terms` links.
+- Center headline:
+  - `Cytomove Controlled Academic Beta`
+  - `Reviewable scratch wound healing analysis in your browser.`
+- Split choice panels:
+  - Left panel, `Sign in with email`:
+    - Copy: `Use Google or a magic link to request or enter full beta access.`
+    - Actions: `Continue with Google`; `Email me a magic link`.
+    - Note: `Academic use is free during beta. General email addresses may require manual approval.`
+  - Right panel, `Continue to demo`:
+    - Copy: `Try Cytomove without signing in. Load a local image, inspect the overlay, and view core measurements.`
+    - Action: `Open demo`.
+    - Note: `Full CSV, Excel, PNG, and ZIP exports require registered beta access.`
+- Bottom trust row:
+  - `Images stay local in your browser`
+  - `Academic beta is free`
+  - `Full export requires registration`
+  - `Commercial use requires a separate licence`
+- Responsive behavior:
+  - Desktop: two equal panels.
+  - Mobile: panels stack vertically, with `Sign in with email` first and `Continue to demo` second.
+
 ### Loginless Demo
 
 Public visitors can try Cytomove without signing in. Demo mode should be useful enough to understand the workflow but limited enough that serious work moves to registered beta access.
@@ -21,9 +82,10 @@ Public visitors can try Cytomove without signing in. Demo mode should be useful 
 Initial demo constraints:
 
 - Allow sample/demo images.
-- Allow local image loading if technically simple, because it helps users judge real fit.
+- Allow local image loading so users can judge Cytomove against their own microscopy images without signing in.
 - Show segmentation overlays and core measurements.
-- Limit or watermark export.
+- Keep full CSV, Excel, PNG, and ZIP export behind registered full beta access.
+- If lightweight demo export is offered later, mark it clearly as demo output and avoid presenting it as publication-ready.
 - Show a clear call to register for full academic beta access.
 
 ### Registered Full Use
@@ -32,11 +94,12 @@ Full beta use requires registration and email verification. Registered users can
 
 Academic institutional email users should receive free academic beta access after verification. General email users enter manual review before full access. Commercial-looking domains should be routed to commercial contact rather than automatic free access.
 
-Supported sign-in methods for the beta:
+The beta entry screen should expose two primary choices:
 
-- ORCID sign-in or ORCID account linking, used as the strongest research-identity signal.
-- Google sign-in, used for low-friction account creation and returning-user login.
-- Email magic link, used as a fallback for users who do not want to use ORCID or Google.
+1. Sign in with email.
+2. Continue to loginless demo.
+
+The email sign-in route can support Google sign-in and email magic link. ORCID should be offered after sign-in as optional account linking, used as the strongest research-identity signal rather than as a primary login button.
 
 ORCID should not be treated as automatic proof of academic eligibility by itself, because ORCID iDs can be created by many types of users. The access decision should combine ORCID linkage, verified email domain, institution, role, and intended use.
 
@@ -53,9 +116,9 @@ ORCID should not be treated as automatic proof of academic eligibility by itself
 ## Registration Flow
 
 1. User clicks "Apply for full beta access".
-2. User chooses ORCID, Google, or email magic link.
+2. User chooses the email sign-in route: Google sign-in or email magic link.
 3. User enters or confirms email, name, institution, country, role, and intended use.
-4. If the user did not start with ORCID, the interface offers optional ORCID linking to strengthen the academic profile.
+4. The interface offers optional ORCID linking to strengthen the academic profile.
 5. System classifies the email domain and academic signals:
    - Academic domain: send verification email, then grant `academic_verified`.
    - Academic domain plus ORCID: send verification email, then grant `academic_verified` with high confidence.
@@ -95,7 +158,7 @@ Recommended backend direction: use a managed auth/database provider for the beta
 Preferred auth provider direction:
 
 - Use a managed auth provider that supports Google sign-in and email magic links out of the box.
-- Add ORCID through a custom OAuth/OIDC provider if the chosen backend supports it cleanly.
+- Add ORCID account linking through a custom OAuth/OIDC provider if the chosen backend supports it cleanly.
 - Store the ORCID iD as linked identity metadata, not as the sole authorization rule.
 - Keep authorization in Cytomove's own beta profile table so access can be manually overridden.
 
@@ -131,7 +194,7 @@ The analysis engine should remain client-side. Authentication should gate access
 ### Milestone 3: Registration And Classification
 
 - Add registration form.
-- Add ORCID, Google, and email magic-link sign-in options.
+- Add Google and email magic-link sign-in options under the email sign-in route.
 - Add email verification.
 - Add optional ORCID linking prompt for Google/email users.
 - Add domain classification.
@@ -154,7 +217,7 @@ The analysis engine should remain client-side. Authentication should gate access
 
 - Whether demo users can export a small watermarked CSV/PNG or no export at all.
 - Which academic-domain list/provider to use for automatic approval.
-- Which backend provider should handle ORCID custom OAuth/OIDC most cleanly.
+- Which backend provider should handle ORCID account linking most cleanly.
 - Whether consumer-email users can upload institutional proof during manual review.
 - Whether desktop alpha should share the same account state or remain separate initially.
 
