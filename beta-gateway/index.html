@@ -200,12 +200,18 @@
       padding-top: 22px;
     }
 
-    .magic-link-form {
+    .email-auth-form {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-columns: minmax(0, 1fr);
       gap: 9px;
       margin-top: auto;
       padding-top: 22px;
+    }
+
+    .email-auth-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
     }
 
     .email-input {
@@ -417,7 +423,8 @@
         width: 100%;
       }
 
-      .magic-link-form {
+      .email-auth-form,
+      .email-auth-actions {
         grid-template-columns: 1fr;
       }
     }
@@ -463,16 +470,20 @@
               </svg>
             </div>
           </div>
-          <p>Enter your email to request or enter full beta access. Academic use is free during beta.</p>
-          <div class="magic-link-form" aria-label="Magic-link sign-in">
-            <input class="email-input" id="magicEmail" type="email" autocomplete="email" placeholder="you@university.edu">
-            <button class="button" id="magicLinkSignIn" type="button">Email me a magic link</button>
+          <p>Create an account with email verification, then use the same account in the web and desktop beta. Academic use is free during beta.</p>
+          <div class="email-auth-form" aria-label="Email and password sign-in">
+            <input class="email-input" id="authEmail" type="email" autocomplete="email" placeholder="you@university.edu">
+            <input class="email-input" id="authPassword" type="password" autocomplete="current-password" placeholder="Password">
+            <div class="email-auth-actions">
+              <button class="button" id="createAccount" type="button">Create account</button>
+              <button class="button secondary" id="passwordSignIn" type="button">Sign in</button>
+            </div>
           </div>
           <div class="secondary-auth">
             <span>Prefer OAuth?</span>
             <button class="text-button" id="googleSignIn" type="button">Continue with Google</button>
           </div>
-          <div class="note">General email addresses may require manual approval. Commercial use requires a separate licence.</div>
+          <div class="note">Email verification activates academic beta access. Commercial use requires a separate licence.</div>
           <div class="status-message" id="authStatus" hidden></div>
           <div class="account-panel" id="accountPanel" hidden></div>
         </article>
@@ -513,8 +524,10 @@
       var status = document.getElementById('authStatus');
       var accountPanel = document.getElementById('accountPanel');
       var googleButton = document.getElementById('googleSignIn');
-      var magicButton = document.getElementById('magicLinkSignIn');
-      var magicEmail = document.getElementById('magicEmail');
+      var createButton = document.getElementById('createAccount');
+      var signInButton = document.getElementById('passwordSignIn');
+      var authEmail = document.getElementById('authEmail');
+      var authPassword = document.getElementById('authPassword');
 
       function setStatus(message, isError) {
         status.hidden = false;
@@ -541,10 +554,10 @@
           return;
         }
         var email = snapshot.profile && snapshot.profile.email ? snapshot.profile.email : snapshot.session.user.email;
-        var statusText = snapshot.label || 'Pending review';
+        var statusText = snapshot.label || 'Email verification required';
         var accessCopy = snapshot.approved
-          ? 'Full beta export is available for this account.'
-          : 'Your full beta access is not approved yet. Demo mode remains available while the request is reviewed.';
+          ? 'Full beta export is available for this verified account.'
+          : 'Check your email to verify this account. Demo mode remains available until verification is complete.';
 
         accountPanel.hidden = false;
         accountPanel.innerHTML =
@@ -592,16 +605,30 @@
         }
       });
 
-      magicButton.addEventListener('click', async function () {
+      createButton.addEventListener('click', async function () {
         try {
           if (!window.CytomoveAuth.isConfigured()) {
             setStatus('Supabase config is not filled yet. Create the Supabase project, then add the project URL and anon key.', false);
             return;
           }
-          var email = magicEmail.value.trim();
-          var result = await window.CytomoveAuth.signInWithMagicLink(email);
+          var result = await window.CytomoveAuth.signUpWithPassword(authEmail.value.trim(), authPassword.value);
           if (result.error) throw result.error;
-          setStatus('Magic link sent. Check your email, then return to Cytomove Academic Beta.', false);
+          setStatus('Account created. Check your email to verify the account, then sign in with the same email and password.', false);
+        } catch (error) {
+          setStatus(error.message || String(error), true);
+        }
+      });
+
+      signInButton.addEventListener('click', async function () {
+        try {
+          if (!window.CytomoveAuth.isConfigured()) {
+            setStatus('Supabase config is not filled yet. Create the Supabase project, then add the project URL and anon key.', false);
+            return;
+          }
+          var result = await window.CytomoveAuth.signInWithPassword(authEmail.value.trim(), authPassword.value);
+          if (result.error) throw result.error;
+          setStatus('Signed in. Checking beta access status...', false);
+          await refreshAccount();
         } catch (error) {
           setStatus(error.message || String(error), true);
         }

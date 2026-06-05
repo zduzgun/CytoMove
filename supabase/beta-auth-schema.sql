@@ -7,8 +7,8 @@ create table if not exists public.beta_profiles (
   role text,
   intended_use text,
   academic_email_signal boolean not null default false,
-  access_status text not null default 'pending'
-    check (access_status in ('pending', 'manual_review', 'academic_verified', 'approved', 'beta_approved', 'commercial_contact', 'rejected')),
+  access_status text not null default 'email_verified'
+    check (access_status in ('pending', 'email_verified', 'manual_review', 'academic_verified', 'approved', 'beta_approved', 'commercial_contact', 'rejected')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -39,11 +39,12 @@ to authenticated
 using (auth.uid() = user_id);
 
 drop policy if exists "Users can create their own pending beta profile" on public.beta_profiles;
-create policy "Users can create their own pending beta profile"
+drop policy if exists "Users can create their own verified beta profile" on public.beta_profiles;
+create policy "Users can create their own verified beta profile"
 on public.beta_profiles
 for insert
 to authenticated
-with check (auth.uid() = user_id and access_status = 'pending');
+with check (auth.uid() = user_id and access_status in ('email_verified', 'pending'));
 
 drop policy if exists "Users can update editable profile fields" on public.beta_profiles;
 create policy "Users can update editable profile fields"

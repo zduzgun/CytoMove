@@ -1,5 +1,5 @@
 (function () {
-  var DEFAULT_APPROVED = ["academic_verified", "approved", "beta_approved"];
+  var DEFAULT_APPROVED = ["email_verified", "academic_verified", "approved", "beta_approved"];
   var clientPromise = null;
   var cachedSnapshot = null;
 
@@ -39,10 +39,11 @@
 
   function statusLabel(status) {
     if (!status) return "Not registered";
+    if (status === "email_verified") return "Email verified";
     if (approvedStatuses().indexOf(status) !== -1) return "Approved beta access";
     if (status === "manual_review") return "Manual review";
     if (status === "commercial_contact") return "Commercial licence review";
-    return "Pending review";
+    return "Email verification required";
   }
 
   async function getClient() {
@@ -79,15 +80,24 @@
     });
   }
 
-  async function signInWithMagicLink(email) {
-    if (!email) throw new Error("Email is required for magic-link sign-in.");
+  async function signUpWithPassword(email, password) {
+    if (!email) throw new Error("Email is required.");
+    if (!password || password.length < 8) throw new Error("Use a password with at least 8 characters.");
     var client = await getClient();
-    return client.auth.signInWithOtp({
+    return client.auth.signUp({
       email: email,
-      options: {
-        emailRedirectTo: redirectTo(),
-        shouldCreateUser: true
-      }
+      password: password,
+      options: { emailRedirectTo: redirectTo() }
+    });
+  }
+
+  async function signInWithPassword(email, password) {
+    if (!email) throw new Error("Email is required.");
+    if (!password) throw new Error("Password is required.");
+    var client = await getClient();
+    return client.auth.signInWithPassword({
+      email: email,
+      password: password
     });
   }
 
@@ -157,12 +167,15 @@
 
     var profile = await ensureProfile(session);
     var accessStatus = profile && profile.access_status;
+    var emailConfirmed = Boolean(session.user && session.user.email_confirmed_at);
+    var approved = emailConfirmed || approvedStatuses().indexOf(accessStatus) !== -1;
     cachedSnapshot = {
       configured: true,
       signedIn: true,
-      approved: approvedStatuses().indexOf(accessStatus) !== -1,
-      status: accessStatus || "pending",
-      label: statusLabel(accessStatus || "pending"),
+      approved: approved,
+      emailConfirmed: emailConfirmed,
+      status: emailConfirmed ? "email_verified" : (accessStatus || "pending"),
+      label: emailConfirmed ? statusLabel("email_verified") : statusLabel(accessStatus || "pending"),
       session: session,
       profile: profile
     };
@@ -175,7 +188,8 @@
     getSession: getSession,
     getAccessSnapshot: getAccessSnapshot,
     signInWithGoogle: signInWithGoogle,
-    signInWithMagicLink: signInWithMagicLink,
+    signUpWithPassword: signUpWithPassword,
+    signInWithPassword: signInWithPassword,
     signOut: signOut,
     normalizeEmailDomain: normalizeEmailDomain,
     academicSignalFromEmail: academicSignalFromEmail

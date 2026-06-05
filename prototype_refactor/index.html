@@ -359,9 +359,9 @@
           exportsRequireAccess = true;
           document.documentElement.dataset.accessMode = snapshot.signedIn ? 'pending' : 'signed-out';
           exportGateMessage = snapshot.signedIn
-            ? 'Your beta access is signed in but not approved yet. Full CSV, Excel, PNG, and ZIP exports require approved academic beta access.'
-            : 'Sign in from the Academic Beta gateway to request full CSV, Excel, PNG, and ZIP export access.';
-          showGateBanner(snapshot.signedIn ? 'Access pending' : 'Sign in required', exportGateMessage);
+            ? 'Your account is signed in but email verification is not complete. Full CSV, Excel, PNG, and ZIP exports require a verified Academic Beta account.'
+            : 'Sign in from the Academic Beta gateway with a verified account to use full CSV, Excel, PNG, and ZIP exports.';
+          showGateBanner(snapshot.signedIn ? 'Email verification required' : 'Sign in required', exportGateMessage);
         }).catch(function (error) {
           exportsRequireAccess = true;
           document.documentElement.dataset.accessMode = 'auth-error';
