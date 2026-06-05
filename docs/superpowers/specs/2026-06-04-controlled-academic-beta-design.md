@@ -26,9 +26,9 @@ Visual direction:
 - Use two balanced choice panels for the main decision, with `Sign in with email` and `Continue to demo` given equal visual dignity.
 - Keep privacy and access constraints visible below the choices without turning them into a warning block.
 
-Gateway headline:
+Public gateway headline:
 
-- `Cytomove Controlled Academic Beta`
+- `Cytomove Academic Beta`
 - Supporting line: `Reviewable scratch wound healing analysis in your browser.`
 
 Primary choices:
@@ -55,7 +55,7 @@ Gateway Wireframe V1:
   - Left: Cytomove logo/wordmark.
   - Right: `Privacy` and `Beta terms` links.
 - Center headline:
-  - `Cytomove Controlled Academic Beta`
+  - `Cytomove Academic Beta`
   - `Reviewable scratch wound healing analysis in your browser.`
 - Split choice panels:
   - Left panel, `Sign in with email`:
@@ -149,7 +149,7 @@ The beta terms should be short and explicit:
 - assay images remain local unless the user explicitly sends feedback or files;
 - user feedback may be used to improve Cytomove.
 
-Public wording should avoid "open source" and use "source-available non-commercial" when discussing code. The web UI can say "Free Controlled Academic Beta" and "Commercial use requires a separate licence."
+Public wording should avoid "open source" and use "source-available non-commercial" when discussing code. The web UI should prefer the simpler public label "Academic Beta"; "controlled" can remain an internal access-model term. It can also say "Academic beta is free" and "Commercial use requires a separate licence."
 
 ## Technical Architecture
 
