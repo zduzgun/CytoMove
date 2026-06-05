@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cytomove Privacy Policy</title>
+  <meta name="description" content="Privacy policy for the Cytomove Academic Beta.">
+  <link rel="canonical" href="https://cytomove.com/privacy/">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f7faf9;
+      --paper: #ffffff;
+      --ink: #102027;
+      --muted: #526d6b;
+      --dim: #7e9290;
+      --line: #d8e6e3;
+      --teal: #0f9f8f;
+      --teal-dark: #08766c;
+      --radius: 8px;
+      --shadow: 0 18px 48px rgba(16, 32, 39, 0.08);
+    }
+    body {
+      min-height: 100vh;
+      background: linear-gradient(160deg, #fbfdfc 0%, var(--bg) 58%, #edf6f4 100%);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    .page { width: min(900px, calc(100% - 40px)); margin: 0 auto; padding: 22px 0 56px; }
+    .site-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+    .logo { display: inline-flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
+    .logo-mark { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); box-shadow: 0 8px 22px rgba(16, 32, 39, 0.06); }
+    .logo-text { font-size: 19px; font-weight: 800; }
+    .header-links { display: flex; align-items: center; gap: 8px; }
+    .header-links a { color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 750; padding: 9px 11px; border-radius: 6px; }
+    .header-links a:hover { color: var(--ink); background: rgba(255, 255, 255, 0.82); }
+    main { margin-top: 42px; }
+    h1 { font-size: 48px; line-height: 1.05; font-weight: 760; letter-spacing: 0; }
+    .lead { max-width: 720px; margin-top: 16px; color: var(--muted); font-size: 18px; }
+    .meta { margin-top: 14px; color: var(--dim); font-size: 13px; font-weight: 720; }
+    .content { margin-top: 28px; padding: 28px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(255, 255, 255, 0.9); box-shadow: var(--shadow); }
+    h2 { margin-top: 26px; font-size: 21px; line-height: 1.25; }
+    h2:first-child { margin-top: 0; }
+    p, ul { margin-top: 10px; color: var(--muted); font-size: 15px; }
+    ul { padding-left: 20px; }
+    li + li { margin-top: 6px; }
+    a { color: var(--teal-dark); font-weight: 720; }
+    .notice { margin-top: 24px; padding: 14px 15px; border: 1px solid #cfe4df; border-radius: var(--radius); background: #f5fbfa; color: var(--muted); font-size: 14px; }
+    @media (max-width: 560px) {
+      .page { width: min(100% - 26px, 900px); }
+      .site-header { align-items: flex-start; flex-direction: column; }
+      h1 { font-size: 36px; }
+      .content { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="site-header">
+      <a class="logo" href="../" aria-label="Cytomove home">
+        <span class="logo-mark" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="16" cy="16" r="13" stroke="#0f9f8f" stroke-width="1.8"/>
+            <ellipse cx="10.5" cy="16" rx="4" ry="4" fill="#bdeee8" stroke="#0f9f8f" stroke-width="1.4"/>
+            <ellipse cx="21.5" cy="16" rx="4" ry="4" fill="#bdeee8" stroke="#0f9f8f" stroke-width="1.4"/>
+            <path d="M14 12.5L18.5 16 14 19.5" stroke="#08766c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="logo-text">Cytomove</span>
+      </a>
+      <nav class="header-links" aria-label="Policy links">
+        <a href="../beta-gateway/">Academic Beta</a>
+        <a href="../beta-terms/">Beta Terms</a>
+      </nav>
+    </header>
+
+    <main>
+      <h1>Privacy Policy</h1>
+      <p class="lead">Cytomove is a browser-based research tool for scratch wound healing assay analysis. The Academic Beta is designed around a local-first workflow.</p>
+      <div class="meta">Last updated: June 5, 2026</div>
+
+      <section class="content">
+        <h2>Local Image Processing</h2>
+        <p>When you use the Cytomove web app, assay images are processed in your browser. Cytomove does not upload your microscopy images to our server as part of the normal analysis workflow.</p>
+
+        <h2>Account Information</h2>
+        <p>If you sign in for the Academic Beta, we may store account and access-review information through our authentication provider, including:</p>
+        <ul>
+          <li>email address;</li>
+          <li>name and profile information provided by the sign-in provider;</li>
+          <li>institution, role, and intended use if you provide them;</li>
+          <li>beta access status, such as pending review or approved academic access.</li>
+        </ul>
+
+        <h2>Authentication Providers</h2>
+        <p>Cytomove may use third-party authentication services, including Supabase and Google, to support Google sign-in and email magic-link sign-in. These providers process authentication data according to their own policies.</p>
+
+        <h2>Feedback And Support</h2>
+        <p>If you contact us, send feedback, or voluntarily share files for troubleshooting, we may use that information to respond to you, evaluate beta issues, and improve Cytomove. Please do not send confidential patient data or personally identifiable clinical data.</p>
+
+        <h2>Research And Product Improvement</h2>
+        <p>We may use aggregated, non-identifying usage and feedback information to improve the Cytomove beta. We do not sell user account data or microscopy images.</p>
+
+        <h2>Commercial Use</h2>
+        <p>The Academic Beta is intended for academic and non-commercial research evaluation. Commercial use requires a separate licence discussion.</p>
+
+        <h2>Contact</h2>
+        <p>For privacy questions, contact the Cytomove project team through the contact route listed on the main Cytomove website.</p>
+
+        <div class="notice">This page is a practical beta privacy notice for Cytomove. It is not a substitute for institution-specific legal review where that is required.</div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
