@@ -204,7 +204,8 @@
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 9px;
-      margin-top: 10px;
+      margin-top: auto;
+      padding-top: 22px;
     }
 
     .email-input {
@@ -335,6 +336,16 @@
       text-decoration: underline;
     }
 
+    .secondary-auth {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--dim);
+      font-size: 13px;
+      flex-wrap: wrap;
+    }
+
     .trust-strip {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -452,13 +463,14 @@
               </svg>
             </div>
           </div>
-          <p>Use Google or a magic link to request or enter full beta access. Academic use is free during beta.</p>
-          <div class="actions">
-            <button class="button" id="googleSignIn" type="button">Continue with Google</button>
-          </div>
+          <p>Enter your email to request or enter full beta access. Academic use is free during beta.</p>
           <div class="magic-link-form" aria-label="Magic-link sign-in">
             <input class="email-input" id="magicEmail" type="email" autocomplete="email" placeholder="you@university.edu">
-            <button class="button secondary" id="magicLinkSignIn" type="button">Email me a magic link</button>
+            <button class="button" id="magicLinkSignIn" type="button">Email me a magic link</button>
+          </div>
+          <div class="secondary-auth">
+            <span>Prefer OAuth?</span>
+            <button class="text-button" id="googleSignIn" type="button">Continue with Google</button>
           </div>
           <div class="note">General email addresses may require manual approval. Commercial use requires a separate licence.</div>
           <div class="status-message" id="authStatus" hidden></div>
