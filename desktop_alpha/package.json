@@ -1,8 +1,8 @@
 {
-  "name": "cytomove-desktop-alpha",
-  "version": "0.1.0-alpha.1",
+  "name": "cytomove-desktop-beta",
+  "version": "0.1.0-beta.1",
   "private": true,
-  "description": "Cytomove Desktop Alpha - local-first wound healing analysis app.",
+  "description": "Cytomove Desktop Beta - local-first wound healing analysis app.",
   "main": "main.js",
   "author": "Cytomove",
   "license": "UNLICENSED",
@@ -19,8 +19,8 @@
     "electron-builder": "^24.13.3"
   },
   "build": {
-    "appId": "com.cytomove.desktopalpha",
-    "productName": "Cytomove Desktop Alpha",
+    "appId": "com.cytomove.desktop",
+    "productName": "Cytomove Desktop Beta",
     "directories": {
       "output": "release"
     },
@@ -37,13 +37,13 @@
       ]
     },
     "portable": {
-      "artifactName": "Cytomove-Desktop-Alpha-${version}-portable.${ext}"
+      "artifactName": "Cytomove-Desktop-Beta-${version}-portable.${ext}"
     },
     "nsis": {
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "artifactName": "Cytomove-Desktop-Alpha-${version}-setup.${ext}"
+      "artifactName": "Cytomove-Desktop-Beta-${version}-setup.${ext}"
     }
   }
 }

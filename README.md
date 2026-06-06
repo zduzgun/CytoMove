@@ -11,7 +11,7 @@ _As of June 2026 — soft-deployed and in a controlled academic beta._
 - Live site: [cytomove.com](https://cytomove.com)
 - **Working web app** is live (no installation): local image analysis with single-image and group review.
 - **Controlled Academic Beta:** a loginless demo plus registered full access. Academic use is free during the beta.
-- **Desktop app (Alpha):** an Electron build for faster local group analysis and heavier exports.
+- **Desktop app (Beta):** an Electron build for faster local group analysis and heavier exports.
 - **Manuscript in preparation:** an Original Software Publication describing Cytomove and its validation against manual ImageJ measurement.
 
 ## What It Does
