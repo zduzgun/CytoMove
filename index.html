@@ -845,8 +845,8 @@
       <nav class="site-nav" aria-label="Primary navigation">
         <a class="nav-link" href="#capabilities">Features</a>
         <a class="nav-link" href="wound-healing-scratch-assay-analysis/">Guide</a>
-        <a class="nav-link" href="#desktop-alpha">Desktop Alpha</a>
-        <a class="nav-link" href="#request">Request</a>
+        <a class="nav-link" href="#desktop-alpha">Desktop</a>
+        <a class="nav-link" href="download/">Download</a>
         <a class="nav-link primary" href="beta-gateway/">Open Web App</a>
       </nav>
     </header>
@@ -868,7 +868,7 @@
                 <path d="M4 12 12 4M6.5 4H12v5.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </a>
-            <a class="button secondary" href="#request">Request Desktop Alpha</a>
+            <a class="button secondary" href="download/">Download Desktop App</a>
           </div>
 
           <div class="proof-row" aria-label="Product highlights">
@@ -1067,25 +1067,26 @@
       <section class="section compact" id="desktop-alpha" aria-labelledby="desktop-alpha-title">
         <div class="split-panel">
           <div class="quiet-panel">
-            <h2 id="desktop-alpha-title">Desktop Alpha is by request.</h2>
+            <h2 id="desktop-alpha-title">Get the desktop app.</h2>
             <p>
-              The web app stays the main public path. The Windows Desktop Alpha is available
-              for trusted testers who need faster local group workflows or heavier ZIP exports.
+              The web app stays the main public path. The Windows desktop app adds faster local
+              group workflows and heavier ZIP exports, and is available to verified academic beta
+              accounts — just sign in to download.
             </p>
             <ul class="status-list">
-              <li>Alpha 0.1 is free, local-first, and does not require mandatory login.</li>
-              <li>Desktop access is shared manually for feedback and real-lab testing.</li>
-              <li>Private beta and account licensing can come later, after validation and tester feedback.</li>
+              <li>Free for academic use during the beta.</li>
+              <li>Sign in with email or Google to unlock the installer and portable download.</li>
+              <li>Installer for everyday use, or a single portable .exe to run without installing.</li>
             </ul>
             <div class="cta-row">
-              <a class="button secondary" href="#request">Request access</a>
+              <a class="button secondary" href="download/">Sign in &amp; download</a>
             </div>
           </div>
 
           <div class="feedback-panel" id="request">
-            <h2>Request access or send feedback.</h2>
+            <h2>Send feedback.</h2>
             <p>
-              Ask for the Desktop Alpha, report a difficult image, or suggest what would
+              Report a difficult image, ask a question, or suggest what would
               make Cytomove more useful in your scratch assay workflow.
             </p>
             <form class="feedback-form" id="feedbackForm"
@@ -1095,14 +1096,14 @@
               <input type="hidden" name="_subject" value="Cytomove feedback">
               <div class="field-group">
                 <label for="feedbackMessage">Message</label>
-                <textarea id="feedbackMessage" name="message" placeholder="Request Desktop Alpha, describe your image set, or share a feature idea." required></textarea>
+                <textarea id="feedbackMessage" name="message" placeholder="Describe your image set, report an issue, or share a feature idea." required></textarea>
               </div>
               <div class="field-group">
                 <label for="feedbackEmail">Email</label>
                 <input id="feedbackEmail" type="email" name="email" placeholder="researcher@lab.edu" required autocomplete="email">
               </div>
               <div class="feedback-actions">
-                <button type="submit">Send request</button>
+                <button type="submit">Send feedback</button>
                 <span class="feedback-status" id="feedbackStatus" role="status" aria-live="polite">
                   Your message goes directly to the Cytomove inbox.
                 </span>
@@ -1243,7 +1244,7 @@
       var status = document.getElementById('feedbackStatus');
       var button = form.querySelector('button[type="submit"]');
       var defaultStatus = status ? status.textContent : '';
-      var defaultButton = button ? button.textContent : 'Send request';
+      var defaultButton = button ? button.textContent : 'Send feedback';
 
       form.addEventListener('submit', function (event) {
         event.preventDefault();
@@ -1253,7 +1254,7 @@
         button.textContent = 'Sending...';
         button.style.opacity = '0.72';
         if (status) {
-          status.textContent = 'Sending your request...';
+          status.textContent = 'Sending your message...';
           status.style.color = '';
         }
 
@@ -1265,7 +1266,7 @@
           if (!response.ok) throw new Error('Form service returned ' + response.status);
           form.reset();
           if (status) {
-            status.textContent = 'Thanks, your request was sent.';
+            status.textContent = 'Thanks, your message was sent.';
             status.style.color = 'var(--teal-dark)';
           }
         }).catch(function () {
