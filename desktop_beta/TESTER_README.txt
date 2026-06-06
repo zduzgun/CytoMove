@@ -8,10 +8,9 @@ The desktop app requires a verified academic beta account. On launch you will se
 (email/password or Google); the workspace unlocks after you sign in with a verified account.
 Create/verify an account at https://cytomove.com and download the app from https://cytomove.com/download/
 
-Beta access window
-This build is active for 30 days on first launch. After that window, the app shows a thank-you/update
-screen and links back to cytomove.com for the next build. This is an active-development beta for feedback,
-not a final licensed product.
+Beta notice
+This is an active-development beta for feedback, not a final licensed product. Access is controlled by your
+verified academic account (sign-in required); there is no time-limited trial.
 
 How to run
 1. Installer: run the setup .exe and follow the prompts (recommended; faster launches).

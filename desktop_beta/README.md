@@ -19,13 +19,6 @@ sign-in screen and the workspace stays locked until a verified account signs in.
 - The Supabase config and auth helper are bundled in `renderer/auth/` (keep `supabase-config.js` in sync
   with the web copy; the anon key is publishable).
 
-## Trial window
-
-The build keeps a local 30-day testing window stored in Electron `userData` as `desktop-beta-trial.json`
-(`firstRunAt`, `lastSeenAt`, `installId`, `trialVersion`). After the window, the analysis surface locks and the
-app shows a thank-you/update screen linking back to cytomove.com. The gate also pauses if the system clock
-appears to move backwards by more than five minutes. This is a tester control, not a paid licensing system.
-
 ## Run locally
 
 ```powershell
