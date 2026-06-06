@@ -30,7 +30,7 @@
       "label": "Free Beta",
       "audience": "academic testers",
       "state": "active",
-      "note": "Free for academic use during the beta; sign-in required."
+      "note": "Free for academic use; sign-in required."
     },
     {
       "id": "academic",

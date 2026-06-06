@@ -10,7 +10,7 @@ _As of June 2026 — soft-deployed and in a controlled academic beta._
 
 - Live site: [cytomove.com](https://cytomove.com)
 - **Working web app** is live (no installation): local image analysis with single-image and group review.
-- **Controlled Academic Beta:** a loginless demo plus registered full access. Academic use is free during the beta.
+- **Controlled Academic Beta:** a loginless demo plus registered full access. Free for academic use.
 - **Desktop app (Beta):** an Electron build for faster local group analysis and heavier exports.
 - **Manuscript in preparation:** an Original Software Publication describing Cytomove and its validation against manual ImageJ measurement.
 
@@ -33,7 +33,7 @@ The core validation goal is that Cytomove measurements correlate highly with man
 - **Demo (no sign-in):** try the analysis in your browser; full exports require an account.
 - **Registered full access:** sign in with email/password or Google. Email verification activates academic beta access.
 - **Desktop app:** requires a verified account to sign in; download links for the installer and portable build are available to signed-in beta users on the download page.
-- Academic use is free during the beta. Commercial use requires a separate license.
+- Free for academic use. Commercial use requires a separate license.
 
 ## Why It Exists
 

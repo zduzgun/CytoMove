@@ -311,10 +311,13 @@
             <div class="empty-icon">&#128300;</div>
             <div class="empty-title">Load scratch assay images</div>
             <div class="empty-text">
-              Drag &amp; drop one image for single-image analysis, or drop multiple images to create a group.
-              You can also use the open button in the top-right toolbar.<br><br>
+              Drag &amp; drop one image for single-image analysis, or drop multiple images to create a group.<br><br>
               Analysis runs entirely in your browser &mdash; images never leave your device.
             </div>
+            <div class="empty-actions">
+              <button class="btn primary" type="button" onclick="document.getElementById('fileInput').click()">Open image</button>
+            </div>
+            <div class="empty-formats">Supported: PNG, JPG, BMP, GIF</div>
           </div>
           <canvas id="canvas" hidden></canvas>
           <button class="group-nav-btn prev" id="groupPrev" type="button" disabled aria-label="Previous group image">
@@ -464,6 +467,16 @@
     }());
   </script>
   <script src="app.js"></script>
+  <script>
+    // Mark sidebar sections the user has interacted with (shows a dot when collapsed).
+    (function () {
+      var sb = document.querySelector('.sidebar');
+      if (!sb) return;
+      function mark(e) { var s = e.target.closest('.section'); if (s) s.classList.add('section-modified'); }
+      sb.addEventListener('input', mark);
+      sb.addEventListener('change', mark);
+    }());
+  </script>
 </body>
 </html>
 
