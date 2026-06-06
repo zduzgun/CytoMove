@@ -15,7 +15,7 @@ from PIL import Image, ImageOps
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "docs" / "manuscript-cytomove-submission.md"
-OUT = ROOT / "docs" / "Cytomove_manuscript_submission.docx"
+OUT = ROOT / "docs" / "manuscript-cytomove-submission.docx"
 FIGURES = ROOT / "docs" / "manuscript_figures"
 OPTIMIZED_FIGURES = ROOT / "docs" / "manuscript_figures" / "_docx_optimized"
 
@@ -24,10 +24,10 @@ FIGURE_MAP = {
     "Figure 1": FIGURES / "figure_1_app_workspace.png",
     "Figure 2": FIGURES / "figure_2_representative_overlays.png",
     "Figure 3": FIGURES / "figure_3_area_agreement.png",
-    "Figure 4": FIGURES / "figure_4_whad_timecourse.png",
-    "Figure 5": FIGURES / "figure_5_visual_comparison.png",
+    "Figure 4": FIGURES / "figure_5_visual_comparison.png",
+    "Figure 5": FIGURES / "figure_5_csma_three_method_combined.png",
+    "Figure 6": FIGURES / "figure_4_whad_timecourse.png",
     "Supplementary Figure S1": FIGURES / "figure_s1_validation_summary.png",
-    "Supplementary Figure S2": FIGURES / "figure_s2_csma_11_frame_visual_audit.png",
 }
 
 
@@ -168,31 +168,30 @@ def add_cover(doc: Document) -> None:
     run.font.bold = True
     run.font.color.rgb = RGBColor.from_string("0B2545")
 
-    subtitle = doc.add_paragraph()
-    subtitle.paragraph_format.space_after = Pt(12)
-    subtitle.add_run(f"Submission manuscript | Generated from {SOURCE.relative_to(ROOT).as_posix()}").italic = True
-
-    meta = doc.add_paragraph()
-    meta.add_run("Status: ").bold = True
-    meta.add_run("submission build, preliminary validation data\n")
-    meta.add_run("Reference file: ").bold = True
-    meta.add_run("docs/references/cytomove-preprint.bib\n")
-    meta.add_run("Figures: ").bold = True
-    meta.add_run("docs/manuscript_figures/")
     doc.add_page_break()
 
 
 def add_figures(doc: Document, captions: dict[str, str]) -> None:
     doc.add_page_break()
     doc.add_heading("Figures", level=1)
-    figure_keys = ["Figure 1", "Figure 2", "Figure 3", "Figure 4", "Figure 5"]
+    figure_keys = ["Figure 1", "Figure 2", "Figure 3", "Figure 4", "Figure 5", "Figure 6"]
     for index, key in enumerate(figure_keys):
         if index > 0:
             doc.add_page_break()
+        if key == "Figure 5":
+            section = doc.add_section()
+            section.orientation = WD_ORIENT.LANDSCAPE
+            section.page_width, section.page_height = section.page_height, section.page_width
+            section.top_margin = Inches(0.55)
+            section.bottom_margin = Inches(0.55)
+            section.left_margin = Inches(0.45)
+            section.right_margin = Inches(0.45)
         path = FIGURE_MAP[key]
         if not path.exists():
             continue
-        doc.add_picture(str(optimized_figure(path, max_width_px=1800)), width=Inches(6.4))
+        max_width_px = 3000 if key == "Figure 5" else 1800
+        width_inches = 10.0 if key == "Figure 5" else 6.4
+        doc.add_picture(str(optimized_figure(path, max_width_px=max_width_px)), width=Inches(width_inches))
         caption = doc.add_paragraph()
         caption.paragraph_format.space_after = Pt(12)
         caption.alignment = WD_ALIGN_PARAGRAPH.LEFT
@@ -206,22 +205,6 @@ def add_figures(doc: Document, captions: dict[str, str]) -> None:
         caption.paragraph_format.space_after = Pt(12)
         caption.alignment = WD_ALIGN_PARAGRAPH.LEFT
         apply_inline_markup(caption, captions.get("Supplementary Figure S1", "Supplementary Figure S1"))
-
-    section = doc.add_section()
-    section.orientation = WD_ORIENT.LANDSCAPE
-    section.page_width, section.page_height = section.page_height, section.page_width
-    for side in (section.top_margin, section.bottom_margin, section.left_margin, section.right_margin):
-        side = side
-    section.top_margin = Inches(0.55)
-    section.bottom_margin = Inches(0.55)
-    section.left_margin = Inches(0.45)
-    section.right_margin = Inches(0.45)
-    doc.add_heading("Supplementary Landscape Figure", level=1)
-    path = FIGURE_MAP["Supplementary Figure S2"]
-    if path.exists():
-        doc.add_picture(str(optimized_figure(path, max_width_px=3000)), width=Inches(10.0))
-        caption = doc.add_paragraph()
-        apply_inline_markup(caption, captions.get("Supplementary Figure S2", "Supplementary Figure S2"))
 
 
 def optimized_figure(path: Path, max_width_px: int) -> Path:
@@ -252,6 +235,7 @@ def build_docx() -> None:
     lines = SOURCE.read_text(encoding="utf-8").splitlines()
     in_refs = False
     in_open_todos = False
+    in_figures_section = False
     captions: dict[str, str] = {}
     table_buffer: list[str] = []
     paragraph_buffer: list[str] = []
@@ -271,9 +255,13 @@ def build_docx() -> None:
 
     for raw_line in lines:
         line = raw_line.rstrip()
-        if line.startswith("## Figure Captions"):
+        if line.startswith("## Figure Captions") or line.startswith("## Figures"):
             flush_table()
             flush_paragraph()
+            in_figures_section = True
+        elif line.startswith("## "):
+            # any other level-1 section ends the figure-caption block
+            in_figures_section = False
         if line.startswith("## References"):
             flush_table()
             flush_paragraph()
@@ -288,6 +276,11 @@ def build_docx() -> None:
             title = caption_match.group(2).strip().rstrip(".")
             body = caption_match.group(3).strip()
             captions[label] = f"{label}. {title}. {body}"
+
+        # The figure-caption text block is rendered later as embedded figures
+        # (see add_figures); skip its body lines here to avoid duplication.
+        if in_figures_section:
+            continue
 
         if line.startswith("# "):
             continue

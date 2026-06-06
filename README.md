@@ -64,7 +64,7 @@ Giresun Üniversitesi Tıp Fakültesi, Tıbbi Biyoloji Anabilim Dalı.
 
 Bu repodaki dokümantasyon, yol haritası ve karar kayıtları [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) lisansı altındadır.
 
-Ürün kodunun lisansı ayrıca belirlenecektir.
+Cytomove ürün kodu source-available ve ticari olmayan akademik/eğitim/araştırma kullanımı için yayımlanacaktır. Public kod lisansı PolyForm Noncommercial License 1.0.0 modelini izler; ticari kullanım public lisans altında kullanılamaz ve ayrı yazılı ticari lisans gerektirir. Ayrıntı için [LICENSE](./LICENSE) ve [LICENSING_STRATEGY.md](./LICENSING_STRATEGY.md) dosyalarına bak.
 
 ---
 

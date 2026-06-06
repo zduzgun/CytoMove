@@ -12,6 +12,10 @@ OUT = ROOT / "docs" / "manuscript_figures"
 
 def font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     candidates = [
+        Path(
+            "C:/Users/Zekeriya/AppData/Roaming/Python/Python312/site-packages/"
+            f"matplotlib/mpl-data/fonts/ttf/DejaVuSans{'-Bold' if bold else ''}.ttf"
+        ),
         Path("C:/Windows/Fonts/arialbd.ttf" if bold else "C:/Windows/Fonts/arial.ttf"),
         Path("C:/Windows/Fonts/calibrib.ttf" if bold else "C:/Windows/Fonts/calibri.ttf"),
     ]
@@ -47,7 +51,7 @@ def draw_centered(draw: ImageDraw.ImageDraw, box: tuple[int, int, int, int], tex
     )
 
 
-def main() -> None:
+def build_audit_panel(include_title: bool = True) -> Image.Image:
     raw_dir = ROOT / "validation_sets" / "comparator_clean" / "images_png" / "csma_sample_11"
     csma_dir = RESULTS / "csma" / "csma_sample_11_native_run" / "results_area"
     whst_dir = RESULTS / "whst" / "csma_sample_11"
@@ -69,9 +73,9 @@ def main() -> None:
             raise FileNotFoundError(f"{label} missing files: {missing}")
 
     tile = 300
-    label_w = 168
+    label_w = 180
     margin = 36
-    title_h = 54
+    title_h = 54 if include_title else 18
     header_h = 34
     gap = 8
     width = margin * 2 + label_w + len(frame_ids) * tile + (len(frame_ids) - 1) * gap
@@ -79,16 +83,17 @@ def main() -> None:
 
     canvas = Image.new("RGB", (width, height), "#FFFFFF")
     draw = ImageDraw.Draw(canvas)
-    title_font = font(28, bold=True)
-    small_font = font(18, bold=True)
-    row_font = font(22, bold=True)
+    title_font = font(26, bold=True)
+    small_font = font(21, bold=True)
+    row_font = font(25, bold=True)
 
-    draw.text(
-        (margin, margin - 6),
-        "CSMA sample 11 visual audit: raw images and comparator overlays across the time-course",
-        fill="#0F172A",
-        font=title_font,
-    )
+    if include_title:
+        draw.text(
+            (margin, margin - 6),
+            "CSMA sample 11 visual audit: raw images and comparator overlays across the time-course",
+            fill="#0F172A",
+            font=title_font,
+        )
 
     start_x = margin + label_w
     start_y = margin + title_h + header_h
@@ -105,13 +110,50 @@ def main() -> None:
             draw.rectangle((x - 1, y - 1, x + tile, y + tile), outline="#CBD5E1", width=1)
             canvas.paste(fit_tile(path, tile), (x, y))
 
+    return canvas
+
+
+def save_image(image: Image.Image, stem: str) -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    png_path = OUT / "figure_s2_csma_11_frame_visual_audit.png"
-    pdf_path = OUT / "figure_s2_csma_11_frame_visual_audit.pdf"
-    canvas.save(png_path, "PNG", dpi=(300, 300))
-    canvas.save(pdf_path, "PDF", resolution=300)
+    png_path = OUT / f"{stem}.png"
+    pdf_path = OUT / f"{stem}.pdf"
+    image.save(png_path, "PNG", dpi=(300, 300))
+    image.save(pdf_path, "PDF", resolution=300)
     print(png_path)
     print(pdf_path)
+
+
+def build_combined_figure() -> Image.Image:
+    audit = build_audit_panel(include_title=False)
+    chart_path = OUT / "figure_5_csma_three_method_timecourse.png"
+    with Image.open(chart_path) as chart_image:
+        chart = ImageOps.exif_transpose(chart_image).convert("RGB")
+
+    margin = 36
+    divider = 30
+    label_h = 46
+    target_width = audit.width
+    chart_height = round(chart.height * target_width / chart.width)
+    chart = chart.resize((target_width, chart_height), Image.Resampling.LANCZOS)
+
+    combined = Image.new("RGB", (target_width, chart.height + divider + label_h + audit.height), "#FFFFFF")
+    combined.paste(chart, (0, 0))
+    draw = ImageDraw.Draw(combined)
+    draw.text(
+        (margin, chart.height + divider - 4),
+        "D. Frame-level visual audit: raw images and comparator overlays",
+        fill="#0F172A",
+        font=font(34, bold=False),
+    )
+    combined.paste(audit, (0, chart.height + divider + label_h))
+    return combined
+
+
+def main() -> None:
+    audit = build_audit_panel(include_title=True)
+    save_image(audit, "figure_s2_csma_11_frame_visual_audit")
+    combined = build_combined_figure()
+    save_image(combined, "figure_5_csma_three_method_combined")
 
 
 if __name__ == "__main__":

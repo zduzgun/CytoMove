@@ -472,7 +472,7 @@ Her PDF rapora otomatik methods paragrafı + DOI + sürüm gömülecek. Akademis
 - [x] Landing page ilk dili: sadece İngilizce (global)
 - [x] Marka tonu: akademik SaaS; klinik/kurumsal değil, startup oyunculuğu da değil
 - [ ] İlk kullanıcı kazanım kanalı: X akademik biyoloji topluluğu, LinkedIn, doğrudan PI e-posta gönderimi?
-- [ ] Analiz kütüphanesi (npm paketi) SaaS'tan ayrı open-source verilsin mi?
+- [x] Analiz kütüphanesi (npm paketi) SaaS'tan ayrı open-source verilsin mi? → Karar: OSI open source/AGPL değil; source-available, ticari olmayan akademik/araştırma kullanımı. Public lisans ticari kullanıma kapalıdır; ticari kullanım ayrı yazılı lisans gerektirir.
 - [x] Validation veri seti: Tier 1 Düzgün lab arşivi initial set için yeterli; üçüncü hücre hattı / formal kamera için public dataset opsiyonel
 - [ ] Preprint cross-listing (bioRxiv + arXiv cs.CV) yapılsın mı?
 - [ ] Modül 2 adayı (Faz 5): hangisi mevcut kullanıcılarla en hızlı doğrulanır?

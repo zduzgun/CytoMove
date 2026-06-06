@@ -30,6 +30,28 @@
     .pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); font-size: 11.5px; font-weight: 500; box-shadow: var(--shadow-sm); }
     .pill strong { color: var(--ink); font-weight: 700; }
     .pill-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); display: inline-block; }
+    .home-pill { text-decoration: none; color: #fff; background: var(--teal-dark); border-color: var(--teal-dark); font-weight: 800; font-size: 12.5px; padding: 7px 14px; cursor: pointer; transition: background .15s ease, box-shadow .15s ease; }
+    .home-pill svg { width: 15px; height: 15px; }
+    .home-pill strong { color: #fff; }
+    .home-pill:hover { background: var(--teal); box-shadow: 0 2px 8px rgba(15,159,143,0.35); }
+    .account-menu { position: relative; }
+    .account-menu[hidden] { display: none; }
+    .account-btn { display: inline-flex; align-items: center; gap: 7px; padding: 4px 9px 4px 4px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); cursor: pointer; box-shadow: var(--shadow-sm); font: inherit; transition: border-color .15s ease; }
+    .account-btn:hover { border-color: var(--teal); }
+    .account-avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--teal); color: #fff; font-size: 11px; font-weight: 800; display: grid; place-items: center; text-transform: uppercase; }
+    .account-email { font-size: 12px; font-weight: 600; color: var(--ink); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .account-btn svg { width: 12px; height: 12px; color: var(--muted); }
+    .account-dropdown { position: absolute; right: 0; top: calc(100% + 8px); z-index: 50; min-width: 230px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm); box-shadow: 0 12px 30px rgba(15,42,38,0.16); padding: 12px; }
+    .account-dropdown[hidden] { display: none; }
+    .account-dd-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+    .account-dd-email { font-size: 12.5px; font-weight: 700; color: var(--ink); word-break: break-all; margin-top: 3px; }
+    .account-dd-status { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+    .account-dd-divider { height: 1px; background: var(--line); margin: 10px 0; }
+    .account-dd-item { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; padding: 8px 9px; border-radius: 8px; border: none; background: transparent; font: inherit; font-size: 12.5px; font-weight: 600; color: var(--ink); text-decoration: none; cursor: pointer; }
+    .account-dd-item svg { width: 15px; height: 15px; flex: none; }
+    .account-dd-item:hover { background: #eef3f1; }
+    .account-dd-item.danger { color: #c0433d; }
+    .account-dd-item.danger:hover { background: #fdecec; }
 
     .demo-banner { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #cfe4df; border-radius: var(--radius-sm); background: #f5fbfa; color: var(--muted); box-shadow: var(--shadow-sm); }
     .demo-banner[hidden] { display: none; }

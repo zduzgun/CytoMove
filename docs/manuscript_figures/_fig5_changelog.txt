@@ -1,0 +1,4 @@
+Figure 5 rebuilt as a single vector matplotlib composite (A-C + D).
+Changes: real frame-number x-axis, distinct markers (o/s/^), larger fonts, vector PDF/SVG.
+Script: scripts/generate_figure5_combined_v2.py
+Backup of previous version: docs/manuscript_figures/_fig5_backup/

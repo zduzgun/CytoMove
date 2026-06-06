@@ -1,6 +1,7 @@
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
+const http = require('node:http');
 const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
 
 const APP_TITLE = 'Cytomove Desktop Alpha';
@@ -10,6 +11,8 @@ const TRIAL_DURATION_MS = TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000;
 const CLOCK_ROLLBACK_GRACE_MS = 5 * 60 * 1000;
 const TRIAL_STATE_FILE = 'desktop-alpha-trial.json';
 const TRIAL_VERSION = 'alpha-0.1';
+
+let mainWindow = null;
 
 function trialStatePath() {
   return path.join(app.getPath('userData'), TRIAL_STATE_FILE);
@@ -79,7 +82,7 @@ function getDesktopTrialState() {
 }
 
 function createMainWindow() {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     title: APP_TITLE,
     width: 1440,
     height: 940,
@@ -170,6 +173,43 @@ ipcMain.handle('cytomove:get-trial-state', async () => getDesktopTrialState());
 ipcMain.handle('cytomove:close-app', async () => {
   app.quit();
   return true;
+});
+
+// Google sign-in via loopback: start a one-shot local server, wait for the
+// OAuth redirect (http://localhost:PORT/?code=...), return the full URL.
+const GOOGLE_LOOPBACK_PORT = 54545;
+
+ipcMain.handle('cytomove:google-auth-wait', async () => {
+  return await new Promise((resolve, reject) => {
+    let settled = false;
+    const server = http.createServer((req, res) => {
+      const fullUrl = 'http://localhost:' + GOOGLE_LOOPBACK_PORT + (req.url || '');
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end('<!doctype html><html><head><meta charset="utf-8"><title>Cytomove</title></head>' +
+        '<body style="font-family:system-ui,Segoe UI,sans-serif;text-align:center;padding:48px;color:#102027">' +
+        '<h2 style="color:#08766c">Cytomove</h2><p>Sign-in complete. You can close this tab and return to the desktop app.</p></body></html>');
+      if (!settled) {
+        settled = true;
+        cleanup();
+        resolve(fullUrl);
+      }
+    });
+    function cleanup() {
+      clearTimeout(timeout);
+      try { server.close(); } catch (_e) {}
+    }
+    const timeout = setTimeout(() => {
+      if (!settled) { settled = true; cleanup(); reject(new Error('Google sign-in timed out. Please try again.')); }
+    }, 5 * 60 * 1000);
+    server.on('error', err => {
+      if (!settled) {
+        settled = true;
+        clearTimeout(timeout);
+        reject(new Error('Could not start the local sign-in listener on port ' + GOOGLE_LOOPBACK_PORT + '. ' + (err && err.message ? err.message : '')));
+      }
+    });
+    server.listen(GOOGLE_LOOPBACK_PORT, '127.0.0.1');
+  });
 });
 
 app.whenReady().then(() => {

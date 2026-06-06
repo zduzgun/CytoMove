@@ -11,7 +11,8 @@
     "check": "node --check main.js && node --check preload.js && node --check renderer/app.js",
     "pack:win": "powershell -ExecutionPolicy Bypass -File scripts/package-win-unpacked.ps1",
     "pack:win:builder": "electron-builder --win --dir",
-    "dist:win": "electron-builder --win"
+    "dist:win": "electron-builder --win",
+    "portable:win": "electron-builder --win portable"
   },
   "devDependencies": {
     "electron": "^31.7.7",
@@ -35,10 +36,14 @@
         "portable"
       ]
     },
+    "portable": {
+      "artifactName": "Cytomove-Desktop-Alpha-${version}-portable.${ext}"
+    },
     "nsis": {
       "oneClick": false,
       "perMachine": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "Cytomove-Desktop-Alpha-${version}-setup.${ext}"
     }
   }
 }

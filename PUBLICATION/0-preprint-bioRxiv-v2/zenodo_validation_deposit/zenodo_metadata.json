@@ -1,0 +1,10 @@
+{
+  "title": "Cytomove: validation data, figures, and analysis artifacts for a browser-local scratch wound healing assay quantification workflow",
+  "upload_type": "dataset",
+  "access_right": "open",
+  "license": "cc-by-nc-4.0",
+  "reserved_doi": "10.5281/zenodo.20486820",
+  "repository": "https://github.com/zduzgun/CytoMove",
+  "live_site": "https://cytomove.com",
+  "license_note": "Validation data, author-generated figures, and deposit metadata: CC BY-NC 4.0. Third-party source datasets retain their own licenses. Cytomove source code and manuscript are not redistributed in this lean reproducibility package."
+}

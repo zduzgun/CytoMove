@@ -428,9 +428,159 @@
         grid-template-columns: 1fr;
       }
     }
+
+    .auth-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 4px;
+      background: #eef3f1;
+      border-radius: var(--radius);
+      margin-bottom: 2px;
+    }
+
+    .auth-tab {
+      border: none;
+      background: transparent;
+      padding: 9px 10px;
+      border-radius: calc(var(--radius) - 4px);
+      font: inherit;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--dim);
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .auth-tab.active {
+      background: #ffffff;
+      color: var(--ink);
+      box-shadow: 0 1px 3px rgba(15, 42, 38, 0.12);
+    }
+
+    .email-auth-actions.single {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    #confirmField {
+      display: grid;
+      gap: 9px;
+    }
+
+    #confirmField[hidden] {
+      display: none;
+    }
+
+    .password-field {
+      position: relative;
+    }
+
+    .password-hint {
+      margin-top: 9px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #f8fcfb;
+      padding: 11px 13px;
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    .password-hint[hidden] {
+      display: none;
+    }
+
+    .password-match {
+      font-size: 12.5px;
+      font-weight: 600;
+      margin-top: -2px;
+    }
+
+    .password-match[hidden] {
+      display: none;
+    }
+
+    .password-match.ok {
+      color: #0c7a5f;
+    }
+
+    .password-match.bad {
+      color: #d04a45;
+    }
+
+    .password-hint-title {
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    .password-rule {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 2px 0;
+      color: var(--dim);
+      transition: color 0.15s ease;
+    }
+
+    .password-rule .tick {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 1.5px solid var(--line);
+      font-size: 10px;
+      line-height: 1;
+      color: transparent;
+      flex: none;
+      transition: all 0.15s ease;
+    }
+
+    .password-rule.met {
+      color: #0c7a5f;
+    }
+
+    .password-rule.met .tick {
+      background: #0f9f8f;
+      border-color: #0f9f8f;
+      color: #ffffff;
+    }
+
+    .password-strength {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .password-strength-bar {
+      flex: 1;
+      height: 5px;
+      border-radius: 99px;
+      background: #e7ecea;
+      overflow: hidden;
+    }
+
+    .password-strength-fill {
+      height: 100%;
+      width: 0;
+      border-radius: 99px;
+      background: #e0574f;
+      transition: width 0.2s ease, background 0.2s ease;
+    }
+
+    .password-strength-label {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--dim);
+      min-width: 54px;
+      text-align: right;
+    }
   </style>
-  <script src="../auth/supabase-config.js"></script>
-  <script src="../auth/cytomove-auth.js"></script>
+  <script src="../auth/supabase-config.js?v=20260605"></script>
+  <script src="../auth/cytomove-auth.js?v=20260605"></script>
 </head>
 <body>
   <div class="page">
@@ -472,11 +622,30 @@
           </div>
           <p>Create an account with email verification, then use the same account in the web and desktop beta. Academic use is free during beta.</p>
           <div class="email-auth-form" aria-label="Email and password sign-in">
+            <div class="auth-tabs" role="tablist" aria-label="Choose account action">
+              <button class="auth-tab active" id="tabSignup" type="button" role="tab" aria-selected="true">Create account</button>
+              <button class="auth-tab" id="tabSignin" type="button" role="tab" aria-selected="false">Sign in</button>
+            </div>
             <input class="email-input" id="authEmail" type="email" autocomplete="email" placeholder="you@university.edu">
-            <input class="email-input" id="authPassword" type="password" autocomplete="current-password" placeholder="Password">
-            <div class="email-auth-actions">
-              <button class="button" id="createAccount" type="button">Create account</button>
-              <button class="button secondary" id="passwordSignIn" type="button">Sign in</button>
+            <div class="password-field">
+              <input class="email-input" id="authPassword" type="password" autocomplete="new-password" placeholder="Password" aria-describedby="passwordHint">
+              <div class="password-hint" id="passwordHint" hidden role="status" aria-live="polite">
+                <div class="password-hint-title">Password must have:</div>
+                <div class="password-rule" data-rule="length"><span class="tick">&#10003;</span><span>At least 8 characters</span></div>
+                <div class="password-rule" data-rule="letter"><span class="tick">&#10003;</span><span>A letter</span></div>
+                <div class="password-rule" data-rule="number"><span class="tick">&#10003;</span><span>A number</span></div>
+                <div class="password-strength">
+                  <div class="password-strength-bar"><div class="password-strength-fill" id="passwordStrengthFill"></div></div>
+                  <span class="password-strength-label" id="passwordStrengthLabel">Weak</span>
+                </div>
+              </div>
+            </div>
+            <div id="confirmField">
+              <input class="email-input" id="authPasswordConfirm" type="password" autocomplete="new-password" placeholder="Confirm password">
+              <div class="password-match" id="passwordMatch" hidden></div>
+            </div>
+            <div class="email-auth-actions single">
+              <button class="button" id="authSubmit" type="button">Create account</button>
             </div>
           </div>
           <div class="secondary-auth">
@@ -524,10 +693,108 @@
       var status = document.getElementById('authStatus');
       var accountPanel = document.getElementById('accountPanel');
       var googleButton = document.getElementById('googleSignIn');
-      var createButton = document.getElementById('createAccount');
-      var signInButton = document.getElementById('passwordSignIn');
+      var authSubmit = document.getElementById('authSubmit');
+      var tabSignup = document.getElementById('tabSignup');
+      var tabSignin = document.getElementById('tabSignin');
+      var confirmField = document.getElementById('confirmField');
       var authEmail = document.getElementById('authEmail');
       var authPassword = document.getElementById('authPassword');
+      var authPasswordConfirm = document.getElementById('authPasswordConfirm');
+      var passwordHint = document.getElementById('passwordHint');
+      var passwordMatch = document.getElementById('passwordMatch');
+      var strengthFill = document.getElementById('passwordStrengthFill');
+      var strengthLabel = document.getElementById('passwordStrengthLabel');
+      var mode = 'signup';
+      var appUrl = '../prototype_refactor/';
+      var stayOnGateway = new URLSearchParams(window.location.search).has('stay');
+
+      function setMode(next) {
+        mode = next;
+        var signup = mode === 'signup';
+        tabSignup.classList.toggle('active', signup);
+        tabSignin.classList.toggle('active', !signup);
+        tabSignup.setAttribute('aria-selected', signup ? 'true' : 'false');
+        tabSignin.setAttribute('aria-selected', signup ? 'false' : 'true');
+        confirmField.hidden = !signup;
+        authSubmit.textContent = signup ? 'Create account' : 'Sign in';
+        authPassword.setAttribute('autocomplete', signup ? 'new-password' : 'current-password');
+        if (!signup) passwordHint.hidden = true;
+        if (status) status.hidden = true;
+      }
+
+      tabSignup.addEventListener('click', function () { setMode('signup'); });
+      tabSignin.addEventListener('click', function () { setMode('signin'); });
+
+      function checkMatch() {
+        var confirm = authPasswordConfirm.value || '';
+        if (!confirm) {
+          passwordMatch.hidden = true;
+          return false;
+        }
+        var ok = confirm === (authPassword.value || '');
+        passwordMatch.hidden = false;
+        passwordMatch.textContent = ok ? 'Passwords match' : 'Passwords do not match';
+        passwordMatch.classList.toggle('ok', ok);
+        passwordMatch.classList.toggle('bad', !ok);
+        return ok;
+      }
+
+      authPasswordConfirm.addEventListener('input', checkMatch);
+
+      function evaluatePassword() {
+        var value = authPassword.value || '';
+        var rules = {
+          length: value.length >= 8,
+          letter: /[a-zA-Z]/.test(value),
+          number: /[0-9]/.test(value)
+        };
+        var met = 0;
+        Object.keys(rules).forEach(function (key) {
+          var el = passwordHint.querySelector('[data-rule="' + key + '"]');
+          if (!el) return;
+          if (rules[key]) {
+            el.classList.add('met');
+            met += 1;
+          } else {
+            el.classList.remove('met');
+          }
+        });
+
+        var longEnough = value.length >= 12;
+        var score = met + (longEnough ? 1 : 0);
+        var label = 'Weak';
+        var color = '#e0574f';
+        var width = '33%';
+        if (value.length === 0) {
+          label = 'Weak';
+          width = '0';
+        } else if (score >= 4) {
+          label = 'Strong';
+          color = '#0f9f8f';
+          width = '100%';
+        } else if (score === 3) {
+          label = 'Good';
+          color = '#e0a800';
+          width = '66%';
+        }
+        strengthFill.style.width = width;
+        strengthFill.style.background = color;
+        strengthLabel.textContent = label;
+        return rules.length;
+      }
+
+      authPassword.addEventListener('focus', function () {
+        if (mode !== 'signup') return;
+        passwordHint.hidden = false;
+        evaluatePassword();
+      });
+      authPassword.addEventListener('input', function () {
+        if (mode === 'signup') evaluatePassword();
+        checkMatch();
+      });
+      authPassword.addEventListener('blur', function () {
+        passwordHint.hidden = true;
+      });
 
       function setStatus(message, isError) {
         status.hidden = false;
@@ -586,6 +853,11 @@
           renderAccount(snapshot);
           if (!snapshot.configured) {
             setStatus('Supabase is ready in the code, but auth config is not filled yet. Add auth/supabase-config.js values after creating the Supabase project.', false);
+            return;
+          }
+          if (snapshot.approved && !stayOnGateway) {
+            setStatus('Signed in. Opening the app…', false);
+            window.location.replace(appUrl);
           }
         } catch (error) {
           setStatus(error.message || String(error), true);
@@ -605,35 +877,46 @@
         }
       });
 
-      createButton.addEventListener('click', async function () {
+      async function handleSignUp() {
+        if ((authPassword.value || '').length < 8) {
+          setStatus('Use a password with at least 8 characters.', true);
+          authPassword.focus();
+          return;
+        }
+        if (authPassword.value !== authPasswordConfirm.value) {
+          setStatus('Passwords do not match. Please re-enter the same password in both fields.', true);
+          authPasswordConfirm.focus();
+          return;
+        }
+        var result = await window.CytomoveAuth.signUpWithPassword(authEmail.value.trim(), authPassword.value);
+        if (result.error) throw result.error;
+        setStatus('Account created. Check your email to verify the account, then switch to "Sign in" with the same email and password.', false);
+      }
+
+      async function handleSignIn() {
+        var result = await window.CytomoveAuth.signInWithPassword(authEmail.value.trim(), authPassword.value);
+        if (result.error) throw result.error;
+        setStatus('Signed in. Checking beta access status...', false);
+        await refreshAccount();
+      }
+
+      authSubmit.addEventListener('click', async function () {
         try {
           if (!window.CytomoveAuth.isConfigured()) {
             setStatus('Supabase config is not filled yet. Create the Supabase project, then add the project URL and anon key.', false);
             return;
           }
-          var result = await window.CytomoveAuth.signUpWithPassword(authEmail.value.trim(), authPassword.value);
-          if (result.error) throw result.error;
-          setStatus('Account created. Check your email to verify the account, then sign in with the same email and password.', false);
-        } catch (error) {
-          setStatus(error.message || String(error), true);
-        }
-      });
-
-      signInButton.addEventListener('click', async function () {
-        try {
-          if (!window.CytomoveAuth.isConfigured()) {
-            setStatus('Supabase config is not filled yet. Create the Supabase project, then add the project URL and anon key.', false);
-            return;
+          if (mode === 'signup') {
+            await handleSignUp();
+          } else {
+            await handleSignIn();
           }
-          var result = await window.CytomoveAuth.signInWithPassword(authEmail.value.trim(), authPassword.value);
-          if (result.error) throw result.error;
-          setStatus('Signed in. Checking beta access status...', false);
-          await refreshAccount();
         } catch (error) {
           setStatus(error.message || String(error), true);
         }
       });
 
+      setMode('signup');
       refreshAccount();
     }());
   </script>

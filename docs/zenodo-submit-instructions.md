@@ -7,15 +7,15 @@ Record B (software) is optional and is best produced via the GitHub integration.
 
 ## Record A — Validation data & figures (ready now)
 
-**Upload file:** `docs/Cytomove_zenodo_deposit_enriched.zip` (or upload its contents individually).
-Do not use the older `docs/Cytomove_zenodo_deposit.zip`; it lacks the enriched provenance layer.
+**Upload file after rebuild:** `docs/Cytomove_zenodo_deposit_enriched_doi.zip` (or upload its contents individually).
+Do not use the older `docs/Cytomove_zenodo_deposit.zip` or `docs/Cytomove_zenodo_deposit_enriched.zip`; they lack the final DOI-synchronized package state.
 **Metadata:** pre-filled in `docs/zenodo_deposit/.zenodo.json`.
 
 Steps:
 
 1. Sign in at https://zenodo.org (use your ORCID 0000-0001-6420-6292 if linked).
 2. Click **New upload**.
-3. Drag in `Cytomove_zenodo_deposit_enriched.zip` (or unzip and add the files).
+3. Regenerate the manuscript PDF, refresh `docs/zenodo_deposit/Cytomove_manuscript_submission.pdf`, rebuild `Cytomove_zenodo_deposit_enriched_doi.zip`, then drag in the rebuilt ZIP (or unzip and add the files).
 4. Fill the form from `.zenodo.json`:
    - **Resource type:** Dataset
    - **Title:** Cytomove: validation data, figures, and analysis artifacts for a browser-local scratch wound healing assay quantification workflow
@@ -27,11 +27,10 @@ Steps:
      - references → 10.5281/zenodo.12806149 (WHAD/CAMAD dataset)
      - references → 10.1109/ACCESS.2025.3561607 (CSMA paper)
      - is supplement to → https://github.com/zduzgun/CytoMove
-5. **Save** (draft). Reserve a DOI now if you want the number before the manuscript is final
-   (Zenodo: "Reserve DOI" on the draft).
-6. **Publish** when ready. Publishing is permanent.
-7. Copy the DOI into the manuscript **Data and Code Availability** section (replace the
-   pending Zenodo validation-package sentence) and into `README.md` / the website.
+5. **Save** (draft). The manuscript currently uses reserved DOI `10.5281/zenodo.20486820`.
+6. **Publish** when ready. Publishing is permanent and makes the DOI resolve publicly.
+7. After publication, update the manuscript **Data and Code Availability** sentence from
+   reserved/prepared wording to "available on Zenodo", then update `README.md` / the website.
 
 > Note: this deposit redistributes only author-generated derived measurements and figures.
 > The raw WHAD/CAMAD and CSMA image archives are NOT included — they stay at their original sources.

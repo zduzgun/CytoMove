@@ -1,0 +1,24 @@
+Cytomove Source-Available Noncommercial License Notice
+
+Required Notice: Copyright (c) Zekeriya Duzgun.
+
+The Cytomove source code is made available for non-commercial academic,
+educational, and research use.
+
+The intended public license model is the PolyForm Noncommercial License 1.0.0:
+https://polyformproject.org/licenses/noncommercial/1.0.0/
+
+Commercial use is not permitted under this public license notice. Commercial use
+includes, without limitation, use in paid products, commercial SaaS platforms,
+commercial laboratory workflows, consulting deliverables, contract research
+services, proprietary software, or revenue-generating analysis pipelines.
+
+Commercial use requires a separate written commercial license from the author or
+rights holder.
+
+This repository may also contain documentation, manuscripts, figures, validation
+artifacts, and third-party source references. Those materials may be governed by
+their own notices, dataset licenses, or publication terms. Third-party datasets
+retain their original licenses and rights statements.
+
+This license notice is not an OSI open-source license.

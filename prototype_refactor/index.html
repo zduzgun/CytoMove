@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20260605">
   <script src="../auth/supabase-config.js"></script>
   <script src="../auth/cytomove-auth.js"></script>
 </head>
@@ -33,6 +33,27 @@
         <span class="pill"><span class="pill-dot"></span><strong>Area</strong> MVP metric</span>
         <span class="pill"><strong>Width</strong> secondary</span>
         <span class="pill"><strong>Images</strong> local only</span>
+        <div class="account-menu" id="accountMenu" hidden>
+          <button class="account-btn" id="accountBtn" type="button" aria-haspopup="true" aria-expanded="false">
+            <span class="account-avatar" id="accountAvatar">?</span>
+            <span class="account-email" id="accountBtnEmail"></span>
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="account-dropdown" id="accountDropdown" hidden role="menu">
+            <div class="account-dd-label">Signed in as</div>
+            <div class="account-dd-email" id="ddEmail"></div>
+            <div class="account-dd-status" id="ddStatus"></div>
+            <div class="account-dd-divider"></div>
+            <a class="account-dd-item" href="../beta-gateway/?stay=1" role="menuitem">
+              <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 7.5 8 3l5.5 4.5M4 6.5V13h8V6.5" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Home
+            </a>
+            <button class="account-dd-item danger" id="signOutBtn" type="button" role="menuitem">
+              <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 2.5H3.5V13.5H6M10 5l3 3-3 3M13 8H6.5" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Sign out
+            </button>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -352,6 +373,7 @@
       } else if (window.CytomoveAuth && window.CytomoveAuth.isConfigured()) {
         document.documentElement.dataset.accessMode = 'checking';
         window.CytomoveAuth.getAccessSnapshot().then(function (snapshot) {
+          if (snapshot.signedIn) showAccount(snapshot);
           if (snapshot.approved) {
             document.documentElement.dataset.accessMode = 'full';
             return;
@@ -387,6 +409,58 @@
         }
         if (banner) banner.hidden = false;
       }, true);
+
+      var accountMenu = document.getElementById('accountMenu');
+      var accountBtn = document.getElementById('accountBtn');
+      var accountDropdown = document.getElementById('accountDropdown');
+      var accountAvatar = document.getElementById('accountAvatar');
+      var accountBtnEmail = document.getElementById('accountBtnEmail');
+      var ddEmail = document.getElementById('ddEmail');
+      var ddStatus = document.getElementById('ddStatus');
+      var signOutBtn = document.getElementById('signOutBtn');
+
+      function showAccount(snapshot) {
+        var email = (snapshot.profile && snapshot.profile.email)
+          || (snapshot.session && snapshot.session.user && snapshot.session.user.email)
+          || '';
+        if (!accountMenu) return;
+        accountMenu.hidden = false;
+        accountAvatar.textContent = email ? email.charAt(0) : '?';
+        accountBtnEmail.textContent = email;
+        ddEmail.textContent = email;
+        ddStatus.textContent = 'Status: ' + (snapshot.label || (snapshot.approved ? 'Verified' : 'Pending verification'));
+      }
+
+      function closeDropdown() {
+        if (!accountDropdown) return;
+        accountDropdown.hidden = true;
+        accountBtn.setAttribute('aria-expanded', 'false');
+      }
+
+      if (accountBtn) {
+        accountBtn.addEventListener('click', function (event) {
+          event.stopPropagation();
+          var open = accountDropdown.hidden;
+          accountDropdown.hidden = !open;
+          accountBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+        document.addEventListener('click', function (event) {
+          if (accountMenu && !accountMenu.contains(event.target)) closeDropdown();
+        });
+        document.addEventListener('keydown', function (event) {
+          if (event.key === 'Escape') closeDropdown();
+        });
+      }
+
+      if (signOutBtn) {
+        signOutBtn.addEventListener('click', async function () {
+          signOutBtn.disabled = true;
+          try {
+            if (window.CytomoveAuth) await window.CytomoveAuth.signOut();
+          } catch (error) { /* ignore and redirect anyway */ }
+          window.location.href = '../beta-gateway/?stay=1';
+        });
+      }
     }());
   </script>
   <script src="app.js"></script>

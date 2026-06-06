@@ -9,7 +9,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
+from PIL import Image, ImageOps
+
+
+def read_rgb(path: Path) -> np.ndarray:
+    """Load any PNG as 3-channel RGB so imshow never colormaps grayscale tiles."""
+    with Image.open(path) as image:
+        return np.asarray(ImageOps.exif_transpose(image).convert("RGB"))
+
+from generate_csma_visual_audit_figure import main as generate_csma_visual_audit_outputs
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,6 +42,14 @@ DISPLAY_NAMES = {
     "cell_phone_HK": "Phone HK (n=3)",
     "cell_phone_M8F": "Phone M8F (n=3)",
     "cell_phone_MK": "Phone MK stress (n=3)",
+}
+
+DATASET_MARKERS = {
+    "csma_sample_11": "o",
+    "whad_mcf7_11": "^",
+    "cell_phone_HK": "s",
+    "cell_phone_M8F": "D",
+    "cell_phone_MK": "v",
 }
 
 
@@ -64,6 +82,14 @@ def savefig(fig: plt.Figure, stem: str) -> None:
             kwargs["dpi"] = 450
         fig.savefig(OUT / f"{stem}.{ext}", **kwargs)
     plt.close(fig)
+
+
+def show_source_image(ax: plt.Axes, path: Path) -> None:
+    img = mpimg.imread(path)
+    if img.ndim == 2:
+        ax.imshow(img, cmap="gray", vmin=0, vmax=1 if img.dtype.kind == "f" else 255)
+    else:
+        ax.imshow(img)
 
 
 def load_data() -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -154,8 +180,7 @@ def figure_2_representative_overlays() -> None:
     ]
     fig, axes = plt.subplots(1, 3, figsize=(9.2, 3.1), constrained_layout=True)
     for ax, (title, path) in zip(axes, overlay_paths):
-        img = mpimg.imread(path)
-        ax.imshow(img)
+        show_source_image(ax, path)
         ax.set_title(title, loc="left", weight="bold")
         ax.set_xticks([])
         ax.set_yticks([])
@@ -168,55 +193,54 @@ def figure_2_representative_overlays() -> None:
 
 
 def figure_3_area_agreement(paired: pd.DataFrame) -> None:
-    fig, axes = plt.subplots(1, 2, figsize=(9.2, 4.0), constrained_layout=True)
-    ax = axes[0]
+    fig, axes = plt.subplots(1, 2, figsize=(9.4, 4.1), constrained_layout=True)
     paired = paired.copy()
     paired["whst_area_mpx"] = paired["whst_area_px"] / 1_000_000
     paired["cytomove_area_mpx"] = paired["cytomove_area_px"] / 1_000_000
+    paired["mean_area_mpx"] = (paired["whst_area_mpx"] + paired["cytomove_area_mpx"]) / 2
+    paired["diff_mpx"] = paired["cytomove_area_mpx"] - paired["whst_area_mpx"]
+
+    # Panel A: identity scatter
+    ax = axes[0]
     max_val = paired[["whst_area_mpx", "cytomove_area_mpx"]].to_numpy().max() * 1.05
     for dataset, df in paired.groupby("dataset"):
         ax.scatter(
-            df["whst_area_mpx"],
-            df["cytomove_area_mpx"],
-            s=42,
-            color=PALETTE.get(dataset, "#64748B"),
-            edgecolor="white",
-            linewidth=0.6,
-            label=DISPLAY_NAMES.get(dataset, dataset),
-            alpha=0.92,
+            df["whst_area_mpx"], df["cytomove_area_mpx"], s=42,
+            color=PALETTE.get(dataset, "#64748B"), marker=DATASET_MARKERS.get(dataset, "o"),
+            edgecolor="white", linewidth=0.6, label=DISPLAY_NAMES.get(dataset, dataset), alpha=0.92,
         )
     ax.plot([0, max_val], [0, max_val], color="#111827", linestyle="--", linewidth=1.1, label="identity")
     ax.set_xlabel("WHST wound area (Mpx)")
     ax.set_ylabel("Cytomove wound area (Mpx)")
-    ax.set_title("A. Area agreement")
+    ax.set_title("A  Area agreement", loc="left", fontweight="bold")
     ax.set_xlim(0, max_val)
     ax.set_ylim(0, max_val)
     ax.legend(frameon=True, ncol=1, loc="upper left")
+    ax.grid(True, color="#E5E7EB", linewidth=0.6)
+    ax.set_axisbelow(True)
 
+    # Panel B: absolute-scale, non-parametric Bland-Altman (robust to skew and
+    # to the near-closure small-denominator artifact of a percentage metric)
     ax = axes[1]
-    paired["mean_area_px"] = (paired["whst_area_px"] + paired["cytomove_area_px"]) / 2
-    paired["mean_area_mpx"] = paired["mean_area_px"] / 1_000_000
-    paired["area_diff_percent"] = (paired["cytomove_area_px"] - paired["whst_area_px"]) / paired["whst_area_px"] * 100
-    bias = paired["area_diff_percent"].mean()
-    loa = 1.96 * paired["area_diff_percent"].std(ddof=1)
+    diff = paired["diff_mpx"]
+    median_diff = float(diff.median())
+    lo, hi = np.percentile(diff, [2.5, 97.5])
     for dataset, df in paired.groupby("dataset"):
         ax.scatter(
-            df["mean_area_mpx"],
-            df["area_diff_percent"],
-            s=42,
-            color=PALETTE.get(dataset, "#64748B"),
-            edgecolor="white",
-            linewidth=0.6,
-            alpha=0.92,
+            df["mean_area_mpx"], df["diff_mpx"], s=42,
+            color=PALETTE.get(dataset, "#64748B"), marker=DATASET_MARKERS.get(dataset, "o"),
+            edgecolor="white", linewidth=0.6, alpha=0.92,
         )
     ax.axhline(0, color="#111827", linewidth=0.8)
-    ax.axhline(bias, color="#0F766E", linewidth=1.1, label=f"bias {bias:.1f}%")
-    ax.axhline(bias + loa, color="#94A3B8", linestyle="--", linewidth=1.0, label="95% limits")
-    ax.axhline(bias - loa, color="#94A3B8", linestyle="--", linewidth=1.0)
+    ax.axhline(median_diff, color="#0F766E", linewidth=1.3, label=f"median {median_diff:+.3f} Mpx")
+    ax.axhline(hi, color="#94A3B8", linestyle="--", linewidth=1.0, label="2.5-97.5% limits")
+    ax.axhline(lo, color="#94A3B8", linestyle="--", linewidth=1.0)
     ax.set_xlabel("Mean wound area (Mpx)")
-    ax.set_ylabel("Cytomove - WHST area (%)")
-    ax.set_title("B. Bland-Altman style view")
+    ax.set_ylabel("Cytomove − WHST area (Mpx)")
+    ax.set_title("B  Bland-Altman (absolute, non-parametric)", loc="left", fontweight="bold")
     ax.legend(frameon=True, loc="lower right")
+    ax.grid(True, color="#E5E7EB", linewidth=0.6)
+    ax.set_axisbelow(True)
     savefig(fig, "figure_3_area_agreement")
 
 
@@ -225,29 +249,178 @@ def extract_whad_time(filename: str) -> int:
     return int(match.group(1)) if match else 0
 
 
+def _whad_audit_rows() -> list[tuple[str, list[Path]]]:
+    raw_dir = ROOT / "validation_sets" / "comparator_clean" / "images_png" / "whad_mcf7_11"
+    whst_dir = RESULTS / "whst" / "whad_mcf7_11"
+    cyto_dir = RESULTS / "cytomove" / "whad_mcf7_11" / "cytomove_whad_mcf7_0_overlay_pngs"
+    rows = [
+        ("Raw image", sorted(raw_dir.glob("whad_mcf7_*.png"))),
+        ("WHST", [whst_dir / f"{i}.png" for i in range(1, 12)]),
+        ("Cytomove", sorted(cyto_dir.glob("cytomove_whad_mcf7_0_*_overlay_1920x1440px.png"))),
+    ]
+    for label, paths in rows:
+        if len(paths) != 11 or not all(p.exists() for p in paths):
+            raise RuntimeError(f"WHAD {label}: expected 11 existing files, got {len(paths)}")
+    return rows
+
+
 def figure_4_whad_timecourse(paired: pd.DataFrame) -> None:
+    """Combined main figure: A-B time-course (top) + D frame-level visual audit (bottom)."""
     df = paired.loc[paired["dataset"] == "whad_mcf7_11"].copy()
     df["time_h"] = df["image"].map(extract_whad_time)
-    df = df.sort_values("time_h")
-    fig, axes = plt.subplots(1, 2, figsize=(9.0, 3.8), constrained_layout=True)
+    df = df.sort_values("time_h").reset_index(drop=True)
+    hours = df["time_h"].to_numpy()
+    rows = _whad_audit_rows()
+
+    colors = {"WHST": "#111827", "Cytomove": "#2D6CDF"}
+    markers = {"WHST": "s", "Cytomove": "^"}
+    mk = dict(linewidth=1.8, markersize=5.5, markeredgecolor="white", markeredgewidth=0.6)
+
+    fig = plt.figure(figsize=(12.4, 8.0))
+    outer = GridSpec(
+        2, 1, figure=fig, height_ratios=[3.0, 3.7], hspace=0.30,
+        left=0.065, right=0.985, top=0.93, bottom=0.05,
+    )
+
+    # ---- Top: quantitative panels A-B ----
+    top = GridSpecFromSubplotSpec(1, 2, subplot_spec=outer[0], wspace=0.22)
+    axA = fig.add_subplot(top[0, 0])
+    axB = fig.add_subplot(top[0, 1])
+
+    axA.fill_between(hours, 0, 5, color="#FEF3C7", alpha=0.55, label="near-closure zone", zorder=0)
+    axA.plot(hours, df["whst_area_percent"], marker=markers["WHST"], color=colors["WHST"], label="WHST", **mk)
+    axA.plot(hours, df["cytomove_area_percent"], marker=markers["Cytomove"], color=colors["Cytomove"], label="Cytomove", **mk)
+    axA.set_xlabel("Time / frame label (h)")
+    axA.set_ylabel("Wound area fraction (%)")
+    axA.set_title("A  Area time-course", loc="left", fontweight="bold")
+    axA.legend(frameon=True)
+    axA.grid(True, color="#E5E7EB", linewidth=0.6)
+    axA.set_axisbelow(True)
+
+    axB.plot(hours, df["whst_width_px"], marker=markers["WHST"], color=colors["WHST"], label="WHST", **mk)
+    axB.plot(hours, df["cytomove_width_px"], marker=markers["Cytomove"], color=colors["Cytomove"], label="Cytomove", **mk)
+    axB.set_xlabel("Time / frame label (h)")
+    axB.set_ylabel("Mean wound width (px)")
+    axB.set_title("B  Width time-course", loc="left", fontweight="bold")
+    axB.legend(frameon=True)
+    axB.grid(True, color="#E5E7EB", linewidth=0.6)
+    axB.set_axisbelow(True)
+
+    # ---- Bottom: panel D visual audit grid ----
+    n_cols = len(hours)
+    grid = GridSpecFromSubplotSpec(
+        len(rows), n_cols + 1, subplot_spec=outer[1],
+        width_ratios=[0.55] + [1] * n_cols, wspace=0.04, hspace=0.06,
+    )
+    d_top = outer[1].get_position(fig).y1
+    fig.text(0.065, d_top + 0.012, "C  Frame-level visual audit: raw image, WHST output, and Cytomove overlay",
+             fontweight="bold", fontsize=11, ha="left", va="bottom")
+
+    for r, (row_label, paths) in enumerate(rows):
+        lab = fig.add_subplot(grid[r, 0])
+        lab.axis("off")
+        lab.text(0.5, 0.5, row_label, rotation=90, ha="center", va="center",
+                 fontweight="bold", fontsize=10.5, color="#0F172A")
+        for c, path in enumerate(paths):
+            ax = fig.add_subplot(grid[r, c + 1])
+            ax.imshow(read_rgb(path))
+            ax.set_xticks([]); ax.set_yticks([])
+            for spine in ax.spines.values():
+                spine.set_edgecolor("#CBD5E1")
+                spine.set_linewidth(0.6)
+                spine.set_visible(True)
+            if r == 0:
+                ax.set_title(f"{int(hours[c])} h", fontsize=8.5, color="#334155", pad=3)
+
+    fig.suptitle("WHAD-MCF7 sample 11 two-method time-course and visual audit", x=0.065, y=0.985,
+                 ha="left", fontweight="bold", fontsize=13)
+
+    OUT.mkdir(parents=True, exist_ok=True)
+    for ext in ("svg", "pdf", "png"):
+        kwargs = {"facecolor": "white"}
+        if ext == "png":
+            kwargs["dpi"] = 300
+        fig.savefig(OUT / f"figure_4_whad_timecourse.{ext}", **kwargs)
+    plt.close(fig)
+
+
+def figure_5_csma_three_method_timecourse(paired: pd.DataFrame) -> None:
+    df = paired.loc[paired["dataset"] == "csma_sample_11"].copy().reset_index(drop=True)
+    csma = pd.read_csv(
+        RESULTS
+        / "csma"
+        / "csma_sample_11_native_run"
+        / "results_area"
+        / "quantification_by_area_raw_data.csv"
+    )
+    df["frame_index"] = np.arange(len(df))
+    df["frame_label"] = ["001", "002", "003", "010", "015", "020", "025", "035", "040", "045", "049"]
+    df["csma_area_px"] = csma["wound_area_in_pixel"].to_numpy()
+    for column in ("csma_area_px", "whst_area_px", "cytomove_area_px"):
+        df[f"{column}_baseline_percent"] = df[column] / df[column].iloc[0] * 100
+
+    fig, axes = plt.subplots(1, 3, figsize=(10.2, 3.45), constrained_layout=True)
+    colors = {"CSMA native": "#008F7A", "WHST": "#111827", "Cytomove": "#2D6CDF"}
+    axis_label_size = 6.2
+    tick_label_size = 5.7
+    panel_title_size = 7.4
+    legend_size = 6.1
+    marker_size = 3.4
+    line_width = 1.15
 
     ax = axes[0]
-    ax.plot(df["time_h"], df["whst_area_percent"], marker="o", color="#111827", label="WHST", linewidth=1.8)
-    ax.plot(df["time_h"], df["cytomove_area_percent"], marker="o", color="#2D6CDF", label="Cytomove", linewidth=1.8)
-    ax.fill_between(df["time_h"], 0, 5, color="#FEF3C7", alpha=0.55, label="near-closure zone")
-    ax.set_xlabel("Time / frame label (h)")
-    ax.set_ylabel("Wound area fraction (%)")
-    ax.set_title("A. Area time-course")
-    ax.legend(frameon=True)
+    ax.plot(df["frame_index"], df["csma_area_px"] / 1_000_000, marker="o", color=colors["CSMA native"], label="CSMA native", linewidth=line_width, markersize=marker_size)
+    ax.plot(df["frame_index"], df["whst_area_px"] / 1_000_000, marker="o", color=colors["WHST"], label="WHST", linewidth=line_width, markersize=marker_size)
+    ax.plot(df["frame_index"], df["cytomove_area_px"] / 1_000_000, marker="o", color=colors["Cytomove"], label="Cytomove", linewidth=line_width, markersize=marker_size)
+    ax.set_xlabel("CSMA sample frame", fontsize=axis_label_size)
+    ax.set_ylabel("Wound area (Mpx)", fontsize=axis_label_size)
+    ax.set_title("A. Absolute wound area", fontsize=panel_title_size)
+    ax.set_xticks(df["frame_index"])
+    ax.set_xticklabels(df["frame_label"], rotation=45, ha="right", fontsize=tick_label_size)
+    ax.tick_params(axis="y", labelsize=tick_label_size)
+    ax.legend(frameon=True, fontsize=legend_size)
 
     ax = axes[1]
-    ax.plot(df["time_h"], df["whst_width_px"], marker="o", color="#111827", label="WHST", linewidth=1.8)
-    ax.plot(df["time_h"], df["cytomove_width_px"], marker="o", color="#2D6CDF", label="Cytomove", linewidth=1.8)
-    ax.set_xlabel("Time / frame label (h)")
-    ax.set_ylabel("Mean wound width (px)")
-    ax.set_title("B. Width time-course")
-    ax.legend(frameon=True)
-    savefig(fig, "figure_4_whad_timecourse")
+    ax.plot(df["frame_index"], df["csma_area_px_baseline_percent"], marker="o", color=colors["CSMA native"], label="CSMA native", linewidth=line_width, markersize=marker_size)
+    ax.plot(df["frame_index"], df["whst_area_px_baseline_percent"], marker="o", color=colors["WHST"], label="WHST", linewidth=line_width, markersize=marker_size)
+    ax.plot(df["frame_index"], df["cytomove_area_px_baseline_percent"], marker="o", color=colors["Cytomove"], label="Cytomove", linewidth=line_width, markersize=marker_size)
+    ax.set_xlabel("CSMA sample frame", fontsize=axis_label_size)
+    ax.set_ylabel("Residual area (% of first frame)", fontsize=axis_label_size)
+    ax.set_title("B. Normalized residual area", fontsize=panel_title_size)
+    ax.set_xticks(df["frame_index"])
+    ax.set_xticklabels(df["frame_label"], rotation=45, ha="right", fontsize=tick_label_size)
+    ax.tick_params(axis="y", labelsize=tick_label_size)
+
+    ax = axes[2]
+    ax.axhline(0, color="#111827", linewidth=0.8)
+    ax.plot(
+        df["frame_index"],
+        (df["csma_area_px"] - df["whst_area_px"]) / df["whst_area_px"] * 100,
+        marker="o",
+        color=colors["CSMA native"],
+        label="CSMA vs WHST",
+        linewidth=line_width,
+        markersize=marker_size,
+    )
+    ax.plot(
+        df["frame_index"],
+        df["area_signed_error_percent"],
+        marker="o",
+        color=colors["Cytomove"],
+        label="Cytomove vs WHST",
+        linewidth=line_width,
+        markersize=marker_size,
+    )
+    ax.set_xlabel("CSMA sample frame", fontsize=axis_label_size)
+    ax.set_ylabel("Area difference from WHST (%)", fontsize=axis_label_size)
+    ax.set_title("C. Frame-level method difference", fontsize=panel_title_size)
+    ax.set_xticks(df["frame_index"])
+    ax.set_xticklabels(df["frame_label"], rotation=45, ha="right", fontsize=tick_label_size)
+    ax.tick_params(axis="y", labelsize=tick_label_size)
+    ax.legend(frameon=True, loc="upper left", fontsize=legend_size)
+
+    fig.suptitle("CSMA sample 11 three-method area trend", x=0.01, ha="left", weight="bold", fontsize=8.5)
+    savefig(fig, "figure_5_csma_three_method_timecourse")
 
 
 def metric_text(paired: pd.DataFrame, dataset: str, image: str) -> str:
@@ -306,8 +479,7 @@ def figure_5_visual_comparison(paired: pd.DataFrame) -> None:
             (axes[0], example["whst"], "WHST comparator"),
             (axes[1], example["cytomove"], "Cytomove"),
         ):
-            img = mpimg.imread(source)
-            ax.imshow(img)
+            show_source_image(ax, source)
             ax.set_title(title, loc="left", fontsize=8.5, weight="bold")
             ax.set_xticks([])
             ax.set_yticks([])
@@ -403,8 +575,7 @@ def figure_s2_csma_11_frame_visual_audit() -> None:
     for row_index, (row_label, paths) in enumerate(rows):
         for col_index, path in enumerate(paths):
             ax = axes[row_index, col_index]
-            img = mpimg.imread(path)
-            ax.imshow(img)
+            show_source_image(ax, path)
             ax.set_xticks([])
             ax.set_yticks([])
             if row_index == 0:
@@ -432,9 +603,11 @@ def main() -> None:
     figure_2_representative_overlays()
     figure_3_area_agreement(paired)
     figure_4_whad_timecourse(paired)
+    figure_5_csma_three_method_timecourse(paired)
     figure_5_visual_comparison(paired)
     figure_s1_validation_summary(summary)
     figure_s2_csma_11_frame_visual_audit()
+    generate_csma_visual_audit_outputs()
     print(f"Wrote figures to {OUT}")
 
 
