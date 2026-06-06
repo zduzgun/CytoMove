@@ -13,7 +13,6 @@ _As of June 2026 — soft-deployed and in a controlled academic beta._
 - **Controlled Academic Beta:** a loginless demo plus registered full access. Academic use is free during the beta.
 - **Desktop app (Alpha):** an Electron build for faster local group analysis and heavier exports.
 - **Manuscript in preparation:** an Original Software Publication describing Cytomove and its validation against manual ImageJ measurement.
-- The roadmap and strategic decisions are kept open here; see [ROADMAP.md](./ROADMAP.md).
 
 ## What It Does
 
@@ -27,7 +26,7 @@ The web app (and the desktop app) currently support:
 - Time-course plots
 - Export to PNG, CSV, Excel, and ZIP
 
-The core validation goal is that Cytomove measurements correlate highly with manual ImageJ measurements; MVP success criteria are defined in `ROADMAP.md`.
+The core validation goal is that Cytomove measurements correlate highly with manual ImageJ measurements.
 
 ## Access
 
@@ -43,20 +42,6 @@ In cell biology labs, wound healing analysis is still often manual, hard to repr
 - **In-browser analysis:** assay images are processed without ever leaving your computer.
 - **Figure-ready output:** PNG figures, CSV/Excel data, and methods text.
 - **Reproducibility:** the analysis version and settings are reported together with a citation block.
-
-## Roadmap
-
-For the detailed plan: [ROADMAP.md](./ROADMAP.md)
-
-Short summary:
-
-- **Phase 1:** Minimum credible landing page and basic trust layer ✅
-- **Phase 2:** Single time-point MVP, working web app, validation dataset ✅ (current)
-- **Phase 3:** Citation-ready reports and academic publication (in progress)
-- **Phase 4:** User accounts, paid plans, time-lapse analysis
-- **Phase 5:** Incorporation, funding, trademark, and parent-brand decisions
-
-The north-star metric is the number of published papers that cite Cytomove. Additional cell biology modules may be considered only after Cytomove's success is validated; for now the focus is solely on wound healing analysis.
 
 ## For Researchers
 
