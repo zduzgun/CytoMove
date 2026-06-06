@@ -31,3 +31,18 @@ sample_imagej_apps/pyscratch_public/
 docs/.~lock*
 docs/zi9SJotS
 docs/Cytomove_manuscript_submission_v2.pdf
+
+# --- Yayımlanmaz: araştırma, makale, veri, iç notlar (lokalde kalır) ---
+# Public repo yalnızca site (index) + desktop app içerir.
+ROADMAP.md
+AGENT_BRIEF.md
+PUBLICATION/
+docs/
+scripts/
+sample_imagej_apps/
+trash/
+tools/
+old/
+supabase/
+BİLDİRİ/
+UBYT_DERGİ_LİSTESİ/

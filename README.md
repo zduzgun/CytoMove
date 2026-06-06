@@ -1,71 +1,78 @@
 # Cytomove
 
-> Hücre biyologları için tarayıcıda çalışan, gizlilik odaklı wound healing analiz aracı.
+> A privacy-first, browser-based wound healing (scratch assay) analysis tool for cell biologists.
 
-Cytomove, scratch assay / wound healing görüntülerinde yara alanı ölçümünü daha tekrarlanabilir hale getirmek için geliştirilen gizlilik odaklı bir web aracıdır. Amaç; manuel ImageJ tabanlı ölçüm iş akışına, figure-ready export ve tekrarlanabilir methods metni üreten daha hızlı bir tarayıcı alternatifi sunmaktır.
+Cytomove turns scratch assay / wound healing measurement into a reviewable, reproducible, and exportable research workflow that runs entirely in the browser. It aims to be a faster, citation-ready alternative to manual ImageJ-based wound area measurement — images are processed locally, segmentation is reviewable, and exports come with reproducible methods text and a versioned citation block.
 
-## Mevcut Durum
+## Current Status
 
-Cytomove lansman öncesi geliştirme aşamasındadır.
+_As of June 2026 — soft-deployed and in a controlled academic beta._
 
-- Landing page yayında: [cytomove.com](https://cytomove.com) / [cytomove.pages.dev](https://cytomove.pages.dev)
-- Waitlist aktif.
-- MVP hedefi: tek zaman noktası scratch assay analizi.
-- Ürün kodu şimdilik private geliştiriliyor; yol haritası ve stratejik kararlar burada açık tutuluyor.
+- Live site: [cytomove.com](https://cytomove.com)
+- **Working web app** is live (no installation): local image analysis with single-image and group review.
+- **Controlled Academic Beta:** a loginless demo plus registered full access. Academic use is free during the beta.
+- **Desktop app (Alpha):** an Electron build for faster local group analysis and heavier exports.
+- **Manuscript in preparation:** an Original Software Publication describing Cytomove and its validation against manual ImageJ measurement.
+- The roadmap and strategic decisions are kept open here; see [ROADMAP.md](./ROADMAP.md).
 
-## Neden Var?
+## What It Does
 
-Hücre biyolojisi laboratuvarlarında wound healing analizi hâlâ çoğu zaman manuel, tekrarı zor ve makale çıktısına dönüştürmesi zahmetli iş akışlarıyla yapılıyor. Cytomove bu iş akışını üç noktada iyileştirmeyi hedefler:
+The web app (and the desktop app) currently support:
 
-- **Tarayıcıda analiz:** Assay görüntüleri bilgisayardan ayrılmadan işlenir.
-- **Figure-ready çıktı:** PNG figür, CSV veri ve methods metni üretmeyi hedefler.
-- **Tekrarlanabilirlik:** Analiz sürümü ve ayarları atıf bloğuyla birlikte raporlanır.
+- Local image input — images never leave your computer
+- Automatic wound area segmentation with adjustable controls
+- Single-image and local multi-image **group review**
+- Area and width metrics, mask/contour review, and quality-control guidance
+- **Manual correction** of the segmentation result
+- Time-course plots
+- Export to PNG, CSV, Excel, and ZIP
 
-## Planlanan MVP
+The core validation goal is that Cytomove measurements correlate highly with manual ImageJ measurements; MVP success criteria are defined in `ROADMAP.md`.
 
-İlk MVP, tek zaman noktası scratch assay görüntülerini analiz etmeye odaklanır:
+## Access
 
-- Görüntü yükleme
-- Otomatik wound area segmentasyonu
-- Wound area ölçümü ve validation sonrası closure readout
-- Segmentasyon sonucunu gözden geçirme ve manuel düzeltme
-- PNG figür ve CSV veri dışa aktarma
+- **Demo (no sign-in):** try the analysis in your browser; full exports require an account.
+- **Registered full access:** sign in with email/password or Google. Email verification activates academic beta access.
+- **Desktop app:** requires a verified account to sign in; download links for the installer and portable build are available to signed-in beta users on the download page.
+- Academic use is free during the beta. Commercial use requires a separate license.
 
-MVP başarı kriterleri `ROADMAP.md` içinde tanımlanmıştır. Temel doğrulama hedefi, Cytomove ölçümlerinin ImageJ manuel ölçümleriyle yüksek korelasyon göstermesidir.
+## Why It Exists
 
-## Yol Haritası
+In cell biology labs, wound healing analysis is still often manual, hard to reproduce, and tedious to turn into publication output. Cytomove improves this in three ways:
 
-Detaylı 18 aylık plan için: [ROADMAP.md](./ROADMAP.md)
+- **In-browser analysis:** assay images are processed without ever leaving your computer.
+- **Figure-ready output:** PNG figures, CSV/Excel data, and methods text.
+- **Reproducibility:** the analysis version and settings are reported together with a citation block.
 
-Kısa özet:
+## Roadmap
 
-- **Faz 1:** Minimum credible landing, waitlist, temel güven katmanı
-- **Faz 2:** Tek zaman noktası MVP ve validation veri seti
-- **Faz 3:** Time-lapse analiz, citation-ready raporlar, bioRxiv preprint
-- **Faz 4:** Kullanıcı hesapları, ücretli planlar, peer-reviewed yayın
-- **Faz 5:** Şirketleşme, fonlama, trademark ve üst marka kararı
+For the detailed plan: [ROADMAP.md](./ROADMAP.md)
 
-Uzun vadede Cytomove başarısı doğrulandıktan sonra ek hücre biyolojisi analiz modülleri düşünülebilir. Şu an odak yalnızca wound healing analizidir.
+Short summary:
 
-## Araştırmacılar İçin
+- **Phase 1:** Minimum credible landing page and basic trust layer ✅
+- **Phase 2:** Single time-point MVP, working web app, validation dataset ✅ (current)
+- **Phase 3:** Citation-ready reports and academic publication (in progress)
+- **Phase 4:** User accounts, paid plans, time-lapse analysis
+- **Phase 5:** Incorporation, funding, trademark, and parent-brand decisions
 
-Erken erişim ve beta duyuruları için waitlist'e katılabilirsin:
+The north-star metric is the number of published papers that cite Cytomove. Additional cell biology modules may be considered only after Cytomove's success is validated; for now the focus is solely on wound healing analysis.
 
-[Join the waitlist](https://cytomove.com)
+## For Researchers
 
-Geri bildirim, veri seti önerileri veya akademik iş birliği fikirleri için GitHub Issues ya da e-posta kullanılabilir.
+Try the web app or join the beta at [cytomove.com](https://cytomove.com). For feedback, dataset suggestions, or academic collaboration ideas, use GitHub Issues or email.
 
-## Kurucu
+## Founder
 
-[Dr. Zekeriya Düzgün](https://github.com/zduzgun)  
-Giresun Üniversitesi Tıp Fakültesi, Tıbbi Biyoloji Anabilim Dalı.
+[Dr. Zekeriya Düzgün](https://github.com/zduzgun)
+Department of Medical Biology, Faculty of Medicine, Giresun University.
 
-## Lisans
+## License
 
-Bu repodaki dokümantasyon, yol haritası ve karar kayıtları [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) lisansı altındadır.
+The documentation, roadmap, and decision records in this repository are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
-Cytomove ürün kodu source-available ve ticari olmayan akademik/eğitim/araştırma kullanımı için yayımlanacaktır. Public kod lisansı PolyForm Noncommercial License 1.0.0 modelini izler; ticari kullanım public lisans altında kullanılamaz ve ayrı yazılı ticari lisans gerektirir. Ayrıntı için [LICENSE](./LICENSE) ve [LICENSING_STRATEGY.md](./LICENSING_STRATEGY.md) dosyalarına bak.
+Cytomove product code is source-available for non-commercial academic, educational, and research use, following the PolyForm Noncommercial License 1.0.0 model. Commercial use is not permitted under the public license and requires a separate written commercial license. See [LICENSE](./LICENSE) and [LICENSING_STRATEGY.md](./LICENSING_STRATEGY.md) for details.
 
 ---
 
-*Cytomove açıkta inşa ediliyor; çünkü araştırmacı geri bildirimi ürünün doğruluğu kadar önemlidir.*
+*Cytomove is built in the open, because researcher feedback matters as much as the product's accuracy.*
