@@ -15,8 +15,8 @@ docs/comparator-benchmark/images/
 _screenshot_*.png
 Cytomove - Segmentation Lab.pdf
 find_backup.py
-desktop_alpha/node_modules/
-desktop_alpha/release/
+desktop_beta/node_modules/
+desktop_beta/release/
 
 # LibreOffice / soffice geçici ve kilit dosyaları
 .~lock.*#

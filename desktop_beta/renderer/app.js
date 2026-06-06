@@ -298,18 +298,9 @@
   }
 
   async function initTrialGate() {
-    if(!window.cytomoveDesktop?.getTrialState) return;
-    try {
-      const trial=await window.cytomoveDesktop.getTrialState();
-      if(trial.expired||trial.clockInvalid) {
-        showTrialPanel('expired',trial);
-        return;
-      }
-      if(!hasSeenTrialWelcome(trial)) showTrialPanel('welcome',trial);
-    } catch(err) {
-      console.warn(err);
-      setLog(`<strong>Trial check failed.</strong> ${escHtml(err.message||err)} Local analysis remains available.`);
-    }
+    // Trial gate disabled: access is controlled by the mandatory sign-in gate
+    // (auth-ui.js). No 30-day window, no welcome/expiry screens.
+    hideTrialPanel();
   }
 
   const BUTTON_TOOLTIPS = {
