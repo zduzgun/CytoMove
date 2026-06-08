@@ -516,6 +516,111 @@
       line-height: 1.62;
     }
 
+    .validation-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 0.92fr) minmax(420px, 1.08fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .eyebrow {
+      color: var(--teal-dark);
+      font-size: 12px;
+      font-weight: 880;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .validation-copy h2 {
+      margin-bottom: 16px;
+    }
+
+    .validation-copy p {
+      max-width: 560px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.72;
+    }
+
+    .validation-copy p strong {
+      color: var(--ink);
+      font-weight: 760;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .stat {
+      min-height: 92px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.72);
+      padding: 14px;
+    }
+
+    .stat strong {
+      display: block;
+      color: var(--ink);
+      font-size: 24px;
+      line-height: 1;
+      letter-spacing: -0.035em;
+      margin-bottom: 9px;
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+      font-weight: 680;
+    }
+
+    .validation-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .validation-figures {
+      display: grid;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .figure-card {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--paper);
+      box-shadow: 0 18px 46px rgba(16, 32, 39, 0.08);
+    }
+
+    .figure-card img {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #ffffff;
+    }
+
+    .figure-card figcaption {
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      padding: 10px 12px;
+    }
+
+    .figure-card.secondary-figure {
+      max-width: 82%;
+      justify-self: end;
+    }
+
     .split-panel {
       display: grid;
       grid-template-columns: minmax(0, 0.88fr) minmax(360px, 1fr);
@@ -675,6 +780,7 @@
 
     @media (max-width: 980px) {
       .hero,
+      .validation-panel,
       .split-panel {
         grid-template-columns: 1fr;
       }
@@ -689,6 +795,11 @@
 
       .workflow {
         grid-template-columns: 1fr;
+      }
+
+      .figure-card.secondary-figure {
+        max-width: 100%;
+        justify-self: stretch;
       }
     }
 
@@ -715,12 +826,24 @@
 
       .site-nav {
         width: 100%;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
         min-width: 0;
       }
 
+      .nav-link {
+        min-width: 0;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.68);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
       .nav-link.primary {
-        width: calc(100vw - 56px);
+        width: 100%;
+        grid-column: 1 / -1;
       }
 
       .hero {
@@ -733,6 +856,9 @@
       .product-body,
       .workspace-preview,
       .section,
+      .validation-panel,
+      .validation-copy,
+      .validation-figures,
       .split-panel,
       .quiet-panel,
       .feedback-panel {
@@ -743,7 +869,7 @@
 
       .hero-copy,
       .product-shell {
-        max-width: calc(100vw - 56px);
+        max-width: 100%;
         margin-right: 0;
       }
 
@@ -761,14 +887,9 @@
         overflow-wrap: break-word;
       }
 
-      .hero-lead strong {
-        display: block;
-        margin: 4px 0;
-      }
-
       .button {
-        width: calc(100vw - 56px);
-        max-width: calc(100vw - 56px);
+        width: 100%;
+        max-width: 100%;
       }
 
       .product-body {
@@ -783,6 +904,10 @@
         flex-direction: column;
       }
 
+      .canvas-frame {
+        max-width: 100%;
+      }
+
       .product-bar {
         align-items: flex-start;
         justify-content: flex-start;
@@ -793,7 +918,8 @@
       }
 
       .preview-metrics,
-      .capability-grid {
+      .capability-grid,
+      .stat-grid {
         grid-template-columns: 1fr;
       }
 
@@ -844,6 +970,7 @@
 
       <nav class="site-nav" aria-label="Primary navigation">
         <a class="nav-link" href="#capabilities">Features</a>
+        <a class="nav-link" href="#validation">Validation</a>
         <a class="nav-link" href="wound-healing-scratch-assay-analysis/">Guide</a>
         <a class="nav-link" href="#desktop-app">Desktop</a>
         <a class="nav-link" href="download/">Download</a>
@@ -1061,6 +1188,54 @@
             <h3>Export results</h3>
             <p>Save overlays, plots, CSV, or Excel tables for reporting and validation notes.</p>
           </article>
+        </div>
+      </section>
+
+      <section class="section compact" id="validation" aria-labelledby="validation-title">
+        <div class="validation-panel">
+          <div class="validation-copy">
+            <div class="eyebrow">Preprint validation</div>
+            <h2 id="validation-title">Compared with ImageJ/Fiji WHST, with every mask visible.</h2>
+            <p>
+              Cytomove was evaluated against ImageJ/Fiji Wound Healing Size Tool outputs across
+              <strong>31 paired measurements from five image sets</strong>. In the clean brightfield
+              comparator sequence, Cytomove closely reproduced WHST wound-area trends
+              <strong>(Pearson r = 0.9975)</strong>, while keeping each segmentation visible as an
+              overlay before export.
+            </p>
+
+            <div class="stat-grid" aria-label="Validation summary">
+              <div class="stat">
+                <strong>r = 0.9975</strong>
+                <span>Clean brightfield comparator sequence versus WHST</span>
+              </div>
+              <div class="stat">
+                <strong>31</strong>
+                <span>Paired Cytomove-WHST measurements</span>
+              </div>
+              <div class="stat">
+                <strong>5</strong>
+                <span>Image sets spanning brightfield, phase contrast, and phone acquisition</span>
+              </div>
+            </div>
+
+            <div class="validation-links">
+              <!-- Replace this href with the bioRxiv URL after posting. -->
+              <a class="button secondary" href="https://doi.org/10.5281/zenodo.20486820" target="_blank" rel="noopener noreferrer">View validation data</a>
+              <a class="button secondary" href="beta-gateway/">Open Cytomove</a>
+            </div>
+          </div>
+
+          <div class="validation-figures" aria-label="Validation figures">
+            <figure class="figure-card">
+              <img src="assets/validation/figure3-whst-cytomove-agreement.jpg" alt="WHST versus Cytomove wound-area agreement plots">
+              <figcaption>WHST versus Cytomove wound-area agreement across the preliminary validation sets.</figcaption>
+            </figure>
+            <figure class="figure-card secondary-figure">
+              <img src="assets/validation/figure6-ab-phase-timecourse.jpg" alt="Area and width time-course agreement cropped from Figure 6 panels A and B">
+              <figcaption>Independent time-course agreement, cropped to Figure 6 panels A and B.</figcaption>
+            </figure>
+          </div>
         </div>
       </section>
 

@@ -167,7 +167,7 @@
   function setLog(msg, timer='') { el.logMsg.innerHTML=msg; el.timerMsg.textContent=timer; }
 
   function localDesktopVersion() {
-    return window.cytomoveDesktop?.version || '0.1.0-beta.1';
+    return window.cytomoveDesktop?.version || '0.1.0-alpha.1';
   }
 
   function compareVersions(a, b) {
@@ -195,7 +195,7 @@
       el.desktopLinkStatus.classList.toggle('offline',false);
     }
     if(el.desktopLinkMessage) {
-      el.desktopLinkMessage.innerHTML=`<strong>${updateAvailable?'Update available':'Connected to Cytomove web'}.</strong> ${escHtml(manifest.message||'Desktop status received.')}<br><small>Local ${escHtml(current)} · latest ${escHtml(latest)} · channel ${escHtml(manifest.channel||'beta')}</small>`;
+      el.desktopLinkMessage.innerHTML=`<strong>${updateAvailable?'Update available':'Connected to Cytomove web'}.</strong> ${escHtml(manifest.message||'Desktop status received.')}<br><small>Local ${escHtml(current)} · latest ${escHtml(latest)} · channel ${escHtml(manifest.channel||'alpha')}</small>`;
     }
     if(el.desktopModuleList) {
       const modules=Array.isArray(manifest.modules)?manifest.modules:[];
@@ -252,7 +252,7 @@
 
   function trialWelcomeKey(trial) {
     const version=window.cytomoveDesktop?.version||'dev';
-    return `cytomove.desktopBeta.welcomeSeen.${version}.${trial?.trialVersion||'beta'}`;
+    return `cytomove.desktopAlpha.welcomeSeen.${version}.${trial?.trialVersion||'alpha'}`;
   }
 
   function hasSeenTrialWelcome(trial) {
@@ -284,8 +284,8 @@
     if(el.trialExpiresAt) el.trialExpiresAt.textContent=formatTrialDate(trial?.expiresAt);
     if(el.trialExpiredReason) {
       el.trialExpiredReason.textContent=trial?.clockInvalid
-        ? 'The system clock appears to have been moved backwards, so this beta build is paused for safety.'
-        : 'This beta build has reached its 30-day testing window.';
+        ? 'The system clock appears to have been moved backwards, so this alpha build is paused for safety.'
+        : 'This alpha build has reached its 30-day testing window.';
     }
   }
 
@@ -298,9 +298,18 @@
   }
 
   async function initTrialGate() {
-    // Trial gate disabled: access is controlled by the mandatory sign-in gate
-    // (auth-ui.js). No 30-day window, no welcome/expiry screens.
-    hideTrialPanel();
+    if(!window.cytomoveDesktop?.getTrialState) return;
+    try {
+      const trial=await window.cytomoveDesktop.getTrialState();
+      if(trial.expired||trial.clockInvalid) {
+        showTrialPanel('expired',trial);
+        return;
+      }
+      if(!hasSeenTrialWelcome(trial)) showTrialPanel('welcome',trial);
+    } catch(err) {
+      console.warn(err);
+      setLog(`<strong>Trial check failed.</strong> ${escHtml(err.message||err)} Local analysis remains available.`);
+    }
   }
 
   const BUTTON_TOOLTIPS = {
@@ -1556,7 +1565,7 @@
       state.result=null;
       renderMetrics();
       const fileHint=isFileProtocol()
-        ? ' Desktop Beta runs from local files; use the Open button/drag-drop for microscopy images.'
+        ? ' Desktop Alpha runs from local files; use the Open button/drag-drop for microscopy images.'
         : '';
       setLog(`<strong>Segmentation failed.</strong>${fileHint} ${err.name||'Error'}: ${err.message||err}`);
     } finally {
@@ -4540,5 +4549,5 @@
   setupDelayedTooltips();
   loadDesktopManifest();
   initTrialGate();
-  if(isFileProtocol()) setLog('<strong>Desktop Beta:</strong> use Open/drag-drop for local images. Analysis runs on this computer.');
+  if(isFileProtocol()) setLog('<strong>Desktop Alpha:</strong> use Open/drag-drop for local images. Analysis runs on this computer.');
 

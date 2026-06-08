@@ -5,6 +5,7 @@ wound healing/
 wound_healing_self_articles/
 __pycache__/
 *.pyc
+.codex_tmp/
 validation_ref_sets/
 validation_sets/
 docs/literature/papers/
@@ -37,6 +38,8 @@ docs/Cytomove_manuscript_submission_v2.pdf
 ROADMAP.md
 AGENT_BRIEF.md
 AGENT_HANDOFF.md
+CYTOMOVE_MEMORY.md
+recovery/
 PUBLICATION/
 docs/
 scripts/
