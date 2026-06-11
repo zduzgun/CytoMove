@@ -23,6 +23,22 @@
     { id:'mk-control', label:'MK Control', sampleIds:['cal-007','cal-008','cal-009'] }
   ];
 
+  const TUTORIALS = {
+    m8f: {
+      id:'tutorial-m8f',
+      label:'M8F guided tutorial',
+      cell:'MDA-MB-231',
+      condition:'M8F example',
+      baseUrl:'../assets/tutorial/m8f/',
+      samples:[
+        { file:'m8f_0h_001.png', time:'0h' },
+        { file:'m8f_24h_002.png', time:'24h' },
+        { file:'m8f_48h_003.png', time:'48h' }
+      ],
+      settings:{ presetKey:'standard', scratchOrientation:'horizontal' }
+    }
+  };
+
   const CYTOMOVE_ALGORITHM_VERSION = 'prototype-whst-variance-v0.4';
   const SHOW_DEMO_CALIBRATION = false;
   const AUTO_APPLY_DELAY_MS = 1000;
@@ -43,6 +59,7 @@
     microscopeModeUserSet:false,
     lastAutoMicroscopeGroupKey:'',
     contourStyleUserSet:false,
+    tutorial:null,
     varMap:null, maskData:null, autoMaskData:null, fieldData:null, sourceData:null, grayData:null, darkGuideThreshold:0,
     brushMode:'off', brushDrawing:false, brushEdited:false, brushAddedPx:0, brushRemovedPx:0,
     correctionSelecting:false, correctionStart:null, correctionRect:null,
@@ -3574,6 +3591,209 @@
     window.setTimeout(()=>autoDetectGroupMicroscopeMode({auto:true}),0);
   }
 
+  function tutorialKeyFromUrl() {
+    try {
+      return new URLSearchParams(window.location.search).get('tutorial') || '';
+    } catch(_) {
+      return '';
+    }
+  }
+
+  function tutorialSample(row, index, config) {
+    return {
+      id:`${config.id}-${index}`,
+      imageId:`tutorial-${index+1}`,
+      path:row.file,
+      url:`${config.baseUrl}${row.file}`,
+      cell:config.cell,
+      condition:config.condition,
+      time:row.time,
+      area:null,
+      areaPct:null,
+      width:null,
+      closure:null,
+      confidence:'tutorial',
+      custom:true,
+      tutorial:true
+    };
+  }
+
+  function loadTutorialGroup(key) {
+    const config=TUTORIALS[key];
+    if(!config) return false;
+    state.tutorial={key,stepIndex:0,complete:false};
+    const existingGroup=state.customGroups.find(group=>group.id===config.id);
+    const samples=existingGroup
+      ? existingGroup.sampleIds.map(id=>sampleById(id)).filter(Boolean)
+      : config.samples.map((row,index)=>tutorialSample(row,index,config));
+    if(!existingGroup) {
+      state.customSamples.push(...samples);
+      state.customGroups.push({
+        id:config.id,
+        label:config.label,
+        sampleIds:samples.map(sample=>sample.id),
+        custom:true,
+        tutorial:true
+      });
+    }
+    const base={...settingsFromPresetKey(config.settings?.presetKey||'standard'), ...(config.settings||{})};
+    delete base.settings;
+    samples.forEach(sample=>{ state.sampleSettings[sample.id]={...base}; });
+    state.calibrationReport=null;
+    state.microscopeModeUserSet=true;
+    state.lastAutoMicroscopeGroupKey=selectedGroupKey();
+    state.contourStyleUserSet=false;
+    populateGroups();
+    el.groupSelect.value=config.id;
+    applyPanelSettings(base);
+    setMode('group');
+    const first=samples[0];
+    if(first) loadImage(sampleUrl(first),first,first.path,true,{autoApplyAfterLoad:false});
+    warnIfHorizontalScratchDetected(samples);
+    setupTutorialCoach(config,samples);
+    setLog(`<strong>${escHtml(config.label)} loaded.</strong> Follow the tutorial panel and click the highlighted buttons.`);
+    return true;
+  }
+
+  const TUTORIAL_STEPS = [
+    {
+      key:'apply-first',
+      selector:'#rerun',
+      label:'Apply',
+      title:'Analyze the first image',
+      body:'The 0h image is loaded with horizontal scratch orientation. Click Apply to draw the first contour overlay.'
+    },
+    {
+      key:'apply-group',
+      selector:'#applySettingsGroup',
+      label:'Apply to group',
+      title:'Run the same settings on all images',
+      body:'This applies the current settings to the 0h, 24h, and 48h images so the group view can compare the time course.'
+    },
+    {
+      key:'show-area',
+      selector:'#showAreaPlot',
+      label:'Area plot',
+      title:'Open the wound area plot',
+      body:'The area plot turns the three measurements into a closure trend that is easy to review before export.'
+    },
+    {
+      key:'close-plot',
+      selector:'#closePlot',
+      label:'Close plot',
+      title:'Close the plot panel',
+      body:'After reviewing the trend, close the plot so the image workspace and navigation controls are visible again.'
+    },
+    {
+      key:'next-image',
+      selector:'#groupNext',
+      label:'Next image',
+      title:'Inspect the next time point',
+      body:'Move from the 0h image to the next loaded image and confirm that the restored contour follows the wound boundary.'
+    },
+    {
+      key:'mask-view',
+      selector:'button[data-view="mask"]',
+      label:'Mask',
+      title:'Check the binary mask',
+      body:'Switch to Mask view to inspect the exact region that contributes to the wound area measurement.'
+    }
+  ];
+
+  function setupTutorialCoach(config, samples) {
+    document.body.classList.add('tutorial-active');
+    let coach=document.getElementById('tutorialCoach');
+    if(!coach) {
+      coach=document.createElement('aside');
+      coach.id='tutorialCoach';
+      coach.className='tutorial-coach';
+      coach.setAttribute('aria-live','polite');
+      document.body.appendChild(coach);
+    }
+    state.tutorial={...state.tutorial,config,samples,stepIndex:0,done:new Set()};
+    const render=()=>{
+      const current=TUTORIAL_STEPS[state.tutorial.stepIndex];
+      const progress=`${Math.min(state.tutorial.stepIndex+1,TUTORIAL_STEPS.length)} / ${TUTORIAL_STEPS.length}`;
+      const completed=state.tutorial.complete;
+      coach.innerHTML=completed
+        ? `<div class="tutorial-kicker">Guided tutorial complete</div>
+           <h2>M8F review is ready.</h2>
+           <p>You analyzed the first image, applied settings to the group, opened the area plot, navigated the series, and inspected the mask.</p>
+           <div class="tutorial-actions">
+             <a class="tutorial-link" href="../tutorial/">Back to tutorial page</a>
+             <button class="tutorial-secondary" type="button" data-tutorial-restart>Restart</button>
+           </div>`
+        : `<div class="tutorial-kicker">Guided tutorial <span>${progress}</span></div>
+           <h2>${escHtml(current.title)}</h2>
+           <p>${escHtml(current.body)}</p>
+           <div class="tutorial-required">
+             <span>Required click</span>
+             <button class="tutorial-jump" type="button" data-tutorial-jump>${escHtml(current.label)}</button>
+           </div>
+           <ol class="tutorial-steps">
+             ${TUTORIAL_STEPS.map((step,index)=>`<li class="${index<state.tutorial.stepIndex?'done':index===state.tutorial.stepIndex?'current':''}"><span>${index+1}</span>${escHtml(step.label)}</li>`).join('')}
+           </ol>
+           <div class="tutorial-actions">
+             <a class="tutorial-link" href="../tutorial/">Tutorial page</a>
+             <button class="tutorial-secondary" type="button" data-tutorial-skip>Skip</button>
+           </div>`;
+      updateTutorialHighlight();
+    };
+    coach.addEventListener('click',e=>{
+      if(e.target.closest('[data-tutorial-jump]')) {
+        const target=currentTutorialTarget();
+        if(target) {
+          target.scrollIntoView({block:'center',inline:'center',behavior:'smooth'});
+          target.focus({preventScroll:true});
+          if(!target.disabled) window.setTimeout(()=>target.click(),160);
+        }
+      }
+      if(e.target.closest('[data-tutorial-skip]')) {
+        state.tutorial.complete=true;
+        clearTutorialHighlight();
+        render();
+      }
+      if(e.target.closest('[data-tutorial-restart]')) {
+        state.tutorial.stepIndex=0;
+        state.tutorial.complete=false;
+        render();
+      }
+    });
+    document.addEventListener('click',e=>{
+      if(!state.tutorial||state.tutorial.complete) return;
+      const step=TUTORIAL_STEPS[state.tutorial.stepIndex];
+      if(!step) return;
+      const target=e.target.closest(step.selector);
+      if(!target||target.disabled) return;
+      window.setTimeout(()=>{
+        state.tutorial.stepIndex++;
+        if(state.tutorial.stepIndex>=TUTORIAL_STEPS.length) {
+          state.tutorial.complete=true;
+          clearTutorialHighlight();
+        }
+        render();
+      },500);
+    },true);
+    render();
+    window.setInterval(()=>{ if(state.tutorial&&!state.tutorial.complete) updateTutorialHighlight(); },1200);
+  }
+
+  function currentTutorialTarget() {
+    const step=state.tutorial&&!state.tutorial.complete?TUTORIAL_STEPS[state.tutorial.stepIndex]:null;
+    return step?document.querySelector(step.selector):null;
+  }
+
+  function clearTutorialHighlight() {
+    document.querySelectorAll('.tutorial-highlight').forEach(node=>node.classList.remove('tutorial-highlight'));
+  }
+
+  function updateTutorialHighlight() {
+    clearTutorialHighlight();
+    const target=currentTutorialTarget();
+    if(!target) return;
+    target.classList.add('tutorial-highlight');
+  }
+
   function transformImageElement(img, settings) {
     if(!settings.rotation&&!settings.deskew) return Promise.resolve(img);
     return loadImageElement(transformImage(img,settings.rotation,settings.deskew));
@@ -4514,5 +4734,9 @@
   setupSidebarPanels();
   bindEvents();
   setupDelayedTooltips();
-  if(isFileProtocol()) setLog('<strong>File mode:</strong> use Open/drag-drop for local images, or run <code>py -3 -m http.server 8765</code> from the repo root.');
-
+  const tutorialKey=tutorialKeyFromUrl();
+  if(tutorialKey) {
+    if(!loadTutorialGroup(tutorialKey)) setLog(`<strong>Tutorial not found.</strong> Unknown tutorial key: ${escHtml(tutorialKey)}.`);
+  } else if(isFileProtocol()) {
+    setLog('<strong>File mode:</strong> use Open/drag-drop for local images, or run <code>py -3 -m http.server 8765</code> from the repo root.');
+  }
