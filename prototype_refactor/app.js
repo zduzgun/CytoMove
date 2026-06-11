@@ -35,7 +35,7 @@
         { file:'m8f_24h_002.png', time:'24h' },
         { file:'m8f_48h_003.png', time:'48h' }
       ],
-      settings:{ presetKey:'standard', scratchOrientation:'horizontal' }
+      settings:{ presetKey:'standard', scratchOrientation:'vertical' }
     }
   };
 
@@ -3657,11 +3657,28 @@
 
   const TUTORIAL_STEPS = [
     {
+      key:'fix-orientation',
+      selector:'#scratchOrientation',
+      label:'Make vertical',
+      title:'Fix the horizontal scratch warning',
+      body:'These images contain a horizontal scratch. Choose Horizontal scratch so Cytomove rotates the series into the vertical analysis view.',
+      action:'set-value',
+      value:'horizontal',
+      event:'change'
+    },
+    {
+      key:'preset-rough',
+      selector:'button[data-preset="rough"]',
+      label:'Brightfield normal cells',
+      title:'Select the normal-cell brightfield preset',
+      body:'Start with the broader brightfield preset for this tutorial image set, then review the contour before applying it to the group.'
+    },
+    {
       key:'apply-first',
       selector:'#rerun',
       label:'Apply',
       title:'Analyze the first image',
-      body:'The 0h image is loaded with horizontal scratch orientation. Click Apply to draw the first contour overlay.'
+      body:'Click Apply to draw the first contour overlay on the 0h image.'
     },
     {
       key:'apply-group',
@@ -3718,7 +3735,7 @@
       coach.innerHTML=completed
         ? `<div class="tutorial-kicker">Guided tutorial complete</div>
            <h2>M8F review is ready.</h2>
-           <p>You analyzed the first image, applied settings to the group, opened the area plot, navigated the series, and inspected the mask.</p>
+           <p>You fixed orientation, selected the preset, analyzed the first image, applied settings to the group, opened the area plot, navigated the series, and inspected the mask.</p>
            <div class="tutorial-actions">
              <a class="tutorial-link" href="../tutorial/">Back to tutorial page</a>
              <button class="tutorial-secondary" type="button" data-tutorial-restart>Restart</button>
@@ -3745,7 +3762,7 @@
         if(target) {
           target.scrollIntoView({block:'center',inline:'center',behavior:'smooth'});
           target.focus({preventScroll:true});
-          if(!target.disabled) window.setTimeout(()=>target.click(),160);
+          if(!target.disabled) window.setTimeout(()=>performTutorialAction(currentTutorialStep(),target),160);
         }
       }
       if(e.target.closest('[data-tutorial-skip]')) {
@@ -3774,13 +3791,43 @@
         render();
       },500);
     },true);
+    document.addEventListener('change',e=>{
+      if(!state.tutorial||state.tutorial.complete) return;
+      const step=TUTORIAL_STEPS[state.tutorial.stepIndex];
+      if(!step||step.event!=='change') return;
+      const target=e.target.closest(step.selector);
+      if(!target||target.disabled) return;
+      if(step.value!==undefined&&target.value!==step.value) return;
+      window.setTimeout(()=>{
+        state.tutorial.stepIndex++;
+        if(state.tutorial.stepIndex>=TUTORIAL_STEPS.length) {
+          state.tutorial.complete=true;
+          clearTutorialHighlight();
+        }
+        render();
+      },500);
+    },true);
     render();
     window.setInterval(()=>{ if(state.tutorial&&!state.tutorial.complete) updateTutorialHighlight(); },1200);
   }
 
+  function currentTutorialStep() {
+    return state.tutorial&&!state.tutorial.complete?TUTORIAL_STEPS[state.tutorial.stepIndex]:null;
+  }
+
   function currentTutorialTarget() {
-    const step=state.tutorial&&!state.tutorial.complete?TUTORIAL_STEPS[state.tutorial.stepIndex]:null;
+    const step=currentTutorialStep();
     return step?document.querySelector(step.selector):null;
+  }
+
+  function performTutorialAction(step, target) {
+    if(!step||!target||target.disabled) return;
+    if(step.action==='set-value') {
+      target.value=step.value;
+      target.dispatchEvent(new Event(step.event||'change',{bubbles:true}));
+      return;
+    }
+    target.click();
   }
 
   function clearTutorialHighlight() {

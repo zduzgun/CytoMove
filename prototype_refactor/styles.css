@@ -413,6 +413,17 @@
       z-index: 40;
       box-shadow: 0 0 0 4px rgba(15,159,143,0.25), 0 0 0 8px rgba(15,159,143,0.10) !important;
       border-color: var(--teal) !important;
+      animation: tutorialPulse 1s ease-in-out infinite;
+    }
+    @keyframes tutorialPulse {
+      0%, 100% {
+        box-shadow: 0 0 0 4px rgba(15,159,143,0.28), 0 0 0 8px rgba(15,159,143,0.10) !important;
+        filter: brightness(1);
+      }
+      50% {
+        box-shadow: 0 0 0 5px rgba(15,159,143,0.48), 0 0 0 13px rgba(15,159,143,0.18), 0 0 18px rgba(15,159,143,0.48) !important;
+        filter: brightness(1.04);
+      }
     }
 
     @media (max-width: 1260px) { .tutorial-active .app { width: min(1500px,100%); margin-left: auto; } .tutorial-coach { top: auto; left: 14px; right: 14px; bottom: 14px; width: auto; } }

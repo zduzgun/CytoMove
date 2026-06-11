@@ -23,6 +23,8 @@
       "name": "Cytomove guided scratch assay tutorial",
       "description": "A guided workflow for opening preloaded M8F scratch assay images, applying segmentation, reviewing group results, and checking plots.",
       "step": [
+        { "@type": "HowToStep", "name": "Fix the scratch orientation" },
+        { "@type": "HowToStep", "name": "Select Brightfield normal cells" },
         { "@type": "HowToStep", "name": "Analyze the first image" },
         { "@type": "HowToStep", "name": "Apply settings to the group" },
         { "@type": "HowToStep", "name": "Open the wound area plot" },
@@ -175,7 +177,7 @@
     }
     .steps {
       display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 10px;
       padding: 36px 0 64px;
       border-top: 1px solid var(--line);
@@ -245,11 +247,12 @@
     <main>
       <section class="hero">
         <div>
-          <h1>Analyze a scratch assay group in six guided clicks.</h1>
+          <h1>Analyze a scratch assay group in eight guided clicks.</h1>
           <p class="lead">
             This tutorial opens Cytomove with three M8F wound healing images already loaded.
-            Follow the highlighted controls to run the first image, apply settings to the group,
-            inspect the plot, close it, move through the series, and check the mask.
+            Follow the highlighted controls to fix the horizontal scratch warning, choose the
+            brightfield preset, run the first image, apply settings to the group, inspect the plot,
+            close it, move through the series, and check the mask.
           </p>
           <div class="cta-row">
             <a class="button" href="../prototype_refactor/?tutorial=m8f">Launch guided tutorial</a>
@@ -282,31 +285,41 @@
       <section class="steps" aria-label="Tutorial steps">
         <article class="step">
           <strong>01</strong>
+          <h2>Fix orientation</h2>
+          <p>Use Scratch orientation to rotate the horizontal scratch into vertical analysis view.</p>
+        </article>
+        <article class="step">
+          <strong>02</strong>
+          <h2>Choose preset</h2>
+          <p>Select Brightfield normal cells before running the first segmentation.</p>
+        </article>
+        <article class="step">
+          <strong>03</strong>
           <h2>Click Apply</h2>
           <p>Run segmentation on the first image and create the initial contour overlay.</p>
         </article>
         <article class="step">
-          <strong>02</strong>
+          <strong>04</strong>
           <h2>Apply to group</h2>
           <p>Reuse the same settings across the three loaded M8F time points.</p>
         </article>
         <article class="step">
-          <strong>03</strong>
+          <strong>05</strong>
           <h2>Open area plot</h2>
           <p>Review the wound area trend before exporting or changing settings.</p>
         </article>
         <article class="step">
-          <strong>04</strong>
+          <strong>06</strong>
           <h2>Close plot</h2>
           <p>Return from the plot panel to the image workspace before navigating.</p>
         </article>
         <article class="step">
-          <strong>05</strong>
+          <strong>07</strong>
           <h2>Next image</h2>
           <p>Move to the next time point and inspect the restored contour.</p>
         </article>
         <article class="step">
-          <strong>06</strong>
+          <strong>08</strong>
           <h2>Check mask</h2>
           <p>Switch from contour to mask view to verify what is being measured.</p>
         </article>
