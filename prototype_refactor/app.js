@@ -3622,6 +3622,7 @@
     const config=TUTORIALS[key];
     if(!config) return false;
     state.tutorial={key,stepIndex:0,complete:false};
+    expandAllSidebarPanelsForTutorial();
     const existingGroup=state.customGroups.find(group=>group.id===config.id);
     const samples=existingGroup
       ? existingGroup.sampleIds.map(id=>sampleById(id)).filter(Boolean)
@@ -3727,6 +3728,7 @@
       coach.setAttribute('aria-live','polite');
       document.body.appendChild(coach);
     }
+    ensureTutorialPointer();
     state.tutorial={...state.tutorial,config,samples,stepIndex:0,done:new Set()};
     const render=()=>{
       const current=TUTORIAL_STEPS[state.tutorial.stepIndex];
@@ -3839,6 +3841,41 @@
     const target=currentTutorialTarget();
     if(!target) return;
     target.classList.add('tutorial-highlight');
+    aimTutorialPointer(target);
+  }
+
+  function ensureTutorialPointer() {
+    let pointer=document.getElementById('tutorialPointer');
+    if(pointer) return pointer;
+    pointer=document.createElement('div');
+    pointer.id='tutorialPointer';
+    pointer.className='tutorial-pointer';
+    pointer.setAttribute('aria-hidden','true');
+    pointer.innerHTML='<span class="tutorial-pointer-shaft"></span><span class="tutorial-pointer-head"></span>';
+    document.body.appendChild(pointer);
+    return pointer;
+  }
+
+  function aimTutorialPointer(target) {
+    const pointer=ensureTutorialPointer();
+    const rect=target.getBoundingClientRect();
+    const coach=document.getElementById('tutorialCoach');
+    const coachRect=coach?.getBoundingClientRect();
+    const endX=Math.max(22,Math.min(window.innerWidth-22,rect.left+Math.min(rect.width*0.55,rect.width-8)));
+    const endY=Math.max(22,Math.min(window.innerHeight-22,rect.top+Math.min(rect.height*0.55,rect.height-8)));
+    let startX=window.innerWidth-78;
+    let startY=74;
+    if(coachRect) {
+      startX=coachRect.left+38;
+      startY=coachRect.top+coachRect.height-26;
+    }
+    pointer.style.setProperty('--pointer-start-x',`${Math.round(startX)}px`);
+    pointer.style.setProperty('--pointer-start-y',`${Math.round(startY)}px`);
+    pointer.style.setProperty('--pointer-end-x',`${Math.round(endX)}px`);
+    pointer.style.setProperty('--pointer-end-y',`${Math.round(endY)}px`);
+    pointer.classList.remove('moving');
+    void pointer.offsetWidth;
+    pointer.classList.add('moving');
   }
 
   function transformImageElement(img, settings) {
@@ -4309,6 +4346,13 @@
       makeCollapsible(section,title,key,defaultOpen.has(panelKey(title.textContent)));
     });
     setupSidebarSubpanels();
+  }
+
+  function expandAllSidebarPanelsForTutorial() {
+    document.querySelectorAll('.sidebar .section:not([hidden]), .sidebar .subpanel').forEach(panel=>{
+      const title=Array.from(panel.children).find(child=>child.classList?.contains('section-title')||child.classList?.contains('subpanel-title'));
+      if(title) setCollapsibleOpen(panel,title,true);
+    });
   }
 
   function createSubpanel(titleText, key, defaultOpen, nodes) {

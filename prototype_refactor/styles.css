@@ -410,19 +410,97 @@
     }
     .tutorial-highlight {
       position: relative;
-      z-index: 40;
-      box-shadow: 0 0 0 4px rgba(15,159,143,0.25), 0 0 0 8px rgba(15,159,143,0.10) !important;
-      border-color: var(--teal) !important;
-      animation: tutorialPulse 1s ease-in-out infinite;
+      z-index: 10003 !important;
+      border-color: #00d6c2 !important;
+      outline: 3px solid rgba(0,214,194,0.95) !important;
+      outline-offset: 3px !important;
+      box-shadow:
+        0 0 0 7px rgba(0,214,194,0.30),
+        0 0 0 14px rgba(0,214,194,0.16),
+        0 0 28px rgba(0,214,194,0.80),
+        0 0 54px rgba(0,214,194,0.42) !important;
+      animation: tutorialPulse 0.82s ease-in-out infinite;
     }
     @keyframes tutorialPulse {
       0%, 100% {
-        box-shadow: 0 0 0 4px rgba(15,159,143,0.28), 0 0 0 8px rgba(15,159,143,0.10) !important;
+        box-shadow:
+          0 0 0 6px rgba(0,214,194,0.34),
+          0 0 0 12px rgba(0,214,194,0.16),
+          0 0 24px rgba(0,214,194,0.78),
+          0 0 48px rgba(0,214,194,0.36) !important;
         filter: brightness(1);
       }
       50% {
-        box-shadow: 0 0 0 5px rgba(15,159,143,0.48), 0 0 0 13px rgba(15,159,143,0.18), 0 0 18px rgba(15,159,143,0.48) !important;
-        filter: brightness(1.04);
+        box-shadow:
+          0 0 0 9px rgba(0,214,194,0.58),
+          0 0 0 20px rgba(0,214,194,0.24),
+          0 0 42px rgba(0,214,194,1),
+          0 0 76px rgba(0,214,194,0.54) !important;
+        filter: brightness(1.10);
+      }
+    }
+    .tutorial-pointer {
+      --pointer-start-x: 80vw;
+      --pointer-start-y: 80px;
+      --pointer-end-x: 50vw;
+      --pointer-end-y: 50vh;
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 58px;
+      height: 58px;
+      z-index: 10004;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(var(--pointer-end-x), var(--pointer-end-y));
+      filter: drop-shadow(0 8px 14px rgba(0,0,0,0.28));
+    }
+    .tutorial-pointer.moving {
+      animation: tutorialPointerMove 1.15s cubic-bezier(.2,.8,.2,1) infinite;
+    }
+    .tutorial-pointer-head {
+      position: absolute;
+      left: 6px;
+      top: 4px;
+      width: 0;
+      height: 0;
+      border-left: 0 solid transparent;
+      border-right: 22px solid transparent;
+      border-bottom: 36px solid #0b1f24;
+      transform: rotate(-28deg);
+    }
+    .tutorial-pointer-head::after {
+      content: "";
+      position: absolute;
+      left: 3px;
+      top: 7px;
+      width: 0;
+      height: 0;
+      border-right: 14px solid transparent;
+      border-bottom: 24px solid #ffffff;
+    }
+    .tutorial-pointer-shaft {
+      position: absolute;
+      left: 31px;
+      top: 31px;
+      width: 14px;
+      height: 22px;
+      border-radius: 4px;
+      background: #0b1f24;
+      transform: rotate(-28deg);
+    }
+    @keyframes tutorialPointerMove {
+      0% {
+        opacity: 0;
+        transform: translate(var(--pointer-start-x), var(--pointer-start-y)) scale(.86);
+      }
+      18% { opacity: 1; }
+      62%, 100% {
+        opacity: 1;
+        transform: translate(var(--pointer-end-x), var(--pointer-end-y)) scale(1);
+      }
+      82% {
+        transform: translate(var(--pointer-end-x), var(--pointer-end-y)) scale(.92);
       }
     }
 
