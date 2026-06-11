@@ -1,9 +1,9 @@
-{
+﻿{
   "schemaVersion": 1,
-  "latestVersion": "0.1.0-beta.1",
-  "channel": "beta",
+  "latestVersion": "1.0.0",
+  "channel": "release",
   "status": "active",
-  "message": "Desktop Beta is the recommended path for faster local group analysis and heavier exports. The beta is free for academic use; please send feedback from the Cytomove website after testing real image groups.",
+  "message": "Desktop is the recommended path for faster local group analysis and heavier exports. Academic access is free; please send feedback from the Cytomove website after testing real image groups.",
   "updateUrl": "https://cytomove.com/",
   "feedbackUrl": "https://cytomove.com/#feedback-title",
   "accountUrl": "https://cytomove.com/",
@@ -26,8 +26,8 @@
   ],
   "plans": [
     {
-      "id": "free-beta",
-      "label": "Free Beta",
+      "id": "free-academic",
+      "label": "Free Academic Access",
       "audience": "academic testers",
       "state": "active",
       "note": "Free for academic use; sign-in required."
@@ -37,14 +37,14 @@
       "label": "Academic",
       "audience": "research labs and students",
       "state": "planned",
-      "note": "Planned for private beta; pricing and license checks are not active yet."
+      "note": "Planned for controlled academic release; pricing and license checks are not active yet."
     },
     {
       "id": "commercial",
       "label": "Commercial",
       "audience": "company and CRO workflows",
       "state": "planned",
-      "note": "Planned for paid modules after validation and beta feedback."
+      "note": "Planned for paid modules after validation and release feedback."
     }
   ]
 }

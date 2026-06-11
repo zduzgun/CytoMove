@@ -8,7 +8,21 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260606">
+  <link rel="stylesheet" href="styles.css?v=20260607">
+  <script>
+    /* Apply saved theme before paint to avoid a flash. JS is the single source of
+       truth: in "auto" the OS preference is resolved here and written to data-theme. */
+    (function () {
+      try {
+        var choice = localStorage.getItem('cytomove-theme') || 'auto';
+        var dark = choice === 'dark'
+          || (choice === 'auto' && window.matchMedia
+              && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        document.documentElement.dataset.themeChoice = choice;
+      } catch (e) {}
+    })();
+  </script>
   <script src="../auth/supabase-config.js"></script>
   <script src="../auth/cytomove-auth.js"></script>
 </head>
@@ -44,6 +58,15 @@
             <div class="account-dd-email" id="ddEmail"></div>
             <div class="account-dd-status" id="ddStatus"></div>
             <div class="account-dd-divider"></div>
+            <div class="account-dd-theme" role="group" aria-label="Theme">
+              <div class="account-dd-theme-label">Theme</div>
+              <div class="theme-seg" id="themeSeg">
+                <button class="theme-opt" type="button" data-theme-choice="light" aria-pressed="false">Light</button>
+                <button class="theme-opt" type="button" data-theme-choice="dark" aria-pressed="false">Dark</button>
+                <button class="theme-opt" type="button" data-theme-choice="auto" aria-pressed="false">Auto</button>
+              </div>
+            </div>
+            <div class="account-dd-divider"></div>
             <a class="account-dd-item" href="../beta-gateway/?stay=1" role="menuitem">
               <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 7.5 8 3l5.5 4.5M4 6.5V13h8V6.5" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/></svg>
               Home
@@ -59,8 +82,8 @@
 
     <div class="demo-banner" id="demoModeBanner" hidden>
       <strong>Demo mode</strong>
-      <span>Load local images and review overlays without signing in. Full CSV, Excel, PNG, and ZIP exports will require registered beta access.</span>
-      <a href="../beta-gateway/">Sign in for full beta</a>
+      <span>Load local images and review overlays without signing in. Full CSV, Excel, PNG, and ZIP exports will require registered academic access.</span>
+      <a href="../beta-gateway/">Sign in for full access</a>
     </div>
 
     <div class="layout">
@@ -89,7 +112,6 @@
             <div class="meta-grid" id="sampleMeta"></div>
             <div class="action-row">
               <button class="btn primary" id="loadSample" type="button">Load Sample</button>
-              <button class="btn" id="rerun" type="button" disabled>Re-run</button>
             </div>
           </div>
 
@@ -102,6 +124,7 @@
               <button class="preset-btn" data-preset="phase2" type="button">Phase<small>contrast 2</small></button>
             </div>
             <div class="action-row">
+              <button class="btn primary" id="rerun" type="button" disabled>Apply</button>
               <button class="btn primary" id="applySettingsGroup" type="button">Apply to group</button>
             </div>
             <button class="btn" id="autoDetectModeGroup" type="button" style="width:100%;margin-top:7px;">Auto detect microscope</button>
@@ -109,6 +132,7 @@
 
           <div class="section">
             <div class="section-title">Segmentation</div>
+            <div id="orientationPanelWarning" class="orientation-panel-warning" hidden></div>
             <div class="control">
               <label for="varianceRadius">Variance radius</label>
               <div class="range-row">
@@ -161,7 +185,7 @@
               <input id="fovMode" type="hidden" value="cutoff">
             </div>
             <div class="control">
-              <label for="scratchOrientation">Scratch orientation</label>
+              <label id="scratchOrientationLabel" class="orientation-label" for="scratchOrientation">Scratch orientation</label>
               <select id="scratchOrientation">
                 <option value="vertical">Vertical scratch</option>
                 <option value="horizontal">Horizontal scratch</option>
@@ -306,6 +330,8 @@
           </div>
         </div>
 
+        <div id="orientationTopWarning" class="orientation-top-warning" hidden></div>
+
         <div class="drop-zone" id="dropZone">
           <div class="empty-state" id="emptyState">
             <div class="empty-icon">&#128300;</div>
@@ -360,7 +386,7 @@
       var bannerStrong = banner ? banner.querySelector('strong') : null;
       var exportIds = ['exportPng', 'exportGroupPng', 'exportPlots', 'exportCsv', 'exportExcel'];
       var exportsRequireAccess = false;
-      var exportGateMessage = 'Full CSV, Excel, PNG, and ZIP exports require registered beta access.';
+      var exportGateMessage = 'Full CSV, Excel, PNG, and ZIP exports require registered academic access.';
 
       function showGateBanner(title, message) {
         if (!banner) return;
@@ -372,7 +398,7 @@
       if (isDemo) {
         exportsRequireAccess = true;
         document.documentElement.dataset.accessMode = 'demo';
-        showGateBanner('Demo mode', 'Load local images and review overlays without signing in. Full CSV, Excel, PNG, and ZIP exports require registered beta access.');
+        showGateBanner('Demo mode', 'Load local images and review overlays without signing in. Full CSV, Excel, PNG, and ZIP exports require registered academic access.');
       } else if (window.CytomoveAuth && window.CytomoveAuth.isConfigured()) {
         document.documentElement.dataset.accessMode = 'checking';
         window.CytomoveAuth.getAccessSnapshot().then(function (snapshot) {
@@ -384,8 +410,8 @@
           exportsRequireAccess = true;
           document.documentElement.dataset.accessMode = snapshot.signedIn ? 'pending' : 'signed-out';
           exportGateMessage = snapshot.signedIn
-            ? 'Your account is signed in but email verification is not complete. Full CSV, Excel, PNG, and ZIP exports require a verified Academic Beta account.'
-            : 'Sign in from the Academic Beta gateway with a verified account to use full CSV, Excel, PNG, and ZIP exports.';
+            ? 'Your account is signed in but email verification is not complete. Full CSV, Excel, PNG, and ZIP exports require a verified academic account.'
+            : 'Sign in from the Academic Access gateway with a verified account to use full CSV, Excel, PNG, and ZIP exports.';
           showGateBanner(snapshot.signedIn ? 'Email verification required' : 'Sign in required', exportGateMessage);
         }).catch(function (error) {
           exportsRequireAccess = true;
@@ -408,7 +434,7 @@
 
         var logMsg = document.getElementById('logMsg');
         if (logMsg) {
-          logMsg.innerHTML = '<strong>Beta access:</strong> ' + exportGateMessage;
+          logMsg.innerHTML = '<strong>Academic access:</strong> ' + exportGateMessage;
         }
         if (banner) banner.hidden = false;
       }, true);
@@ -454,6 +480,46 @@
           if (event.key === 'Escape') closeDropdown();
         });
       }
+
+      // ---- Theme picker (Light / Dark / Auto) ----
+      (function () {
+        var KEY = 'cytomove-theme';
+        var root = document.documentElement;
+        var seg = document.getElementById('themeSeg');
+        var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+        function getChoice() {
+          try { return localStorage.getItem(KEY) || 'auto'; } catch (e) { return 'auto'; }
+        }
+        function resolve(choice) {
+          if (choice === 'auto') return (mq && mq.matches) ? 'dark' : 'light';
+          return choice;
+        }
+        function apply(choice) {
+          root.dataset.theme = resolve(choice);
+          root.dataset.themeChoice = choice;
+          if (seg) {
+            var opts = seg.querySelectorAll('.theme-opt');
+            for (var i = 0; i < opts.length; i++) {
+              opts[i].setAttribute('aria-pressed', opts[i].dataset.themeChoice === choice ? 'true' : 'false');
+            }
+          }
+        }
+        if (seg) {
+          seg.addEventListener('click', function (event) {
+            var btn = event.target.closest ? event.target.closest('.theme-opt') : null;
+            if (!btn) return;
+            var choice = btn.dataset.themeChoice;
+            try { localStorage.setItem(KEY, choice); } catch (e) {}
+            apply(choice);
+          });
+        }
+        if (mq) {
+          var onChange = function () { if (getChoice() === 'auto') apply('auto'); };
+          if (mq.addEventListener) mq.addEventListener('change', onChange);
+          else if (mq.addListener) mq.addListener(onChange);
+        }
+        apply(getChoice());
+      }());
 
       if (signOutBtn) {
         signOutBtn.addEventListener('click', async function () {

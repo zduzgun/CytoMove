@@ -40,7 +40,7 @@
   function statusLabel(status) {
     if (!status) return "Not registered";
     if (status === "email_verified") return "Email verified";
-    if (approvedStatuses().indexOf(status) !== -1) return "Approved beta access";
+    if (approvedStatuses().indexOf(status) !== -1) return "Approved academic access";
     if (status === "manual_review") return "Manual review";
     if (status === "commercial_contact") return "Commercial licence review";
     return "Email verification required";

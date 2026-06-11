@@ -1,4 +1,4 @@
-// Desktop auth: MANDATORY sign-in gate. The app is blocked until a verified
+﻿// Desktop auth: MANDATORY sign-in gate. The app is blocked until a verified
 // academic account is signed in. Email/password works in-app; Google uses the
 // system browser + a localhost loopback (PKCE) captured by the main process.
 (function () {
@@ -198,7 +198,7 @@
   async function handleSignIn() {
     var result = await window.CytomoveAuth.signInWithPassword(authEmail.value.trim(), authPassword.value);
     if (result.error) throw result.error;
-    setStatus('Signed in. Checking access…', false);
+    setStatus('Signed in. Checking accessâ€¦', false);
     await refreshAndGate();
   }
 
@@ -234,7 +234,7 @@
         if (res.error) throw res.error;
         var waitPromise = window.cytomoveDesktop.awaitGoogleCallback();
         await window.cytomoveDesktop.openExternal(res.data.url);
-        setStatus('Opened Google in your browser. Waiting for sign-in to complete…', false);
+        setStatus('Opened Google in your browser. Waiting for sign-in to completeâ€¦', false);
         var cbUrl = await waitPromise;
         var u = new URL(cbUrl);
         var errDesc = u.searchParams.get('error_description');

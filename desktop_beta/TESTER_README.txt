@@ -1,16 +1,22 @@
-Cytomove Desktop Alpha 0.1
+Cytomove Desktop 1.0
 
 Purpose
-This is an early Windows desktop alpha for trusted academic testing of Cytomove wound-healing analysis.
+This is a Windows desktop release for verified academic testing of Cytomove wound-healing analysis.
 
-Alpha access window
-This tester build is active for 30 days on first launch. After that window, the app shows a thank-you/update screen and links back to cytomove.com for the next build or beta instructions.
-Please do not treat this as a final licensed product; it is an active-development alpha for feedback.
+Sign-in
+The desktop app requires a verified academic access account. On launch you will see a sign-in screen
+(email/password or Google); the workspace unlocks after you sign in with a verified account.
+Create/verify an account at https://cytomove.com and download the app from https://cytomove.com/download/
+
+Release notice
+This is an active-development academic release for feedback, not a final licensed product. Access is controlled by your
+verified academic account (sign-in required); there is no time-limited trial.
 
 How to run
-1. Extract the ZIP folder first. Do not run the app directly from inside the ZIP.
-2. Open "Cytomove Desktop Alpha.exe".
-3. Drag one PNG/JPG image for single-image analysis, or drag multiple PNG/JPG images to create a group.
+1. Installer: run the setup .exe and follow the prompts (recommended; faster launches).
+   Portable: just run the single .exe, nothing to install (first launch is a little slower).
+2. Sign in with your verified academic account.
+3. Drag one PNG/JPG image for single-image analysis, or drag multiple images to create a group.
 
 What to test
 - Single-image loading and segmentation.
@@ -21,13 +27,14 @@ What to test
 - Manual correction modes if the mask misses or over-detects regions.
 
 Privacy
-Microscopy assay images stay on this computer. The app may check cytomove.com for update/status messages, but it does not upload images or analysis results.
+Microscopy assay images stay on this computer. The app talks to the network only for sign-in and for
+optional update/status messages; it does not upload images or analysis results.
 
 Known notes
-- Alpha 0.1 is free and does not require login.
-- TIFF is not recommended for this alpha. Use PNG/JPG exports where possible.
-- Windows may show an unknown publisher warning because this alpha is not code-signed yet.
+- TIFF is not recommended in this release. Use PNG/JPG where possible.
+- Windows may show an unknown-publisher (SmartScreen) warning because this build is not code-signed yet:
+  choose "More info" then "Run anyway".
 
 Feedback
 Send notes through https://cytomove.com/#feedback-title
-Please include Windows version, image type, what worked, and what failed.
+Please include your Windows version, image type, what worked, and what failed.

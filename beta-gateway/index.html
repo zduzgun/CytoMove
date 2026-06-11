@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cytomove Academic Beta</title>
-  <meta name="description" content="Enter the Cytomove Academic Beta or continue to a loginless browser demo.">
+  <title>Cytomove Academic Access</title>
+  <meta name="description" content="Enter the Cytomove Academic Access or continue to a loginless browser demo.">
   <link rel="canonical" href="https://cytomove.com/beta-gateway/">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' stroke='%230f9f8f' stroke-width='2' fill='white'/><circle cx='10' cy='16' r='4' fill='%23bdeee8' stroke='%230f9f8f' stroke-width='1.4'/><circle cx='22' cy='16' r='4' fill='%23bdeee8' stroke='%230f9f8f' stroke-width='1.4'/><path d='M14 12.7L18.5 16 14 19.3' stroke='%2308766c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
   <style>
@@ -596,21 +596,21 @@
         </span>
         <span class="logo-text">Cytomove</span>
       </a>
-      <nav class="header-links" aria-label="Beta information">
+      <nav class="header-links" aria-label="Access information">
         <a href="../privacy/">Privacy</a>
-        <a href="../beta-terms/">Beta terms</a>
+        <a href="../beta-terms/">Access terms</a>
       </nav>
     </header>
 
     <main class="gateway">
-      <h1>Cytomove Academic Beta</h1>
-      <p class="lead">Reviewable scratch wound healing analysis in your browser, with a loginless demo and registered full beta access for academic use.</p>
+      <h1>Cytomove Academic Access</h1>
+      <p class="lead">Reviewable scratch wound healing analysis in your browser, with a loginless demo and registered full access for academic use.</p>
 
       <section class="choice-grid" aria-label="Choose how to enter Cytomove">
         <article class="choice-card">
           <div class="choice-top">
             <div>
-              <div class="choice-label">Full beta access</div>
+              <div class="choice-label">Full access</div>
               <h2>Sign in with email</h2>
             </div>
             <div class="choice-icon" aria-hidden="true">
@@ -620,7 +620,7 @@
               </svg>
             </div>
           </div>
-          <p>Create an account with email verification, then use the same account in the web and desktop beta. Free for academic use.</p>
+          <p>Create an account with email verification, then use the same account in the web and desktop release. Free for academic use.</p>
           <div class="email-auth-form" aria-label="Email and password sign-in">
             <div class="auth-tabs" role="tablist" aria-label="Choose account action">
               <button class="auth-tab active" id="tabSignup" type="button" role="tab" aria-selected="true">Create account</button>
@@ -652,7 +652,7 @@
             <span>Prefer OAuth?</span>
             <button class="text-button" id="googleSignIn" type="button">Continue with Google</button>
           </div>
-          <div class="note">Email verification activates academic beta access. Commercial use requires a separate licence.</div>
+          <div class="note">Email verification activates academic access. Commercial use requires a separate licence.</div>
           <div class="status-message" id="authStatus" hidden></div>
           <div class="account-panel" id="accountPanel" hidden></div>
         </article>
@@ -675,13 +675,13 @@
           <div class="actions">
             <a class="button demo" href="../prototype_refactor/?mode=demo">Open demo</a>
           </div>
-          <div class="note">Full CSV, Excel, PNG, and ZIP exports require registered beta access.</div>
+          <div class="note">Full CSV, Excel, PNG, and ZIP exports require registered academic access.</div>
         </article>
       </section>
 
-      <section class="trust-strip" aria-label="Beta access notes">
+      <section class="trust-strip" aria-label="Academic access notes">
         <div class="trust-item"><span></span>Images stay local in your browser</div>
-        <div class="trust-item"><span></span>Academic beta is free</div>
+        <div class="trust-item"><span></span>Academic access is free</div>
         <div class="trust-item"><span></span>Full export requires registration</div>
         <div class="trust-item"><span></span>Commercial use requires a separate licence</div>
       </section>
@@ -823,7 +823,7 @@
         var email = snapshot.profile && snapshot.profile.email ? snapshot.profile.email : snapshot.session.user.email;
         var statusText = snapshot.label || 'Email verification required';
         var accessCopy = snapshot.approved
-          ? 'Full beta export is available for this verified account.'
+          ? 'Full export is available for this verified account.'
           : 'Check your email to verify this account. Demo mode remains available until verification is complete.';
 
         accountPanel.hidden = false;
@@ -856,7 +856,7 @@
             return;
           }
           if (snapshot.approved && !stayOnGateway) {
-            setStatus('Signed in. Opening the app…', false);
+            setStatus('Signed in. Opening the appâ€¦', false);
             window.location.replace(appUrl);
           }
         } catch (error) {
@@ -896,7 +896,7 @@
       async function handleSignIn() {
         var result = await window.CytomoveAuth.signInWithPassword(authEmail.value.trim(), authPassword.value);
         if (result.error) throw result.error;
-        setStatus('Signed in. Checking beta access status...', false);
+        setStatus('Signed in. Checking academic access status...', false);
         await refreshAccount();
       }
 

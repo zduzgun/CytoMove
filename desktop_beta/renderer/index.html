@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cytomove Desktop Alpha</title>
-  <meta name="description" content="Desktop-local wound healing scratch assay segmentation alpha. Local images only - privacy first.">
+  <title>Cytomove Desktop</title>
+  <meta name="description" content="Desktop-local wound healing scratch assay segmentation. Local images only - privacy first.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -24,7 +24,7 @@
         </div>
         <div>
           <div class="brand-name">Cytomove</div>
-          <div class="brand-tag">Area-First Segmentation Lab &mdash; Desktop Alpha</div>
+          <div class="brand-tag">Area-First Segmentation Lab &mdash; Desktop</div>
         </div>
       </div>
       <div class="status-pills">
@@ -96,7 +96,6 @@
             <div class="meta-grid" id="sampleMeta"></div>
             <div class="action-row">
               <button class="btn primary" id="loadSample" type="button">Load Sample</button>
-              <button class="btn" id="rerun" type="button" disabled>Re-run</button>
             </div>
           </div>
 
@@ -109,6 +108,7 @@
               <button class="preset-btn" data-preset="phase2" type="button">Phase<small>contrast 2</small></button>
             </div>
             <div class="action-row">
+              <button class="btn primary" id="rerun" type="button" disabled>Apply</button>
               <button class="btn primary" id="applySettingsGroup" type="button">Apply to group</button>
             </div>
             <button class="btn" id="autoDetectModeGroup" type="button" style="width:100%;margin-top:7px;">Auto detect microscope</button>
@@ -116,6 +116,7 @@
 
           <div class="section">
             <div class="section-title">Segmentation</div>
+            <div id="orientationPanelWarning" class="orientation-panel-warning" hidden></div>
             <div class="control">
               <label for="varianceRadius">Variance radius</label>
               <div class="range-row">
@@ -168,7 +169,7 @@
               <input id="fovMode" type="hidden" value="cutoff">
             </div>
             <div class="control">
-              <label for="scratchOrientation">Scratch orientation</label>
+              <label id="scratchOrientationLabel" class="orientation-label" for="scratchOrientation">Scratch orientation</label>
               <select id="scratchOrientation">
                 <option value="vertical">Vertical scratch</option>
                 <option value="horizontal">Horizontal scratch</option>
@@ -313,6 +314,8 @@
           </div>
         </div>
 
+        <div id="orientationTopWarning" class="orientation-top-warning" hidden></div>
+
         <div class="drop-zone" id="dropZone">
           <div class="empty-state" id="emptyState">
             <div class="empty-icon">&#128300;</div>
@@ -357,14 +360,14 @@
   </main>
   <div class="trial-gate" id="trialGate" hidden>
     <section class="trial-card" id="trialWelcome" role="dialog" aria-modal="true" aria-labelledby="trialWelcomeTitle" hidden>
-      <div class="trial-kicker">Desktop Alpha</div>
-      <h1 class="trial-title" id="trialWelcomeTitle">Welcome to Cytomove Desktop Alpha</h1>
+      <div class="trial-kicker">Desktop</div>
+      <h1 class="trial-title" id="trialWelcomeTitle">Welcome to Cytomove Desktop</h1>
       <p class="trial-text">
         Thank you for testing Cytomove. This build is actively developed and should be used as a research-assist tool while you review the output before scientific decisions.
       </p>
       <div class="trial-meter">
         <div>
-          <span class="trial-label">Alpha access</span>
+          <span class="trial-label">Academic access</span>
           <strong>30 days</strong>
         </div>
         <div>
@@ -384,12 +387,12 @@
 
     <section class="trial-card trial-card-expired" id="trialExpired" role="dialog" aria-modal="true" aria-labelledby="trialExpiredTitle" hidden>
       <div class="trial-kicker">Testing window ended</div>
-      <h1 class="trial-title" id="trialExpiredTitle">Thank you for testing Cytomove Desktop Alpha</h1>
+      <h1 class="trial-title" id="trialExpiredTitle">Thank you for testing Cytomove Desktop</h1>
       <p class="trial-text" id="trialExpiredReason">
-        This alpha build has reached its 30-day testing window.
+        This desktop build has reached its 30-day testing window.
       </p>
       <p class="trial-text">
-        Please visit cytomove.com for updates, the next private beta build, or access instructions.
+        Please visit cytomove.com for updates, the next controlled academic release build, or access instructions.
       </p>
       <div class="trial-actions">
         <button class="btn primary" id="trialExpiredVisit" type="button">Open cytomove.com</button>
@@ -401,9 +404,9 @@
 
   <div class="desktop-modal-backdrop auth-modal gate" id="authModalBackdrop" hidden>
     <section class="trial-card auth-card" role="dialog" aria-modal="true" aria-labelledby="authCardTitle">
-      <div class="trial-kicker">Cytomove Desktop &middot; Academic Beta</div>
+      <div class="trial-kicker">Cytomove Desktop &middot; Academic Access</div>
       <h1 class="trial-title" id="authCardTitle">Sign in to continue</h1>
-      <p class="trial-text auth-lead">Cytomove Desktop requires a verified academic account. Sign in or create one to unlock local analysis and full exports. Academic use is free during the beta.</p>
+      <p class="trial-text auth-lead">Cytomove Desktop requires a verified academic account. Sign in or create one to unlock local analysis and full exports. Free for academic use.</p>
 
       <div id="authForm">
       <div class="auth-tabs" role="tablist" aria-label="Choose account action">
@@ -436,7 +439,7 @@
         <span>Prefer OAuth?</span>
         <button class="auth-text-button" id="googleSignIn" type="button">Continue with Google</button>
       </div>
-      <div class="auth-note">Email verification activates academic beta access. The verification link opens in your web browser; after verifying, sign in here with the same email and password.</div>
+      <div class="auth-note">Email verification activates academic access access. The verification link opens in your web browser; after verifying, sign in here with the same email and password.</div>
       </div>
 
       <div id="authPending" hidden>
@@ -458,4 +461,3 @@
   <script src="auth-ui.js"></script>
 </body>
 </html>
-

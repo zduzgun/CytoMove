@@ -25,6 +25,7 @@
 
   const CYTOMOVE_ALGORITHM_VERSION = 'prototype-whst-variance-v0.4';
   const SHOW_DEMO_CALIBRATION = false;
+  const AUTO_APPLY_DELAY_MS = 1000;
 
   const state = {
     mode:'single',
@@ -85,7 +86,10 @@
     microscopeMode:     document.getElementById('microscopeMode'),
     fovMode:            document.getElementById('fovMode'),
     scratchOrientation: document.getElementById('scratchOrientation'),
+    scratchOrientationLabel: document.getElementById('scratchOrientationLabel'),
     orientationHint:    document.getElementById('orientationHint'),
+    orientationPanelWarning: document.getElementById('orientationPanelWarning'),
+    orientationTopWarning: document.getElementById('orientationTopWarning'),
     deskewAngle:        document.getElementById('deskewAngle'),
     deskewAngleVal:     document.getElementById('deskewAngleVal'),
     autoCropFov:        document.getElementById('autoCropFov'),
@@ -167,17 +171,25 @@
   function setLog(msg, timer='') { el.logMsg.innerHTML=msg; el.timerMsg.textContent=timer; }
 
   function localDesktopVersion() {
-    return window.cytomoveDesktop?.version || '0.1.0-alpha.1';
+    return window.cytomoveDesktop?.version || '1.0.0';
   }
 
   function compareVersions(a, b) {
-    const pa=String(a||'').match(/\d+/g)?.map(Number)||[];
-    const pb=String(b||'').match(/\d+/g)?.map(Number)||[];
-    const length=Math.max(pa.length,pb.length);
-    for(let i=0;i<length;i++) {
-      const da=pa[i]||0, db=pb[i]||0;
+    const parse=value=>{
+      const raw=String(value||'').trim();
+      const [core,pre='']=raw.split('-',2);
+      const parts=core.match(/\d+/g)?.slice(0,3).map(Number)||[];
+      while(parts.length<3) parts.push(0);
+      return {parts,pre};
+    };
+    const pa=parse(a), pb=parse(b);
+    for(let i=0;i<3;i++) {
+      const da=pa.parts[i]||0, db=pb.parts[i]||0;
       if(da!==db) return da-db;
     }
+    if(pa.pre&&!pb.pre) return -1;
+    if(!pa.pre&&pb.pre) return 1;
+    if(pa.pre&&pb.pre) return pa.pre.localeCompare(pb.pre,undefined,{numeric:true,sensitivity:'base'});
     return 0;
   }
 
@@ -195,7 +207,7 @@
       el.desktopLinkStatus.classList.toggle('offline',false);
     }
     if(el.desktopLinkMessage) {
-      el.desktopLinkMessage.innerHTML=`<strong>${updateAvailable?'Update available':'Connected to Cytomove web'}.</strong> ${escHtml(manifest.message||'Desktop status received.')}<br><small>Local ${escHtml(current)} · latest ${escHtml(latest)} · channel ${escHtml(manifest.channel||'alpha')}</small>`;
+      el.desktopLinkMessage.innerHTML=`<strong>${updateAvailable?'Update available':'Connected to Cytomove web'}.</strong> ${escHtml(manifest.message||'Desktop status received.')}<br><small>Local ${escHtml(current)} · latest ${escHtml(latest)} · channel ${escHtml(manifest.channel||'release')}</small>`;
     }
     if(el.desktopModuleList) {
       const modules=Array.isArray(manifest.modules)?manifest.modules:[];
@@ -252,7 +264,7 @@
 
   function trialWelcomeKey(trial) {
     const version=window.cytomoveDesktop?.version||'dev';
-    return `cytomove.desktopAlpha.welcomeSeen.${version}.${trial?.trialVersion||'alpha'}`;
+    return `cytomove.desktopRelease.welcomeSeen.${version}.${trial?.trialVersion||'release'}`;
   }
 
   function hasSeenTrialWelcome(trial) {
@@ -284,8 +296,8 @@
     if(el.trialExpiresAt) el.trialExpiresAt.textContent=formatTrialDate(trial?.expiresAt);
     if(el.trialExpiredReason) {
       el.trialExpiredReason.textContent=trial?.clockInvalid
-        ? 'The system clock appears to have been moved backwards, so this alpha build is paused for safety.'
-        : 'This alpha build has reached its 30-day testing window.';
+        ? 'The system clock appears to have been moved backwards, so this desktop build is paused for safety.'
+        : 'This desktop build has reached its 30-day testing window.';
     }
   }
 
@@ -298,24 +310,15 @@
   }
 
   async function initTrialGate() {
-    if(!window.cytomoveDesktop?.getTrialState) return;
-    try {
-      const trial=await window.cytomoveDesktop.getTrialState();
-      if(trial.expired||trial.clockInvalid) {
-        showTrialPanel('expired',trial);
-        return;
-      }
-      if(!hasSeenTrialWelcome(trial)) showTrialPanel('welcome',trial);
-    } catch(err) {
-      console.warn(err);
-      setLog(`<strong>Trial check failed.</strong> ${escHtml(err.message||err)} Local analysis remains available.`);
-    }
+    // Trial gate disabled: access is controlled by the mandatory sign-in gate
+    // (auth-ui.js). No 30-day window, no welcome/expiry screens.
+    hideTrialPanel();
   }
 
   const BUTTON_TOOLTIPS = {
     deleteGroup:'Remove the selected loaded group from this browser session.',
     loadSample:'Load the selected calibration sample into the main canvas.',
-    rerun:'Run segmentation again with the current settings.',
+    rerun:'Analyze the current image with the current settings.',
     applySettingsGroup:'Re-analyze all cards in the selected group with current settings.',
     exportGroupPng:'Download one ZIP file containing contour overlay PNGs for the selected group.',
     exportPlots:'Download wound area and width plots for the selected group as one ZIP.',
@@ -701,7 +704,10 @@
     state.cropManual=!!apply;
     el.applyCrop.disabled=true;
     el.canvas.classList.remove('grabbing');
-    if(apply) runSegmentation();
+    if(apply) {
+      drawLoadedImagePreview('<strong>Crop applied.</strong> Auto-applying in 1 second...');
+      scheduleAutoApply('<strong>Crop applied.</strong> Auto-applying in 1 second...');
+    }
   }
 
   function resetCropAndZoom() {
@@ -745,7 +751,9 @@
     transformed.onload=()=>{
       state.image=transformed;
       resetCropAndZoom();
-      runSegmentation({restoreManual:!!options.restoreManual});
+      if(options.analyze) runSegmentation({restoreManual:!!options.restoreManual});
+      else if(options.restoreGroupResult&&restoreGroupResultToMainCanvas(state.sample)) return;
+      else previewLoadedImageAndMaybeAutoApply(options.logMessage,!!options.autoApplyAfterLoad,options.autoApplyMessage);
     };
     transformed.src=transformImage(state.imageOriginal,effectiveRotationDeg(),angle);
   }
@@ -758,7 +766,66 @@
 
   function deskewCurrentImage() {
     if(!state.imageOriginal) return;
-    applyImageTransform();
+    const message='<strong>Fine rotation changed.</strong> Auto-applying in 1 second...';
+    applyImageTransform({autoApplyAfterLoad:true,logMessage:message,autoApplyMessage:message});
+  }
+
+  function clearAnalysisState() {
+    state.result=null;
+    state.varMap=null; state.maskData=null; state.autoMaskData=null; state.fieldData=null; state.sourceData=null;
+    state.grayData=null; state.darkGuideThreshold=0;
+    state.brushHistory=[];
+    resetBrushStats(false);
+    renderMetrics();
+    el.exportPng.disabled=true;
+    el.exportCsv.disabled=true;
+    el.exportExcel.disabled=true;
+    if(state.mode!=='group') {
+      el.exportGroupPng.disabled=true;
+      el.exportPlots.disabled=true;
+      el.showAreaPlot.disabled=true;
+      el.showWidthPlot.disabled=true;
+    }
+  }
+
+  function drawLoadedImagePreview(message) {
+    if(!state.image) return;
+    const canvas=el.canvas;
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    canvas.width=state.image.naturalWidth||state.image.width;
+    canvas.height=state.image.naturalHeight||state.image.height;
+    ctx.drawImage(state.image,0,0,canvas.width,canvas.height);
+    clearAnalysisState();
+    el.canvasMeta.textContent=`${canvas.width}x${canvas.height} px`;
+    el.rerun.disabled=false;
+    syncLabels();
+    setSpinner(false);
+    setLog(message||'<strong>Image ready.</strong> Adjust settings, then click Apply to analyze this image.');
+  }
+
+  function previewLoadedImageAndMaybeAutoApply(message, shouldAutoApply=false, autoApplyMessage='<strong>Image ready.</strong> Auto-applying the first image in 1 second...') {
+    drawLoadedImagePreview(message);
+    if(shouldAutoApply) scheduleAutoApply(autoApplyMessage);
+  }
+
+  function cancelAutoApply() {
+    if(state.autoApplyTimer) {
+      window.clearTimeout(state.autoApplyTimer);
+      state.autoApplyTimer=null;
+    }
+  }
+
+  function scheduleAutoApply(message='<strong>Settings changed.</strong> Auto-applying in 1 second...') {
+    if(!state.image||state.cropEditing) return;
+    cancelAutoApply();
+    el.rerun.disabled=false;
+    setLog(message);
+    state.autoApplyTimer=window.setTimeout(()=>{
+      state.autoApplyTimer=null;
+      if(!state.image||state.cropEditing) return;
+      syncLabels();
+      runSegmentation();
+    },AUTO_APPLY_DELAY_MS);
   }
 
   // 4. Variance filter â€” integral image O(1) per pixel (matches ImageJ Variance... radius=R)
@@ -887,14 +954,35 @@
   }
 
   function showOrientationHint(message='') {
-    if(!el.orientationHint) return;
     if(!message) {
-      el.orientationHint.hidden=true;
-      el.orientationHint.textContent='';
+      if(el.orientationHint) {
+        el.orientationHint.hidden=true;
+        el.orientationHint.textContent='';
+      }
+      if(el.orientationTopWarning) {
+        el.orientationTopWarning.hidden=true;
+        el.orientationTopWarning.textContent='';
+      }
+      if(el.orientationPanelWarning) {
+        el.orientationPanelWarning.hidden=true;
+        el.orientationPanelWarning.textContent='';
+      }
+      if(el.scratchOrientationLabel) el.scratchOrientationLabel.classList.remove('orientation-alert');
       return;
     }
-    el.orientationHint.textContent=message;
-    el.orientationHint.hidden=false;
+    if(el.orientationHint) {
+      el.orientationHint.textContent=message;
+      el.orientationHint.hidden=false;
+    }
+    if(el.orientationTopWarning) {
+      el.orientationTopWarning.textContent=message;
+      el.orientationTopWarning.hidden=false;
+    }
+    if(el.orientationPanelWarning) {
+      el.orientationPanelWarning.textContent=message;
+      el.orientationPanelWarning.hidden=false;
+    }
+    if(el.scratchOrientationLabel) el.scratchOrientationLabel.classList.add('orientation-alert');
   }
 
   function renderOrientationSeriesWarning(message='') {
@@ -904,8 +992,9 @@
   }
 
   async function warnIfHorizontalScratchDetected(samples=selectedGroupSamples()) {
-    if(el.scratchOrientation.value!=='vertical'||!samples.length) {
+    if(!samples.length) {
       showOrientationHint('');
+      renderOrientationSeriesWarning('');
       return;
     }
     try {
@@ -916,8 +1005,14 @@
       }
       const horizontal=votes.filter(v=>v.orientation==='horizontal').length;
       const vertical=votes.filter(v=>v.orientation==='vertical').length;
-      if(horizontal>vertical&&horizontal>0) {
+      const detectedOrientation=horizontal>vertical&&horizontal>0?'horizontal':vertical>horizontal&&vertical>0?'vertical':'unknown';
+      const selectedOrientation=el.scratchOrientation.value||'vertical';
+      if(detectedOrientation==='horizontal'&&selectedOrientation!=='horizontal') {
         const msg='Horizontal scratch pattern detected. Use Scratch orientation -> Horizontal scratch to rotate images into vertical analysis view.';
+        showOrientationHint(msg);
+        renderOrientationSeriesWarning(msg);
+      } else if(detectedOrientation==='vertical'&&selectedOrientation==='horizontal') {
+        const msg='Vertical scratch pattern detected. Use Scratch orientation -> Vertical scratch for this image.';
         showOrientationHint(msg);
         renderOrientationSeriesWarning(msg);
       } else {
@@ -1565,7 +1660,7 @@
       state.result=null;
       renderMetrics();
       const fileHint=isFileProtocol()
-        ? ' Desktop Alpha runs from local files; use the Open button/drag-drop for microscopy images.'
+        ? ' Desktop runs from local files; use the Open button/drag-drop for microscopy images.'
         : '';
       setLog(`<strong>Segmentation failed.</strong>${fileHint} ${err.name||'Error'}: ${err.message||err}`);
     } finally {
@@ -2178,6 +2273,48 @@
     updateGroupCardResult(sample,enriched);
     updateGroupCardPreview(sample,enriched);
     renderSeriesSummary(selectedGroupSamples());
+  }
+
+  function restoreGroupResultToMainCanvas(sample) {
+    if(!sample?.id) return false;
+    const override=state.manualOverrides[sample.id];
+    const result=override?.result||state.groupResults[sample.id];
+    const source=override?.sourceData||result?.src;
+    const field=override?.fieldData||result?.field;
+    const mask=override?.mask||result?.mask;
+    if(!result||!source||!field||!mask) return false;
+    state.result={...result};
+    state.sourceData=source;
+    state.fieldData=field;
+    state.varMap=override?.varMap||result?.varMap||null;
+    state.maskData=new Uint8Array(mask);
+    state.autoMaskData=new Uint8Array(mask);
+    state.grayData=null;
+    state.darkGuideThreshold=0;
+    state.brushHistory=[];
+    const restoredSettings=settingsFromResult(result);
+    if(restoredSettings) {
+      state.sampleSettings[sample.id]=restoredSettings;
+      applyPanelSettings(restoredSettings);
+    }
+    const W=result.analysisW||result.width||source.width||el.canvas.width;
+    const H=result.analysisH||result.height||source.height||el.canvas.height;
+    el.canvas.width=W;
+    el.canvas.height=H;
+    state.crop=result.crop?{...result.crop}:state.crop;
+    resetBrushStats(false);
+    drawCanvas(source,state.maskData,field,state.varMap,W,H,state.result?.maxV||1);
+    renderMetrics();
+    el.canvasMeta.textContent=`${W}x${H} px restored group analysis`;
+    el.rerun.disabled=false;
+    el.exportPng.disabled=false;
+    el.exportCsv.disabled=false;
+    el.exportExcel.disabled=false;
+    updateGroupNavButtons();
+    setSpinner(false);
+    setLog('<strong>Group result restored.</strong> Existing analysis is shown for this image. Click Apply to re-analyze with changed settings.');
+    warnIfHorizontalScratchDetected([sample]);
+    return true;
   }
 
   function applyManualOverrideToCurrentSample() {
@@ -3034,6 +3171,7 @@
     return selectedGroupSamples().map(s=>`${s.id}:${s.path}:${s.time}`).join('|');
   }
   function clearMainImage() {
+    cancelAutoApply();
     state.image=null; state.imageOriginal=null; state.sample=null; state.result=null;
     state.maskData=null; state.autoMaskData=null; state.fieldData=null; state.sourceData=null;
     state.grayData=null; state.varMap=null; state.imageName='';
@@ -3071,7 +3209,7 @@
       el.sampleSelect.value=sample.id;
       updateSampleMeta();
     }
-    loadImage(sampleUrl(sample),sample,sample.path,true);
+    loadImage(sampleUrl(sample),sample,sample.path,true,{restoreGroupResult:true});
   }
   function stepGroupSample(delta) {
     const idx=currentGroupSampleIndex();
@@ -3792,12 +3930,12 @@
     el.canvasTitle.textContent=`Group view: ${group.label}`;
     el.canvasMeta.textContent=`${samples.map(s=>s.time).join(' / ')} - previews use current settings: ${currentGroupSettingsSummary()}`;
     el.exportPng.disabled=true;
-    el.exportGroupPng.disabled=!samples.length;
-    el.exportPlots.disabled=false;
-    el.showAreaPlot.disabled=false;
-    el.showWidthPlot.disabled=false;
-    el.exportCsv.disabled=false;
-    el.exportExcel.disabled=false;
+    el.exportGroupPng.disabled=true;
+    el.exportPlots.disabled=true;
+    el.showAreaPlot.disabled=true;
+    el.showWidthPlot.disabled=true;
+    el.exportCsv.disabled=true;
+    el.exportExcel.disabled=true;
     el.groupView.innerHTML=`
       <div class="series-summary" id="seriesSummary">
         ${seriesCard('Series QC','calculating',`0/${samples.length} images analysed`)}
@@ -3839,10 +3977,42 @@
         loadGroupSampleAt(selectedGroupSamples().findIndex(s=>s.id===sample.id));
       });
     });
-    renderGroupContours(samples,{force});
+    if(force) renderGroupContours(samples,{force});
+    else renderCachedGroupState(samples);
     warnIfHorizontalScratchDetected(samples);
     samples.forEach(s=>{ if(state.manualOverrides[s.id]) updateGroupCardResult(s,state.manualOverrides[s.id].result); });
-    if(samples.some(s=>state.groupResults[s.id])) renderSeriesSummary(samples);
+    updateGroupExportAvailability(samples);
+    renderSeriesSummary(samples);
+  }
+
+  function updateGroupExportAvailability(samples=selectedGroupSamples()) {
+    const analyzedCount=samples.filter(s=>state.manualOverrides[s.id]||state.groupResults[s.id]).length;
+    el.exportGroupPng.disabled=!samples.length||analyzedCount<samples.length;
+    el.exportPlots.disabled=analyzedCount<2;
+    el.showAreaPlot.disabled=analyzedCount<2;
+    el.showWidthPlot.disabled=analyzedCount<2;
+    el.exportCsv.disabled=analyzedCount<1;
+    el.exportExcel.disabled=analyzedCount<1;
+  }
+
+  function renderCachedGroupState(samples) {
+    samples.forEach(sample=>{
+      const result=state.manualOverrides[sample.id]||state.groupResults[sample.id];
+      const canvas=el.groupView.querySelector(`canvas[data-sample-id="${sample.id}"]`);
+      if(!canvas) return;
+      if(result?.src&&result?.mask) {
+        updateGroupCardPreview(sample,result);
+        updateGroupCardResult(sample,result);
+        return;
+      }
+      canvas.width=420; canvas.height=420;
+      const ctx=canvas.getContext('2d',{willReadFrequently:true});
+      ctx.fillStyle='#f8fbfa';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle='#5b7370';
+      ctx.font='600 13px Inter, sans-serif';
+      ctx.fillText('Ready for Apply to group',18,28);
+    });
   }
 
   async function renderGroupContours(samples, options={}) {
@@ -3900,11 +4070,12 @@
         state.groupResults[sample.id]=analysis;
         updateGroupCardResult(sample,analysis);
         updateGroupCardPreview(sample,analysis);
+        if(state.sample?.id===sample.id) restoreGroupResultToMainCanvas(sample);
+        updateGroupExportAvailability(samples);
         if(state.calibrationReport) {
           state.calibrationReport=buildCalibrationReport(Object.values(state.groupResults),samples);
           renderCalibrationReport();
         }
-        el.exportGroupPng.disabled=!samples.length;
         renderSeriesSummary(samples);
       } catch(err) {
         failPreview();
@@ -4090,7 +4261,8 @@
   }
 
   // Image load
-  function loadImage(src,sample=null,name='',keepMode=false) {
+  function loadImage(src,sample=null,name='',keepMode=false,options={}) {
+    cancelAutoApply();
     rememberCurrentSampleSettings();
     if(state.mode!=='single'&&!keepMode) setMode('single');
     setSpinner(true); setLog('Loading image...');
@@ -4109,8 +4281,14 @@
       el.adjustCrop.disabled=false; el.resetCrop.disabled=false; el.applyCrop.disabled=true;
       el.rotateImage.disabled=false; el.deskewMinus.disabled=false; el.deskewPlus.disabled=false;
       updateGroupNavButtons();
-      if(effectiveRotationDeg()||(Number(el.deskewAngle.value)||0)) applyImageTransform({restoreManual:true});
-      else runSegmentation({restoreManual:true});
+      const readyMessage='<strong>Image ready.</strong> Adjust settings on the first image, then click Apply. Use Apply to group when the settings look right.';
+      const showReadyPreview=()=> {
+        if(options.restoreGroupResult&&restoreGroupResultToMainCanvas(sample)) return;
+        previewLoadedImageAndMaybeAutoApply(readyMessage,!!options.autoApplyAfterLoad,options.autoApplyMessage);
+        if(sample) warnIfHorizontalScratchDetected([sample]);
+      };
+      if(effectiveRotationDeg()||(Number(el.deskewAngle.value)||0)) applyImageTransform({restoreManual:true,analyze:false,restoreGroupResult:!!options.restoreGroupResult,autoApplyAfterLoad:!!options.autoApplyAfterLoad,logMessage:readyMessage});
+      else showReadyPreview();
     };
     img.onerror=()=>{ setSpinner(false); setLog('<strong>Image load failed.</strong> Run a local HTTP server from the repo root (e.g. <code>python -m http.server</code>) to serve the wound healing archive.'); };
     img.src=src;
@@ -4224,7 +4402,7 @@
     if(images.length===1) {
       const singleUrl=URL.createObjectURL(images[0]);
       state.objectUrls.push(singleUrl);
-      loadImage(singleUrl,null,images[0].name);
+      loadImage(singleUrl,null,images[0].name,false,{autoApplyAfterLoad:true});
       return;
     }
     const groupLabel=await askCustomGroupName(images);
@@ -4303,6 +4481,7 @@
     el.closePlot.addEventListener('click',closePlotPanel);
     el.plotPanel.addEventListener('click',e=>{ if(e.target===el.plotPanel) closePlotPanel(); });
     el.applySettingsGroup.addEventListener('click',()=>{
+      cancelAutoApply();
       if(state.mode==='group') renderGroupView({force:true});
       else setMode('group',{force:true});
       const ratioNote=el.applyCropRatioGroup.checked&&state.cropManual&&state.crop
@@ -4319,18 +4498,31 @@
     if(el.autoCalibrateGroup) el.autoCalibrateGroup.addEventListener('click',autoCalibrateGroup);
     el.sampleSelect.addEventListener('change',updateSampleMeta);
     if(el.loadSample) el.loadSample.addEventListener('click',()=>{const s=selectedSample();loadImage(sampleUrl(s),s,s.path);});
-    el.rerun.addEventListener('click',()=>{syncLabels();runSegmentation();});
+    el.rerun.addEventListener('click',()=>{cancelAutoApply();syncLabels();runSegmentation();});
     el.fileInput.addEventListener('change',e=>{handleLocalFiles(e.target.files); e.target.value='';});
 
-    const rerunFromSegmentation=()=>{if(state.image&&!state.cropEditing)runSegmentation();};
+    const markAnalysisPending=(message='<strong>Settings changed.</strong> Auto-applying in 1 second...')=>{
+      if(!state.image||state.cropEditing) return;
+      drawLoadedImagePreview(message);
+      scheduleAutoApply(message);
+    };
     let _debounceTimer;
-    const debouncedRerun=()=>{clearTimeout(_debounceTimer);_debounceTimer=setTimeout(rerunFromSegmentation,180);};
-    const resetAutoCrop=()=>{state.crop=null;state.cropManual=false;if(state.cropEditing)drawCropEditor();else rerunFromSegmentation();};
-    bindNumberPair(el.varianceRadius,el.varianceRadiusVal,debouncedRerun);
-    bindNumberPair(el.thresholdOffset,el.thresholdOffsetVal,debouncedRerun);
-    bindNumberPair(el.minComponent,el.minComponentVal,debouncedRerun);
-    el.tinyIslandMode.addEventListener('change',rerunFromSegmentation);
-    bindNumberPair(el.fovCutoff,el.fovCutoffVal,debouncedRerun);
+    const debouncedPending=(message)=>{clearTimeout(_debounceTimer);_debounceTimer=setTimeout(()=>markAnalysisPending(message),180);};
+    const resetAutoCrop=()=>{
+      state.crop=null;state.cropManual=false;
+      if(state.cropEditing) drawCropEditor();
+      else markAnalysisPending('<strong>Crop reset.</strong> Auto-applying in 1 second...');
+    };
+    const bindPendingControl=(control,handler)=>{
+      if(!control) return;
+      control.addEventListener('input',handler);
+      control.addEventListener('change',handler);
+    };
+    bindNumberPair(el.varianceRadius,el.varianceRadiusVal,()=>debouncedPending());
+    bindNumberPair(el.thresholdOffset,el.thresholdOffsetVal,()=>debouncedPending());
+    bindNumberPair(el.minComponent,el.minComponentVal,()=>debouncedPending());
+    bindPendingControl(el.tinyIslandMode,()=>markAnalysisPending());
+    bindNumberPair(el.fovCutoff,el.fovCutoffVal,()=>debouncedPending());
     bindNumberPair(el.brushSize,el.brushSizeVal,()=>syncLabels());
     el.brushMode.addEventListener('click',e=>{
       const btn=e.target.closest('[data-brush-mode]'); if(!btn) return;
@@ -4362,7 +4554,7 @@
         const next=btn.dataset.fovMode||'full';
         if(next===el.fovMode.value) return;
         setMicroscopeMode(next,true);
-        rerunFromSegmentation();
+        markAnalysisPending('<strong>Microscope mode changed.</strong> Auto-applying in 1 second...');
       });
     });
     bindNumberPair(el.deskewAngle,el.deskewAngleVal,deskewCurrentImage);
@@ -4371,13 +4563,18 @@
       syncLabels();
       redrawCurrentCanvas();
     });
-    el.scratchOrientation.addEventListener('change',()=>{
+    const scratchOrientationChanged=()=>{
       showOrientationHint('');
       renderOrientationSeriesWarning('');
-      if(state.imageOriginal&&!state.cropEditing) applyImageTransform();
+      if(state.imageOriginal&&!state.cropEditing) {
+        const message='<strong>Scratch orientation changed.</strong> Auto-applying in 1 second...';
+        applyImageTransform({autoApplyAfterLoad:true,logMessage:message,autoApplyMessage:message});
+      }
       warnIfHorizontalScratchDetected(selectedGroupSamples());
-    });
-    el.autoCropFov.addEventListener('change',resetAutoCrop);
+    };
+    bindPendingControl(el.scratchOrientation,scratchOrientationChanged);
+    bindPendingControl(el.autoCropFov,resetAutoCrop);
+    bindPendingControl(el.applyCropRatioGroup,()=>markAnalysisPending('<strong>Group crop setting changed.</strong> Auto-applying in 1 second...'));
     el.adjustCrop.addEventListener('click',enterCropEdit);
     el.applyCrop.addEventListener('click',()=>leaveCropEdit(true));
     el.resetCrop.addEventListener('click',resetAutoCrop);
@@ -4415,8 +4612,9 @@
         syncLabels();
         document.querySelectorAll('.preset-btn').forEach(b=>b.classList.toggle('active',b===btn));
         if(state.image) {
-          if(orientationChanged&&state.imageOriginal&&!state.cropEditing) applyImageTransform();
-          else runSegmentation();
+          const message='<strong>Preset selected.</strong> Auto-applying in 1 second...';
+          if(orientationChanged&&state.imageOriginal&&!state.cropEditing) applyImageTransform({analyze:false,autoApplyAfterLoad:true,logMessage:message,autoApplyMessage:message});
+          else markAnalysisPending(message);
         }
       });
     });
@@ -4549,5 +4747,4 @@
   setupDelayedTooltips();
   loadDesktopManifest();
   initTrialGate();
-  if(isFileProtocol()) setLog('<strong>Desktop Alpha:</strong> use Open/drag-drop for local images. Analysis runs on this computer.');
-
+  if(isFileProtocol()) setLog('<strong>Desktop:</strong> use Open/drag-drop for local images. Analysis runs on this computer.');

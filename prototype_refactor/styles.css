@@ -97,6 +97,47 @@
     .check-hint { margin-left: 23px; margin-top: -2px; color: var(--dim); font-size: 10.5px; line-height: 1.35; }
     .inline-warning { margin-top: 7px; padding: 8px 9px; border: 1px solid #f4c56d; border-radius: var(--radius-sm); background: #fff8e6; color: #7a4b00; font-size: 11px; font-weight: 650; line-height: 1.35; }
     .inline-warning[hidden] { display: none; }
+    .orientation-label { display: inline-flex; align-items: center; gap: 6px; }
+    .orientation-label.orientation-alert { color: var(--rose); }
+    .orientation-label.orientation-alert::before {
+      content: '!';
+      display: inline-grid;
+      place-items: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--rose);
+      color: white;
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1;
+    }
+    .orientation-panel-warning {
+      margin: 0 0 10px;
+      padding: 8px 9px;
+      border: 1px solid rgba(180,35,54,0.35);
+      border-radius: var(--radius-sm);
+      background: #fff1f2;
+      color: var(--rose);
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+    .orientation-panel-warning::before {
+      content: '!';
+      display: inline-grid;
+      place-items: center;
+      width: 16px;
+      height: 16px;
+      margin-right: 6px;
+      border-radius: 50%;
+      background: var(--rose);
+      color: white;
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1;
+    }
+    .orientation-panel-warning[hidden] { display: none; }
     .label-help { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
     .label-help label { margin-bottom: 0; }
     .help-dot { width: 18px; height: 18px; border: 1px solid var(--line); border-radius: 50%; background: var(--panel); color: var(--muted); font-size: 11px; font-weight: 800; line-height: 1; display: grid; place-items: center; cursor: help; position: relative; }
@@ -154,6 +195,17 @@
 
     .workspace { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow-y: auto; overflow-x: hidden; max-height: 100%; overscroll-behavior: contain; scrollbar-gutter: stable; }
     .canvas-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: rgba(238,246,244,0.5); }
+    .orientation-top-warning {
+      margin: 0;
+      padding: 10px 16px;
+      border-bottom: 1px solid rgba(180,35,54,0.35);
+      background: #fff1f2;
+      color: var(--rose);
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+    .orientation-top-warning[hidden] { display: none; }
     .canvas-title { font-size: 12.5px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
     .canvas-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
     .canvas-actions { display: flex; gap: 7px; flex-shrink: 0; }
@@ -252,41 +304,63 @@
     .empty-actions { margin: 16px 0 4px; display: flex; justify-content: center; }
     .empty-formats { color: var(--dim); font-size: 11px; margin-top: 10px; }
 
-    /* ---------------- Dark mode (auto, follows OS preference) ---------------- */
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #0e1714; --bg2: #13201c; --panel: #15211d; --panel-soft: #1b2a25;
-        --ink: #e7f0ec; --ink2: #cdddd6; --muted: #a6b9b3; --dim: #8ea29b;
-        --line: #27362f; --teal: #1bb3a1; --teal-dark: #46d4c1; --teal-light: #16302b;
-        --shadow-sm: 0 2px 8px rgba(0,0,0,0.4); --shadow: 0 10px 32px rgba(0,0,0,0.5);
-      }
-      body { background: var(--bg); }
-      .subpanel { background: #16231f; }
-      .subpanel-title { background: #1b2a25; }
-      .canvas-head { background: rgba(27,42,37,0.55); }
-      .group-image-wrap, .group-canvas { background: #0f1a16; }
-      .empty-state { background: rgba(21,33,29,0.7); }
-      .demo-banner { background: #16302b; border-color: #27362f; }
-      .inline-warning { background: #2a2410; border-color: #5a4a1e; color: #ecd690; }
-      /* tooltips must stay dark with light text (ink is now light) */
-      .help-dot::after, .delayed-tooltip { background: #05100d; color: #e7f0ec; border-color: #27362f; }
-      .zoom-badge { background: rgba(0,0,0,0.7); }
-      /* primary button: ink is light now, so use teal with dark text */
-      .btn.primary { background: var(--teal); border-color: var(--teal); color: #06120f; }
-      .btn.primary:hover { background: var(--teal-dark); border-color: var(--teal-dark); }
-      .account-dd-item:hover { background: #1b2a25; }
-      .account-dd-item.danger:hover { background: #2a1416; }
-      .metric-card.good { background: rgba(70,212,193,0.08); }
-      .metric-card.warn { background: rgba(183,121,31,0.14); }
-      .metric-card.bad  { background: rgba(180,35,54,0.16); }
-      canvas { box-shadow: 0 8px 32px rgba(0,0,0,0.55); }
-      /* checkerboard: light dots so the transparency cue shows on dark */
-      .drop-zone, .group-view {
-        background-image:
-          linear-gradient(45deg, rgba(255,255,255,.03) 25%, transparent 25%),
-          linear-gradient(-45deg, rgba(255,255,255,.03) 25%, transparent 25%),
-          linear-gradient(45deg, transparent 75%, rgba(255,255,255,.03) 75%),
-          linear-gradient(-45deg, transparent 75%, rgba(255,255,255,.03) 75%);
-      }
+    /* ---------------- Dark mode (manual toggle; "Auto" follows OS via JS) ----------------
+       JS sets data-theme="dark" or "light" on <html>. In Auto mode JS resolves the
+       OS preference and writes the effective theme here, so CSS only keys off the attribute. */
+    :root[data-theme="dark"] {
+      --bg: #0e1714; --bg2: #13201c; --panel: #15211d; --panel-soft: #1b2a25;
+      --ink: #e7f0ec; --ink2: #cdddd6; --muted: #a6b9b3; --dim: #8ea29b;
+      --line: #27362f; --teal: #1bb3a1; --teal-dark: #46d4c1; --teal-light: #16302b;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.4); --shadow: 0 10px 32px rgba(0,0,0,0.5);
+    }
+    [data-theme="dark"] body { background: var(--bg); }
+    [data-theme="dark"] .subpanel { background: #16231f; }
+    [data-theme="dark"] .subpanel-title { background: #1b2a25; }
+    [data-theme="dark"] .canvas-head { background: rgba(27,42,37,0.55); }
+    [data-theme="dark"] .group-image-wrap, [data-theme="dark"] .group-canvas { background: #0f1a16; }
+    [data-theme="dark"] .empty-state { background: rgba(21,33,29,0.7); }
+    [data-theme="dark"] .demo-banner { background: #16302b; border-color: #27362f; }
+    [data-theme="dark"] .inline-warning { background: #2a2410; border-color: #5a4a1e; color: #ecd690; }
+    [data-theme="dark"] .orientation-top-warning { background: #2a1416; border-color: #5a1e2a; color: #ffb4bd; }
+    [data-theme="dark"] .orientation-panel-warning { background: #2a1416; border-color: #5a1e2a; color: #ffb4bd; }
+    /* tooltips must stay dark with light text (ink is now light) */
+    [data-theme="dark"] .help-dot::after, [data-theme="dark"] .delayed-tooltip { background: #05100d; color: #e7f0ec; border-color: #27362f; }
+    [data-theme="dark"] .zoom-badge { background: rgba(0,0,0,0.7); }
+    /* primary button: ink is light now, so use teal with dark text */
+    [data-theme="dark"] .btn.primary { background: var(--teal); border-color: var(--teal); color: #06120f; }
+    [data-theme="dark"] .btn.primary:hover { background: var(--teal-dark); border-color: var(--teal-dark); }
+    [data-theme="dark"] .account-dd-item:hover { background: #1b2a25; }
+    [data-theme="dark"] .account-dd-item.danger:hover { background: #2a1416; }
+    [data-theme="dark"] .metric-card.good { background: rgba(70,212,193,0.08); }
+    [data-theme="dark"] .metric-card.warn { background: rgba(183,121,31,0.14); }
+    [data-theme="dark"] .metric-card.bad  { background: rgba(180,35,54,0.16); }
+    [data-theme="dark"] canvas { box-shadow: 0 8px 32px rgba(0,0,0,0.55); }
+    /* checkerboard: light dots so the transparency cue shows on dark */
+    [data-theme="dark"] .drop-zone, [data-theme="dark"] .group-view {
+      background-image:
+        linear-gradient(45deg, rgba(255,255,255,.03) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(255,255,255,.03) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(255,255,255,.03) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(255,255,255,.03) 75%);
+    }
+
+    /* ---------------- Theme picker (in account dropdown) ---------------- */
+    .account-dd-theme { padding: 8px 14px 10px; }
+    .account-dd-theme-label {
+      font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+      color: var(--dim); margin-bottom: 6px;
+    }
+    .theme-seg {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px;
+      background: var(--bg2); border: 1px solid var(--line); border-radius: 8px; padding: 2px;
+    }
+    .theme-opt {
+      appearance: none; border: 0; background: transparent; cursor: pointer;
+      font: inherit; font-size: 12px; font-weight: 600; color: var(--muted);
+      padding: 5px 4px; border-radius: 6px; transition: background .12s, color .12s;
+    }
+    .theme-opt:hover { color: var(--ink2); }
+    .theme-opt[aria-pressed="true"] {
+      background: var(--panel); color: var(--teal-dark); box-shadow: var(--shadow-sm);
     }
 

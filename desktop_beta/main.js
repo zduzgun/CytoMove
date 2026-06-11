@@ -1,16 +1,16 @@
-const crypto = require('node:crypto');
+﻿const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
 const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
 
-const APP_TITLE = 'Cytomove Desktop Alpha';
+const APP_TITLE = 'Cytomove Desktop';
 const DESKTOP_MANIFEST_URL = 'https://cytomove.com/desktop-manifest.json';
 const TRIAL_DURATION_DAYS = 30;
 const TRIAL_DURATION_MS = TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000;
 const CLOCK_ROLLBACK_GRACE_MS = 5 * 60 * 1000;
-const TRIAL_STATE_FILE = 'desktop-alpha-trial.json';
-const TRIAL_VERSION = 'alpha-0.1';
+const TRIAL_STATE_FILE = 'desktop-release-trial.json';
+const TRIAL_VERSION = 'release-0.1';
 
 let mainWindow = null;
 
@@ -133,7 +133,7 @@ function createMainWindow() {
       type: 'warning',
       title: APP_TITLE,
       message: 'Cytomove is busy.',
-      detail: 'Large image groups can take time to analyze. If the window does not recover, close and reopen the desktop alpha.'
+      detail: 'Large image groups can take time to analyze. If the window does not recover, close and reopen the desktop app.'
     }).catch(() => {});
   });
 
