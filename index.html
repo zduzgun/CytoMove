@@ -25,6 +25,7 @@
       "operatingSystem": "Web browser",
       "url": "https://cytomove.com/",
       "description": "Browser-based wound healing scratch assay analysis for local image review, wound area and width metrics, plots, and export.",
+      "citation": "https://www.biorxiv.org/content/10.64898/2026.06.06.730617v1",
       "offers": {
         "@type": "Offer",
         "price": "0",
@@ -235,6 +236,13 @@
       padding: 8px 11px;
       font-size: 13px;
       font-weight: 680;
+      text-decoration: none;
+    }
+
+    a.proof-chip:hover {
+      color: var(--ink);
+      border-color: #bfd5d1;
+      background: #ffffff;
     }
 
     .proof-chip svg {
@@ -1018,6 +1026,13 @@
               </svg>
               CSV, Excel, PNG, ZIP
             </span>
+            <a class="proof-chip" href="https://www.biorxiv.org/content/10.64898/2026.06.06.730617v1" target="_blank" rel="noopener noreferrer">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M3.2 2.4h5.1L11 5.1v6.5H3.2V2.4Z" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/>
+                <path d="M8.2 2.6v2.7h2.6M5 7.4h4M5 9.4h3" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              bioRxiv preprint
+            </a>
           </div>
         </div>
 
@@ -1194,7 +1209,7 @@
       <section class="section compact" id="validation" aria-labelledby="validation-title">
         <div class="validation-panel">
           <div class="validation-copy">
-            <div class="eyebrow">Preprint validation</div>
+            <div class="eyebrow">bioRxiv preprint validation</div>
             <h2 id="validation-title">Compared with ImageJ/Fiji WHST, with every mask visible.</h2>
             <p>
               Cytomove was evaluated against ImageJ/Fiji Wound Healing Size Tool outputs across
@@ -1220,7 +1235,7 @@
             </div>
 
             <div class="validation-links">
-              <!-- Replace this href with the bioRxiv URL after posting. -->
+              <a class="button secondary" href="https://www.biorxiv.org/content/10.64898/2026.06.06.730617v1" target="_blank" rel="noopener noreferrer">Read the bioRxiv preprint</a>
               <a class="button secondary" href="https://doi.org/10.5281/zenodo.20486820" target="_blank" rel="noopener noreferrer">View validation data</a>
               <a class="button secondary" href="beta-gateway/">Open Cytomove</a>
             </div>
