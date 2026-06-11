@@ -2,11 +2,11 @@
 
 > A privacy-first, browser-based wound healing (scratch assay) analysis tool for cell biologists.
 
-Cytomove turns scratch assay / wound healing measurement into a reviewable, reproducible, and exportable research workflow that runs entirely in the browser. It aims to be a faster, citation-ready alternative to manual ImageJ-based wound area measurement â€” images are processed locally, segmentation is reviewable, and exports come with reproducible methods text and a versioned citation block.
+Cytomove turns scratch assay / wound healing measurement into a reviewable, reproducible, and exportable research workflow that runs entirely in the browser. It aims to be a faster, citation-ready alternative to manual ImageJ-based wound area measurement - images are processed locally, segmentation is reviewable, and exports come with reproducible methods text and a versioned citation block.
 
 ## Current Status
 
-_As of June 2026 â€” soft-deployed and in a controlled academic access._
+_As of June 2026 - soft-deployed and in controlled academic access._
 
 - Live site: [cytomove.com](https://cytomove.com)
 - **Working web app** is live (no installation): local image analysis with single-image and group review.
@@ -18,7 +18,7 @@ _As of June 2026 â€” soft-deployed and in a controlled academic access._
 
 The web app (and the desktop app) currently support:
 
-- Local image input â€” images never leave your computer
+- Local image input - images never leave your computer
 - Automatic wound area segmentation with adjustable controls
 - Single-image and local multi-image **group review**
 - Area and width metrics, mask/contour review, and quality-control guidance

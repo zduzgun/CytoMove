@@ -828,7 +828,7 @@
     },AUTO_APPLY_DELAY_MS);
   }
 
-  // 4. Variance filter â€” integral image O(1) per pixel (matches ImageJ Variance... radius=R)
+  // 4. Variance filter - integral image O(1) per pixel (matches ImageJ Variance... radius=R)
   function varianceFilter(src, field, W, H, radius) {
     const N=W*H;
     const S=new Float64Array(N), S2=new Float64Array(N);
@@ -1463,7 +1463,7 @@
     return {mask:out,filled,edges};
   }
 
-  // 9. Width estimation â€” ImageJ edge-span method
+  // 9. Width estimation - ImageJ edge-span method
   function estimateWidth(mask, W, H) {
     const spans=[];
     const minValidWidth=Math.max(3,Math.round(W*0.002));

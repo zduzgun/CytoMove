@@ -198,7 +198,7 @@
   async function handleSignIn() {
     var result = await window.CytomoveAuth.signInWithPassword(authEmail.value.trim(), authPassword.value);
     if (result.error) throw result.error;
-    setStatus('Signed in. Checking accessâ€¦', false);
+    setStatus('Signed in. Checking access...', false);
     await refreshAndGate();
   }
 
@@ -234,7 +234,7 @@
         if (res.error) throw res.error;
         var waitPromise = window.cytomoveDesktop.awaitGoogleCallback();
         await window.cytomoveDesktop.openExternal(res.data.url);
-        setStatus('Opened Google in your browser. Waiting for sign-in to completeâ€¦', false);
+        setStatus('Opened Google in your browser. Waiting for sign-in to complete...', false);
         var cbUrl = await waitPromise;
         var u = new URL(cbUrl);
         var errDesc = u.searchParams.get('error_description');
