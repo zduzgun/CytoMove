@@ -3762,7 +3762,7 @@
       if(e.target.closest('[data-tutorial-jump]')) {
         const target=currentTutorialTarget();
         if(target) {
-          target.scrollIntoView({block:'center',inline:'center',behavior:'smooth'});
+          scrollTutorialTargetIntoView(target);
           target.focus({preventScroll:true});
           if(!target.disabled) window.setTimeout(()=>performTutorialAction(currentTutorialStep(),target),160);
         }
@@ -3840,8 +3840,31 @@
     clearTutorialHighlight();
     const target=currentTutorialTarget();
     if(!target) return;
+    scrollTutorialTargetIntoView(target);
     target.classList.add('tutorial-highlight');
     aimTutorialPointer(target);
+    window.setTimeout(()=>aimTutorialPointer(target),420);
+  }
+
+  function scrollTutorialTargetIntoView(target) {
+    const containers=[
+      target.closest('.sidebar'),
+      target.closest('.workspace'),
+      target.closest('.plot-body'),
+      target.closest('.plot-dialog')
+    ].filter(Boolean);
+    containers.forEach(container=>{
+      const targetRect=target.getBoundingClientRect();
+      const containerRect=container.getBoundingClientRect();
+      const targetCenter=targetRect.top + targetRect.height/2;
+      const containerCenter=containerRect.top + containerRect.height/2;
+      container.scrollBy({
+        top: targetCenter-containerCenter,
+        left: 0,
+        behavior: 'smooth'
+      });
+    });
+    target.scrollIntoView({block:'center',inline:'center',behavior:'smooth'});
   }
 
   function ensureTutorialPointer() {
