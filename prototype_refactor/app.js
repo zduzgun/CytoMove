@@ -102,6 +102,104 @@
           body:'Switch to Mask view to inspect the exact region counted as wound area in this phase-contrast example.'
         }
       ]
+    },
+    manual: {
+      id:'tutorial-manual',
+      label:'Manual correction tutorial',
+      cell:'MDA-MB-231',
+      condition:'MK correction example',
+      baseUrl:'../assets/tutorial/manual/',
+      samples:[
+        { file:'mk_0h_001.png', time:'0h' },
+        { file:'mk_24h_002.png', time:'24h' },
+        { file:'mk_48h_003.png', time:'48h' }
+      ],
+      settings:{ presetKey:'rough', scratchOrientation:'vertical' },
+      completeBody:'You analyzed a challenging image, used manual correction modes, drew an edit rectangle on the mask, tested undo/reset, and returned to the automatic result.',
+      steps:[
+        {
+          key:'fix-orientation',
+          selector:'#scratchOrientation',
+          label:'Horizontal scratch',
+          title:'Rotate this horizontal scratch for analysis',
+          body:'This phone-captured example contains a horizontal scratch. Choose Horizontal scratch so Cytomove rotates it into the vertical analysis view.',
+          action:'set-value',
+          value:'horizontal',
+          event:'change'
+        },
+        {
+          key:'preset-rough',
+          selector:'button[data-preset="rough"]',
+          label:'Brightfield normal cells',
+          title:'Start with the brightfield preset',
+          body:'Use the normal-cell brightfield preset as the automatic baseline before editing the mask.'
+        },
+        {
+          key:'apply-first',
+          selector:'#rerun',
+          label:'Apply',
+          title:'Create the automatic contour',
+          body:'Run the first segmentation so the manual correction tools have a mask to edit.'
+        },
+        {
+          key:'fill-mode',
+          selector:'button[data-brush-mode="fill"]',
+          label:'Fill area',
+          title:'Select Fill area',
+          body:'Fill area directly marks a selected rectangle as wound area. Use it when an obvious gap is missing from the mask.'
+        },
+        {
+          key:'draw-fill',
+          selector:'#canvas',
+          label:'Draw rectangle',
+          title:'Drag a small rectangle on the image',
+          body:'Drag across a small part of the wound gap. The tutorial continues only after Cytomove applies a manual correction.',
+          event:'cytomove:manual-correction'
+        },
+        {
+          key:'erase-mode',
+          selector:'button[data-brush-mode="erase"]',
+          label:'Erase scan',
+          title:'Select Erase scan',
+          body:'Erase scan removes mask pixels inside a selected rectangle. Use it when cells or debris were counted as wound area.'
+        },
+        {
+          key:'draw-erase',
+          selector:'#canvas',
+          label:'Draw erase rectangle',
+          title:'Drag a second rectangle',
+          body:'Drag across an already-filled part of the mask to practice removing a local false-positive region.',
+          event:'cytomove:manual-correction'
+        },
+        {
+          key:'add-mode',
+          selector:'button[data-brush-mode="add"]',
+          label:'Add scan',
+          title:'Try Add scan',
+          body:'Add scan rescans a local rectangle instead of filling it blindly. It is useful when the missing wound edge still has texture information.'
+        },
+        {
+          key:'clean-mode',
+          selector:'button[data-brush-mode="clean"]',
+          label:'Clean specks',
+          title:'Try Clean specks',
+          body:'Clean specks removes tiny mask fragments inside a selected region. It is a conservative cleanup tool for small artifacts.'
+        },
+        {
+          key:'undo',
+          selector:'#undoBrush',
+          label:'Undo',
+          title:'Undo the last edit',
+          body:'Undo restores the previous mask state so edits remain reversible.'
+        },
+        {
+          key:'reset',
+          selector:'#resetBrush',
+          label:'Reset correction',
+          title:'Reset manual correction',
+          body:'Reset correction removes manual edits and returns the image to the automatic mask.'
+        }
+      ]
     }
   };
 
@@ -1880,6 +1978,7 @@
         updateResultFromMask();
         el.resetBrush.disabled=false;
         setLog(`<strong>Clean specks applied:</strong> ROI ${rect.w}x${rect.h} px, removed ${fmt(cleaned.removed)} px from ${fmt(cleaned.removedComponents)}/${fmt(cleaned.componentCount)} small 4-connected components (non-cell floor ${fmt(cleaned.impossibleCellArea)} px, max speck ${fmt(cleaned.maxArea)} px, largest ${fmt(cleaned.largest)} px).`);
+        emitTutorialManualCorrection('clean');
         return true;
       }
       setLog(`<strong>Clean specks:</strong> no small mask fragments found in the selected ROI.`);
@@ -1898,6 +1997,7 @@
         updateResultFromMask();
         el.resetBrush.disabled=false;
         setLog(`<strong>Fill area applied:</strong> ROI ${rect.w}x${rect.h} px directly filled as wound area; added ${fmt(added)} px.`);
+        emitTutorialManualCorrection('fill');
         return true;
       }
       setLog(`<strong>Fill area:</strong> selected ROI was already filled or outside the analysis field.`);
@@ -1915,6 +2015,7 @@
         updateResultFromMask();
         el.resetBrush.disabled=false;
         setLog(`<strong>Erase scan applied:</strong> ROI ${rect.w}x${rect.h} px cleared; removed ${fmt(removed)} mask px. This region is now treated as non-wound/no-border.`);
+        emitTutorialManualCorrection('erase');
         return true;
       }
       setLog(`<strong>Erase scan:</strong> no existing mask pixels were found in the selected ROI.`);
@@ -1950,10 +2051,15 @@
       updateResultFromMask();
       el.resetBrush.disabled=false;
       setLog(`<strong>Add scan applied:</strong> ROI ${rect.w}x${rect.h} px cleared first, largest gap component kept, and ${fmt(cleanedMain.filledHoleCount)} tiny internal islands filled (${fmt(candidateCount)}/${fmt(main.totalArea)} px from ${fmt(main.componentCount)} components; local threshold ${localTh}, island max ${fmt(addHoleFillMax)} px).`);
+      emitTutorialManualCorrection('add');
       return true;
     }
     setLog(`<strong>Add scan:</strong> no mask pixels changed in the selected ROI. Try a larger rectangle or adjust scan sensitivity.`);
     return false;
+  }
+
+  function emitTutorialManualCorrection(mode) {
+    document.dispatchEvent(new CustomEvent('cytomove:manual-correction',{detail:{mode}}));
   }
 
   function applyBrushAt(pt) {
@@ -3849,7 +3955,7 @@
       if(!state.tutorial||state.tutorial.complete) return;
       const step=currentTutorialStep();
       if(!step) return;
-      if(step.event==='change'||step.action==='set-value') return;
+      if(step.event||step.action==='set-value') return;
       const target=e.target.closest(step.selector);
       if(!target||target.disabled) return;
       window.setTimeout(()=>advanceTutorialStep(render),500);
@@ -3861,6 +3967,14 @@
       const target=e.target.closest(step.selector);
       if(!target||target.disabled) return;
       if(step.value!==undefined&&target.value!==step.value) return;
+      window.setTimeout(()=>advanceTutorialStep(render),500);
+    },true);
+    document.addEventListener('cytomove:manual-correction',e=>{
+      if(!state.tutorial||state.tutorial.complete) return;
+      const step=currentTutorialStep();
+      if(!step||step.event!=='cytomove:manual-correction') return;
+      const target=currentTutorialTarget();
+      if(!target||target.disabled) return;
       window.setTimeout(()=>advanceTutorialStep(render),500);
     },true);
     render();
