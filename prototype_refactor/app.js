@@ -203,7 +203,7 @@
     }
   };
 
-  const CYTOMOVE_ALGORITHM_VERSION = 'prototype-whst-variance-v0.4';
+  const CYTOMOVE_ALGORITHM_VERSION = 'cytomove-whst-variance-v1.0';
   const SHOW_DEMO_CALIBRATION = false;
   const AUTO_APPLY_DELAY_MS = 1000;
 

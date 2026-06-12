@@ -673,7 +673,7 @@
           </div>
           <p>Try Cytomove without signing in. Load a local image, inspect the segmentation overlay, and view core measurements.</p>
           <div class="actions">
-            <a class="button demo" href="../prototype_refactor/?mode=demo">Open demo</a>
+            <a class="button demo" href="../app/?mode=demo">Open demo</a>
           </div>
           <div class="note">Full CSV, Excel, PNG, and ZIP exports require registered academic access.</div>
         </article>
@@ -705,7 +705,7 @@
       var strengthFill = document.getElementById('passwordStrengthFill');
       var strengthLabel = document.getElementById('passwordStrengthLabel');
       var mode = 'signup';
-      var appUrl = '../prototype_refactor/';
+      var appUrl = '../app/';
       var stayOnGateway = new URLSearchParams(window.location.search).has('stay');
 
       function setMode(next) {
@@ -832,7 +832,7 @@
           '<div>Status: ' + escapeHtml(statusText) + '</div>' +
           '<div>' + escapeHtml(accessCopy) + '</div>' +
           '<div class="account-actions">' +
-          '<a class="text-button" href="../prototype_refactor/">Open full app</a>' +
+          '<a class="text-button" href="../app/">Open full app</a>' +
           '<button class="text-button" id="signOutButton" type="button">Sign out</button>' +
           '</div>';
 
