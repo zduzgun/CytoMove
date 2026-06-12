@@ -130,7 +130,7 @@
 
     .choice-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: minmax(0, 1.12fr) minmax(300px, 0.88fr);
       gap: 18px;
       margin-top: 34px;
     }
@@ -144,6 +144,19 @@
       background: rgba(255, 255, 255, 0.92);
       box-shadow: var(--shadow);
       padding: 24px;
+    }
+
+    .choice-card.primary-access {
+      border-color: rgba(15, 159, 143, 0.28);
+      background:
+        radial-gradient(circle at top right, rgba(15, 159, 143, 0.13), transparent 38%),
+        rgba(255, 255, 255, 0.96);
+    }
+
+    .choice-card.demo-card {
+      min-height: 0;
+      background: rgba(255, 255, 255, 0.78);
+      box-shadow: 0 14px 42px rgba(16, 32, 39, 0.07);
     }
 
     .choice-top {
@@ -277,6 +290,61 @@
       border-color: var(--teal-dark);
     }
 
+    .google-auth-button {
+      width: 100%;
+      min-height: 54px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      border: 1px solid #cfe0dc;
+      border-radius: 999px;
+      background: #ffffff;
+      color: var(--ink);
+      padding: 13px 18px;
+      font: inherit;
+      font-size: 15px;
+      font-weight: 850;
+      cursor: pointer;
+      box-shadow: 0 12px 28px rgba(16, 32, 39, 0.08);
+      transition: transform 0.14s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .google-auth-button:hover {
+      border-color: rgba(15, 159, 143, 0.44);
+      box-shadow: 0 16px 34px rgba(16, 32, 39, 0.11);
+    }
+
+    .google-auth-button:active {
+      transform: translateY(1px);
+    }
+
+    .google-mark {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .auth-divider {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 12px;
+      margin: 18px 0 2px;
+      color: var(--dim);
+      font-size: 12px;
+      font-weight: 760;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+      content: "";
+      height: 1px;
+      background: var(--line);
+    }
+
     .note {
       margin-top: 14px;
       color: var(--dim);
@@ -390,6 +458,10 @@
       .choice-card {
         min-height: 0;
       }
+
+      .choice-card.demo-card {
+        order: 2;
+      }
     }
 
     @media (max-width: 560px) {
@@ -426,6 +498,10 @@
       .email-auth-form,
       .email-auth-actions {
         grid-template-columns: 1fr;
+      }
+
+      .google-auth-button {
+        min-height: 50px;
       }
     }
 
@@ -607,28 +683,40 @@
       <p class="lead">Reviewable scratch wound healing analysis in your browser, with a loginless demo and registered full access for academic use.</p>
 
       <section class="choice-grid" aria-label="Choose how to enter Cytomove">
-        <article class="choice-card">
+        <article class="choice-card primary-access">
           <div class="choice-top">
             <div>
               <div class="choice-label">Full access</div>
-              <h2>Sign in with email</h2>
+              <h2>Sign in to Cytomove</h2>
             </div>
             <div class="choice-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none">
-                <path d="M4 6.5h16v11H4z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
-                <path d="m5 7 7 6 7-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 3.5 19 7v5.2c0 4.2-2.8 6.9-7 8.3-4.2-1.4-7-4.1-7-8.3V7l7-3.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                <path d="m8.6 12.2 2.1 2.1 4.7-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
           </div>
-          <p>Create an account with email verification, then use the same account in the web and desktop release. Free for academic use.</p>
+          <p>Use your verified Google account for full web and desktop access. Academic use remains free; images stay local.</p>
+          <div class="actions">
+            <button class="google-auth-button" id="googleSignIn" type="button">
+              <svg class="google-mark" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.24 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z"/>
+                <path fill="#EA4335" d="M12 5.37c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.37 12 5.37z"/>
+              </svg>
+              Continue with Google
+            </button>
+          </div>
+          <div class="auth-divider"><span>Email access</span></div>
           <div class="email-auth-form" aria-label="Email and password sign-in">
             <div class="auth-tabs" role="tablist" aria-label="Choose account action">
-              <button class="auth-tab active" id="tabSignup" type="button" role="tab" aria-selected="true">Create account</button>
-              <button class="auth-tab" id="tabSignin" type="button" role="tab" aria-selected="false">Sign in</button>
+              <button class="auth-tab" id="tabSignup" type="button" role="tab" aria-selected="false">Create account</button>
+              <button class="auth-tab active" id="tabSignin" type="button" role="tab" aria-selected="true">Sign in</button>
             </div>
             <input class="email-input" id="authEmail" type="email" autocomplete="email" placeholder="you@university.edu">
             <div class="password-field">
-              <input class="email-input" id="authPassword" type="password" autocomplete="new-password" placeholder="Password" aria-describedby="passwordHint">
+              <input class="email-input" id="authPassword" type="password" autocomplete="current-password" placeholder="Password" aria-describedby="passwordHint">
               <div class="password-hint" id="passwordHint" hidden role="status" aria-live="polite">
                 <div class="password-hint-title">Password must have:</div>
                 <div class="password-rule" data-rule="length"><span class="tick">&#10003;</span><span>At least 8 characters</span></div>
@@ -640,24 +728,20 @@
                 </div>
               </div>
             </div>
-            <div id="confirmField">
+            <div id="confirmField" hidden>
               <input class="email-input" id="authPasswordConfirm" type="password" autocomplete="new-password" placeholder="Confirm password">
               <div class="password-match" id="passwordMatch" hidden></div>
             </div>
             <div class="email-auth-actions single">
-              <button class="button" id="authSubmit" type="button">Create account</button>
+              <button class="button secondary" id="authSubmit" type="button">Sign in with email</button>
             </div>
           </div>
-          <div class="secondary-auth">
-            <span>Prefer OAuth?</span>
-            <button class="text-button" id="googleSignIn" type="button">Continue with Google</button>
-          </div>
-          <div class="note">Email verification activates academic access. Commercial use requires a separate licence.</div>
+          <div class="note">Email/password is available for existing accounts. Commercial use requires a separate licence.</div>
           <div class="status-message" id="authStatus" hidden></div>
           <div class="account-panel" id="accountPanel" hidden></div>
         </article>
 
-        <article class="choice-card">
+        <article class="choice-card demo-card">
           <div class="choice-top">
             <div>
               <div class="choice-label">No sign-in trial</div>
@@ -704,7 +788,7 @@
       var passwordMatch = document.getElementById('passwordMatch');
       var strengthFill = document.getElementById('passwordStrengthFill');
       var strengthLabel = document.getElementById('passwordStrengthLabel');
-      var mode = 'signup';
+      var mode = 'signin';
       var appUrl = '../app/';
       var stayOnGateway = new URLSearchParams(window.location.search).has('stay');
 
@@ -716,7 +800,7 @@
         tabSignup.setAttribute('aria-selected', signup ? 'true' : 'false');
         tabSignin.setAttribute('aria-selected', signup ? 'false' : 'true');
         confirmField.hidden = !signup;
-        authSubmit.textContent = signup ? 'Create account' : 'Sign in';
+        authSubmit.textContent = signup ? 'Create email account' : 'Sign in with email';
         authPassword.setAttribute('autocomplete', signup ? 'new-password' : 'current-password');
         if (!signup) passwordHint.hidden = true;
         if (status) status.hidden = true;
@@ -916,7 +1000,7 @@
         }
       });
 
-      setMode('signup');
+      setMode('signin');
       refreshAccount();
     }());
   </script>
