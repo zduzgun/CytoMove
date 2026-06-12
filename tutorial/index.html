@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cytomove Guided Tutorial - M8F Scratch Assay Demo</title>
-  <meta name="description" content="Open a guided Cytomove tutorial with three preloaded M8F wound healing scratch assay images.">
+  <title>Cytomove Guided Tutorials - Scratch Assay Demo Groups</title>
+  <meta name="description" content="Open guided Cytomove tutorials with preloaded M8F and WHAD-MCF7 wound healing scratch assay image groups.">
   <link rel="canonical" href="https://cytomove.com/tutorial/">
   <meta property="og:title" content="Cytomove Guided Tutorial">
-  <meta property="og:description" content="A guided browser demo with three preloaded M8F scratch assay images.">
+  <meta property="og:description" content="Guided browser demos with preloaded scratch assay image groups.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://cytomove.com/tutorial/">
   <meta property="og:image" content="https://cytomove.com/assets/tutorial/m8f/m8f_0h_001.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Cytomove Guided Tutorial">
-  <meta name="twitter:description" content="Analyze three preloaded M8F scratch assay images with step-by-step guidance.">
+  <meta name="twitter:description" content="Analyze preloaded scratch assay image groups with step-by-step guidance.">
   <meta name="twitter:image" content="https://cytomove.com/assets/tutorial/m8f/m8f_0h_001.png">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' stroke='%230f9f8f' stroke-width='2' fill='white'/><circle cx='10' cy='16' r='4' fill='%23bdeee8' stroke='%230f9f8f' stroke-width='1.4'/><circle cx='22' cy='16' r='4' fill='%23bdeee8' stroke='%230f9f8f' stroke-width='1.4'/><path d='M14 12.7L18.5 16 14 19.3' stroke='%2308766c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
   <script type="application/ld+json">
@@ -21,7 +21,7 @@
       "@context": "https://schema.org",
       "@type": "HowTo",
       "name": "Cytomove guided scratch assay tutorial",
-      "description": "A guided workflow for opening preloaded M8F scratch assay images, applying segmentation, reviewing group results, and checking plots.",
+      "description": "Guided workflows for opening preloaded scratch assay image groups, applying segmentation, reviewing group results, and checking plots.",
       "step": [
         { "@type": "HowToStep", "name": "Fix the scratch orientation" },
         { "@type": "HowToStep", "name": "Select Brightfield normal cells" },
@@ -135,6 +135,47 @@
       box-shadow: var(--shadow);
       overflow: hidden;
     }
+    .tutorial-options {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      padding: 0 0 38px;
+    }
+    .tutorial-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--paper);
+      box-shadow: 0 16px 42px rgba(16, 32, 39, 0.07);
+      overflow: hidden;
+    }
+    .tutorial-card-body {
+      padding: 16px;
+    }
+    .tutorial-card h2 {
+      font-size: 20px;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+    .tutorial-card p {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 14px;
+    }
+    .tutorial-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .tutorial-meta span {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 9px;
+      color: var(--muted);
+      background: #f8fbfa;
+      font-size: 12px;
+      font-weight: 760;
+    }
     .preview-head {
       display: flex;
       justify-content: space-between;
@@ -210,8 +251,16 @@
       font-size: 13px;
     }
     footer a { color: var(--teal-dark); font-weight: 800; text-decoration: none; }
+    .data-note {
+      border-top: 1px solid var(--line);
+      padding: 22px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .data-note a { color: var(--teal-dark); font-weight: 800; text-decoration: none; }
     @media (max-width: 900px) {
       .hero { grid-template-columns: 1fr; }
+      .tutorial-options { grid-template-columns: 1fr; }
       .steps { grid-template-columns: 1fr; }
     }
     @media (max-width: 620px) {
@@ -240,22 +289,22 @@
         <a class="nav-link" href="../">Home</a>
         <a class="nav-link" href="../wound-healing-scratch-assay-analysis/">Guide</a>
         <a class="nav-link" href="../download/">Download</a>
-        <a class="nav-link primary" href="../prototype_refactor/?tutorial=m8f">Launch tutorial</a>
+        <a class="nav-link primary" href="../prototype_refactor/?tutorial=m8f">Launch quick start</a>
       </nav>
     </header>
 
     <main>
       <section class="hero">
         <div>
-          <h1>Analyze a scratch assay group in eight guided clicks.</h1>
+          <h1>Learn Cytomove with guided example groups.</h1>
           <p class="lead">
-            This tutorial opens Cytomove with three M8F wound healing images already loaded.
-            Follow the highlighted controls to fix the horizontal scratch warning, choose the
-            brightfield preset, run the first image, apply settings to the group, inspect the plot,
-            close it, move through the series, and check the mask.
+            Open Cytomove with example wound healing image groups already loaded.
+            Start with the M8F quick-start workflow, then try the WHAD-MCF7 phase-contrast
+            workflow to review a public near-closure time course.
           </p>
           <div class="cta-row">
-            <a class="button" href="../prototype_refactor/?tutorial=m8f">Launch guided tutorial</a>
+            <a class="button" href="../prototype_refactor/?tutorial=m8f">Launch M8F quick start</a>
+            <a class="button secondary" href="../prototype_refactor/?tutorial=mcf7">Launch MCF7 phase contrast</a>
             <a class="button secondary" href="../wound-healing-scratch-assay-analysis/">Read the guide</a>
           </div>
         </div>
@@ -280,6 +329,70 @@
             </figure>
           </div>
         </aside>
+      </section>
+
+      <section class="tutorial-options" aria-label="Available guided tutorials">
+        <article class="tutorial-card">
+          <div class="preview-head">
+            <span>Quick start</span>
+            <span>M8F brightfield</span>
+          </div>
+          <div class="thumb-grid">
+            <figure class="thumb">
+              <img src="../assets/tutorial/m8f/m8f_0h_001.png" alt="M8F 0 hour scratch assay image">
+              <span><strong>0h</strong> start</span>
+            </figure>
+            <figure class="thumb">
+              <img src="../assets/tutorial/m8f/m8f_24h_002.png" alt="M8F 24 hour scratch assay image">
+              <span><strong>24h</strong> mid</span>
+            </figure>
+            <figure class="thumb">
+              <img src="../assets/tutorial/m8f/m8f_48h_003.png" alt="M8F 48 hour scratch assay image">
+              <span><strong>48h</strong> late</span>
+            </figure>
+          </div>
+          <div class="tutorial-card-body">
+            <h2>M8F quick start</h2>
+            <p>Practice orientation correction, brightfield preset selection, group analysis, plotting, navigation, and mask review.</p>
+            <div class="tutorial-meta">
+              <span>Brightfield</span>
+              <span>Orientation warning</span>
+              <span>8 steps</span>
+            </div>
+            <a class="button" href="../prototype_refactor/?tutorial=m8f">Launch M8F tutorial</a>
+          </div>
+        </article>
+
+        <article class="tutorial-card">
+          <div class="preview-head">
+            <span>Phase contrast</span>
+            <span>WHAD-MCF7</span>
+          </div>
+          <div class="thumb-grid">
+            <figure class="thumb">
+              <img src="../assets/tutorial/mcf7/whad_mcf7_001.png" alt="WHAD-MCF7 1 hour phase-contrast scratch assay image">
+              <span><strong>1h</strong> early</span>
+            </figure>
+            <figure class="thumb">
+              <img src="../assets/tutorial/mcf7/whad_mcf7_021.png" alt="WHAD-MCF7 21 hour phase-contrast scratch assay image">
+              <span><strong>21h</strong> mid</span>
+            </figure>
+            <figure class="thumb">
+              <img src="../assets/tutorial/mcf7/whad_mcf7_046.png" alt="WHAD-MCF7 46 hour phase-contrast scratch assay image">
+              <span><strong>46h</strong> near close</span>
+            </figure>
+          </div>
+          <div class="tutorial-card-body">
+            <h2>MCF7 phase contrast</h2>
+            <p>Practice the phase-contrast preset, group application, area-plot review, and mask inspection on a public near-closure sequence.</p>
+            <div class="tutorial-meta">
+              <span>Phase contrast</span>
+              <span>Near closure</span>
+              <span>7 steps</span>
+            </div>
+            <a class="button" href="../prototype_refactor/?tutorial=mcf7">Launch MCF7 tutorial</a>
+          </div>
+        </article>
       </section>
 
       <section class="steps" aria-label="Tutorial steps">
@@ -327,9 +440,14 @@
     </main>
 
     <footer>
-      <span>Images are served only as tutorial examples.</span>
+      <span>Tutorial images are served only as example inputs.</span>
       <a href="../prototype_refactor/">Open Cytomove without tutorial</a>
     </footer>
+    <p class="data-note">
+      WHAD-MCF7 example images are from the WHAD/CAMAD dataset by Iheme et al. (2024),
+      Zenodo, CC BY 4.0, DOI:
+      <a href="https://doi.org/10.5281/zenodo.12806149">10.5281/zenodo.12806149</a>.
+    </p>
   </div>
 </body>
 </html>

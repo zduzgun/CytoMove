@@ -35,7 +35,73 @@
         { file:'m8f_24h_002.png', time:'24h' },
         { file:'m8f_48h_003.png', time:'48h' }
       ],
-      settings:{ presetKey:'standard', scratchOrientation:'vertical' }
+      settings:{ presetKey:'standard', scratchOrientation:'vertical' },
+      completeBody:'You fixed orientation, selected the brightfield preset, analyzed the first image, applied settings to the group, opened the area plot, navigated the series, and inspected the mask.'
+    },
+    mcf7: {
+      id:'tutorial-mcf7',
+      label:'WHAD-MCF7 phase-contrast tutorial',
+      cell:'MCF-7',
+      condition:'WHAD/CAMAD example',
+      baseUrl:'../assets/tutorial/mcf7/',
+      samples:[
+        { file:'whad_mcf7_001.png', time:'1h' },
+        { file:'whad_mcf7_021.png', time:'21h' },
+        { file:'whad_mcf7_046.png', time:'46h' }
+      ],
+      settings:{ presetKey:'fine', scratchOrientation:'vertical' },
+      completeBody:'You selected the phase-contrast preset, analyzed the first image, applied settings to the WHAD-MCF7 group, reviewed the area plot, navigated the series, and inspected the mask.',
+      steps:[
+        {
+          key:'preset-phase',
+          selector:'button[data-preset="fine"]',
+          label:'Phase contrast',
+          title:'Select the phase-contrast preset',
+          body:'This WHAD-MCF7 example uses phase-contrast microscopy. Start with the Phase contrast preset before running the first segmentation.'
+        },
+        {
+          key:'apply-first',
+          selector:'#rerun',
+          label:'Apply',
+          title:'Analyze the first MCF7 image',
+          body:'Click Apply to draw the first contour overlay and check that the wound boundary is visible before running the group.'
+        },
+        {
+          key:'apply-group',
+          selector:'#applySettingsGroup',
+          label:'Apply to group',
+          title:'Run the same settings on all MCF7 images',
+          body:'Apply the current phase-contrast settings to the early, mid, and near-closure frames.'
+        },
+        {
+          key:'show-area',
+          selector:'#showAreaPlot',
+          label:'Area plot',
+          title:'Review the near-closure trend',
+          body:'Open the area plot to see how the wound area changes across the three WHAD-MCF7 time points.'
+        },
+        {
+          key:'close-plot',
+          selector:'#closePlot',
+          label:'Close plot',
+          title:'Close the plot panel',
+          body:'Close the plot so you can inspect individual overlays and masks again.'
+        },
+        {
+          key:'next-image',
+          selector:'#groupNext',
+          label:'Next image',
+          title:'Inspect the next MCF7 time point',
+          body:'Move through the series and check whether the restored contour still follows the wound boundary.'
+        },
+        {
+          key:'mask-view',
+          selector:'button[data-view="mask"]',
+          label:'Mask',
+          title:'Check the binary mask',
+          body:'Switch to Mask view to inspect the exact region counted as wound area in this phase-contrast example.'
+        }
+      ]
     }
   };
 
@@ -3656,7 +3722,7 @@
     return true;
   }
 
-  const TUTORIAL_STEPS = [
+  const DEFAULT_TUTORIAL_STEPS = [
     {
       key:'fix-orientation',
       selector:'#scratchOrientation',
@@ -3731,13 +3797,14 @@
     ensureTutorialPointer();
     state.tutorial={...state.tutorial,config,samples,stepIndex:0,done:new Set()};
     const render=()=>{
-      const current=TUTORIAL_STEPS[state.tutorial.stepIndex];
-      const progress=`${Math.min(state.tutorial.stepIndex+1,TUTORIAL_STEPS.length)} / ${TUTORIAL_STEPS.length}`;
+      const steps=currentTutorialSteps();
+      const current=steps[state.tutorial.stepIndex];
+      const progress=`${Math.min(state.tutorial.stepIndex+1,steps.length)} / ${steps.length}`;
       const completed=state.tutorial.complete;
       coach.innerHTML=completed
         ? `<div class="tutorial-kicker">Guided tutorial complete</div>
-           <h2>M8F review is ready.</h2>
-           <p>You fixed orientation, selected the preset, analyzed the first image, applied settings to the group, opened the area plot, navigated the series, and inspected the mask.</p>
+           <h2>${escHtml(config.label)} is ready.</h2>
+           <p>${escHtml(config.completeBody||'You selected the preset, analyzed the first image, applied settings to the group, opened the area plot, navigated the series, and inspected the mask.')}</p>
            <div class="tutorial-actions">
              <a class="tutorial-link" href="../tutorial/">Back to tutorial page</a>
              <button class="tutorial-secondary" type="button" data-tutorial-restart>Restart</button>
@@ -3750,7 +3817,7 @@
              <button class="tutorial-jump" type="button" data-tutorial-jump>${escHtml(current.label)}</button>
            </div>
            <ol class="tutorial-steps">
-             ${TUTORIAL_STEPS.map((step,index)=>`<li class="${index<state.tutorial.stepIndex?'done':index===state.tutorial.stepIndex?'current':''}"><span>${index+1}</span>${escHtml(step.label)}</li>`).join('')}
+             ${steps.map((step,index)=>`<li class="${index<state.tutorial.stepIndex?'done':index===state.tutorial.stepIndex?'current':''}"><span>${index+1}</span>${escHtml(step.label)}</li>`).join('')}
            </ol>
            <div class="tutorial-actions">
              <a class="tutorial-link" href="../tutorial/">Tutorial page</a>
@@ -3780,7 +3847,7 @@
     });
     document.addEventListener('click',e=>{
       if(!state.tutorial||state.tutorial.complete) return;
-      const step=TUTORIAL_STEPS[state.tutorial.stepIndex];
+      const step=currentTutorialStep();
       if(!step) return;
       if(step.event==='change'||step.action==='set-value') return;
       const target=e.target.closest(step.selector);
@@ -3789,7 +3856,7 @@
     },true);
     document.addEventListener('change',e=>{
       if(!state.tutorial||state.tutorial.complete) return;
-      const step=TUTORIAL_STEPS[state.tutorial.stepIndex];
+      const step=currentTutorialStep();
       if(!step||step.event!=='change') return;
       const target=e.target.closest(step.selector);
       if(!target||target.disabled) return;
@@ -3801,16 +3868,21 @@
   }
 
   function advanceTutorialStep(render) {
+    const steps=currentTutorialSteps();
     state.tutorial.stepIndex++;
-    if(state.tutorial.stepIndex>=TUTORIAL_STEPS.length) {
+    if(state.tutorial.stepIndex>=steps.length) {
       state.tutorial.complete=true;
       clearTutorialHighlight();
     }
     render();
   }
 
+  function currentTutorialSteps() {
+    return state.tutorial?.config?.steps || DEFAULT_TUTORIAL_STEPS;
+  }
+
   function currentTutorialStep() {
-    return state.tutorial&&!state.tutorial.complete?TUTORIAL_STEPS[state.tutorial.stepIndex]:null;
+    return state.tutorial&&!state.tutorial.complete?currentTutorialSteps()[state.tutorial.stepIndex]:null;
   }
 
   function currentTutorialTarget() {
