@@ -10,7 +10,7 @@ _As of June 2026 - soft-deployed and in controlled academic access._
 
 - Live site: [cytomove.com](https://cytomove.com)
 - **Working web app** is live (no installation): local image analysis with single-image and group review.
-- **Controlled Academic Access:** a loginless demo plus registered full access. Free for academic use.
+- **Cytomove Access:** a loginless demo plus registered full access. Free for academic use.
 - **Desktop app:** an Electron build for faster local group analysis and heavier exports.
 - **bioRxiv preprint:** [Cytomove: a browser-local and reviewable workflow for scratch wound healing assay quantification](https://www.biorxiv.org/content/10.64898/2026.06.06.730617v1).
 

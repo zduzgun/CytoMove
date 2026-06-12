@@ -774,10 +774,6 @@
 
   <script>
     (function () {
-      if (window.location.pathname.indexOf('/beta-gateway/') !== -1 && window.history && window.history.replaceState) {
-        window.history.replaceState(null, '', '/access/' + window.location.search + window.location.hash);
-      }
-
       var status = document.getElementById('authStatus');
       var accountPanel = document.getElementById('accountPanel');
       var googleButton = document.getElementById('googleSignIn');

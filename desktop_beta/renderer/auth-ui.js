@@ -290,7 +290,7 @@
   });
   if (manageWebBtn) {
     manageWebBtn.addEventListener('click', function () {
-      if (isDesktop) window.cytomoveDesktop.openExternal('https://cytomove.com/beta-gateway/?stay=1');
+      if (isDesktop) window.cytomoveDesktop.openExternal('https://cytomove.com/access/?stay=1');
       closeDropdown();
     });
   }
