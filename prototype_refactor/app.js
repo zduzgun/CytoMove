@@ -3756,7 +3756,7 @@
              <a class="tutorial-link" href="../tutorial/">Tutorial page</a>
              <button class="tutorial-secondary" type="button" data-tutorial-skip>Skip</button>
            </div>`;
-      updateTutorialHighlight();
+      updateTutorialHighlight({scroll:true,restartPointer:true});
     };
     coach.addEventListener('click',e=>{
       if(e.target.closest('[data-tutorial-jump]')) {
@@ -3782,16 +3782,10 @@
       if(!state.tutorial||state.tutorial.complete) return;
       const step=TUTORIAL_STEPS[state.tutorial.stepIndex];
       if(!step) return;
+      if(step.event==='change'||step.action==='set-value') return;
       const target=e.target.closest(step.selector);
       if(!target||target.disabled) return;
-      window.setTimeout(()=>{
-        state.tutorial.stepIndex++;
-        if(state.tutorial.stepIndex>=TUTORIAL_STEPS.length) {
-          state.tutorial.complete=true;
-          clearTutorialHighlight();
-        }
-        render();
-      },500);
+      window.setTimeout(()=>advanceTutorialStep(render),500);
     },true);
     document.addEventListener('change',e=>{
       if(!state.tutorial||state.tutorial.complete) return;
@@ -3800,17 +3794,19 @@
       const target=e.target.closest(step.selector);
       if(!target||target.disabled) return;
       if(step.value!==undefined&&target.value!==step.value) return;
-      window.setTimeout(()=>{
-        state.tutorial.stepIndex++;
-        if(state.tutorial.stepIndex>=TUTORIAL_STEPS.length) {
-          state.tutorial.complete=true;
-          clearTutorialHighlight();
-        }
-        render();
-      },500);
+      window.setTimeout(()=>advanceTutorialStep(render),500);
     },true);
     render();
     window.setInterval(()=>{ if(state.tutorial&&!state.tutorial.complete) updateTutorialHighlight(); },1200);
+  }
+
+  function advanceTutorialStep(render) {
+    state.tutorial.stepIndex++;
+    if(state.tutorial.stepIndex>=TUTORIAL_STEPS.length) {
+      state.tutorial.complete=true;
+      clearTutorialHighlight();
+    }
+    render();
   }
 
   function currentTutorialStep() {
@@ -3836,14 +3832,15 @@
     document.querySelectorAll('.tutorial-highlight').forEach(node=>node.classList.remove('tutorial-highlight'));
   }
 
-  function updateTutorialHighlight() {
+  function updateTutorialHighlight(options={}) {
+    const {scroll=false,restartPointer=false}=options;
     clearTutorialHighlight();
     const target=currentTutorialTarget();
     if(!target) return;
-    scrollTutorialTargetIntoView(target);
+    if(scroll) scrollTutorialTargetIntoView(target);
     target.classList.add('tutorial-highlight');
-    aimTutorialPointer(target);
-    window.setTimeout(()=>aimTutorialPointer(target),420);
+    aimTutorialPointer(target,{restart:restartPointer});
+    if(restartPointer) window.setTimeout(()=>aimTutorialPointer(target,{restart:false}),420);
   }
 
   function scrollTutorialTargetIntoView(target) {
@@ -3879,7 +3876,8 @@
     return pointer;
   }
 
-  function aimTutorialPointer(target) {
+  function aimTutorialPointer(target, options={}) {
+    const {restart=false}=options;
     const pointer=ensureTutorialPointer();
     const rect=target.getBoundingClientRect();
     const coach=document.getElementById('tutorialCoach');
@@ -3896,8 +3894,10 @@
     pointer.style.setProperty('--pointer-start-y',`${Math.round(startY)}px`);
     pointer.style.setProperty('--pointer-end-x',`${Math.round(endX)}px`);
     pointer.style.setProperty('--pointer-end-y',`${Math.round(endY)}px`);
-    pointer.classList.remove('moving');
-    void pointer.offsetWidth;
+    if(restart) {
+      pointer.classList.remove('moving');
+      void pointer.offsetWidth;
+    }
     pointer.classList.add('moving');
   }
 

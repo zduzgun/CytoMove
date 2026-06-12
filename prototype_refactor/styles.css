@@ -456,7 +456,7 @@
       filter: drop-shadow(0 8px 14px rgba(0,0,0,0.28));
     }
     .tutorial-pointer.moving {
-      animation: tutorialPointerMove 1.15s cubic-bezier(.2,.8,.2,1) infinite;
+      animation: tutorialPointerMove 5.6s cubic-bezier(.2,.8,.2,1) infinite;
     }
     .tutorial-pointer-head {
       position: absolute;
@@ -494,12 +494,16 @@
         opacity: 0;
         transform: translate(var(--pointer-start-x), var(--pointer-start-y)) scale(.86);
       }
-      18% { opacity: 1; }
-      62%, 100% {
+      8% { opacity: 1; }
+      40%, 94% {
         opacity: 1;
         transform: translate(var(--pointer-end-x), var(--pointer-end-y)) scale(1);
       }
-      82% {
+      97% {
+        transform: translate(var(--pointer-end-x), var(--pointer-end-y)) scale(.92);
+      }
+      100% {
+        opacity: 0;
         transform: translate(var(--pointer-end-x), var(--pointer-end-y)) scale(.92);
       }
     }
