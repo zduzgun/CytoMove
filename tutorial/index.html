@@ -137,7 +137,7 @@
     }
     .tutorial-options {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
       gap: 16px;
       padding: 0 0 38px;
     }
@@ -306,6 +306,7 @@
             <a class="button" href="../app/?tutorial=m8f">Launch M8F quick start</a>
             <a class="button secondary" href="../app/?tutorial=mcf7">Launch MCF7 phase contrast</a>
             <a class="button secondary" href="../app/?tutorial=manual">Launch manual correction</a>
+            <a class="button secondary" href="../app/?tutorial=manual-hard">Launch hard correction</a>
             <a class="button secondary" href="../wound-healing-scratch-assay-analysis/">Read the guide</a>
           </div>
         </div>
@@ -423,6 +424,37 @@
               <span>11 steps</span>
             </div>
             <a class="button" href="../app/?tutorial=manual">Launch manual tutorial</a>
+          </div>
+        </article>
+
+        <article class="tutorial-card">
+          <div class="preview-head">
+            <span>Hard correction</span>
+            <span>Fragmented MCF7</span>
+          </div>
+          <div class="thumb-grid">
+            <figure class="thumb">
+              <img src="../assets/tutorial/manual-hard/whad_mcf7_036.png" alt="WHAD-MCF7 36 hour fragmented near-closure image">
+              <span><strong>36h</strong> fragmented</span>
+            </figure>
+            <figure class="thumb">
+              <img src="../assets/tutorial/manual-hard/whad_mcf7_041.png" alt="WHAD-MCF7 41 hour fragmented near-closure image">
+              <span><strong>41h</strong> hard</span>
+            </figure>
+            <figure class="thumb">
+              <img src="../assets/tutorial/manual-hard/whad_mcf7_046.png" alt="WHAD-MCF7 46 hour fragmented near-closure image">
+              <span><strong>46h</strong> near close</span>
+            </figure>
+          </div>
+          <div class="tutorial-card-body">
+            <h2>Manual hard case</h2>
+            <p>Practice cleanup and local edits on fragmented near-closure phase-contrast frames where automatic masks need careful review.</p>
+            <div class="tutorial-meta">
+              <span>Fragmented mask</span>
+              <span>Near closure</span>
+              <span>11 steps</span>
+            </div>
+            <a class="button" href="../app/?tutorial=manual-hard">Launch hard tutorial</a>
           </div>
         </article>
       </section>

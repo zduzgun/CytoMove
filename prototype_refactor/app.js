@@ -200,6 +200,101 @@
           body:'Reset correction removes manual edits and returns the image to the automatic mask.'
         }
       ]
+    },
+    'manual-hard': {
+      id:'tutorial-manual-hard',
+      label:'Manual correction hard tutorial',
+      cell:'MCF-7',
+      condition:'WHAD-MCF7 fragmented near-closure example',
+      baseUrl:'../assets/tutorial/manual-hard/',
+      samples:[
+        { file:'whad_mcf7_036.png', time:'36h' },
+        { file:'whad_mcf7_041.png', time:'41h' },
+        { file:'whad_mcf7_046.png', time:'46h' }
+      ],
+      settings:{ presetKey:'fine', scratchOrientation:'vertical' },
+      completeBody:'You reviewed a fragmented near-closure phase-contrast example, used manual cleanup tools, applied local rectangle edits, tested undo/reset, and returned to a controlled mask state.',
+      steps:[
+        {
+          key:'preset-phase',
+          selector:'button[data-preset="fine"]',
+          label:'Phase contrast',
+          title:'Start with the phase-contrast preset',
+          body:'This near-closure WHAD-MCF7 example is fragmented and speckled. Use the Phase contrast preset as a clear starting point before manual cleanup.'
+        },
+        {
+          key:'apply-first',
+          selector:'#rerun',
+          label:'Apply',
+          title:'Create the automatic mask',
+          body:'Run the first segmentation so you can inspect where the automatic mask fragments or overreaches.'
+        },
+        {
+          key:'mask-view',
+          selector:'button[data-view="mask"]',
+          label:'Mask',
+          title:'Inspect the fragmented mask',
+          body:'Switch to Mask view first. In difficult near-closure frames, the binary mask makes small fragments easier to find.'
+        },
+        {
+          key:'clean-mode',
+          selector:'button[data-brush-mode="clean"]',
+          label:'Clean specks',
+          title:'Select Clean specks',
+          body:'Clean specks removes tiny local mask fragments without blindly erasing a large region.'
+        },
+        {
+          key:'draw-clean',
+          selector:'#canvas',
+          label:'Draw cleanup rectangle',
+          title:'Drag over a fragmented region',
+          body:'Drag over a small region with scattered mask specks. The tutorial continues only after Cytomove applies a cleanup.',
+          event:'cytomove:manual-correction'
+        },
+        {
+          key:'erase-mode',
+          selector:'button[data-brush-mode="erase"]',
+          label:'Erase scan',
+          title:'Select Erase scan',
+          body:'Erase scan is useful when a local cell cluster or artifact is clearly not wound area but was included in the mask.'
+        },
+        {
+          key:'draw-erase',
+          selector:'#canvas',
+          label:'Draw erase rectangle',
+          title:'Drag over a false-positive area',
+          body:'Drag over a local false-positive mask region. If nothing changes, choose a nearby filled region and try again.',
+          event:'cytomove:manual-correction'
+        },
+        {
+          key:'add-mode',
+          selector:'button[data-brush-mode="add"]',
+          label:'Add scan',
+          title:'Try Add scan',
+          body:'Add scan rescans a local region and is safer than direct fill when the missing area still has useful texture.'
+        },
+        {
+          key:'fill-mode',
+          selector:'button[data-brush-mode="fill"]',
+          label:'Fill area',
+          title:'Try Fill area last',
+          body:'Fill area is the most direct edit. Reserve it for obvious wound gaps where the mask should definitely be filled.'
+        },
+        {
+          key:'undo',
+          selector:'#undoBrush',
+          label:'Undo',
+          title:'Undo the last hard-case edit',
+          body:'Undo lets you test aggressive corrections without committing to them.'
+        },
+        {
+          key:'reset',
+          selector:'#resetBrush',
+          label:'Reset correction',
+          title:'Reset the manual changes',
+          body:'Reset returns the hard example to the automatic mask so you can compare edited and unedited states.'
+        }
+      ]
     }
   };
 
