@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260612-hard">
+  <link rel="stylesheet" href="styles.css?v=20260614-tutorial-playground">
   <script>
     /* Apply saved theme before paint to avoid a flash. JS is the single source of
        truth: in "auto" the OS preference is resolved here and written to data-theme. */
@@ -29,7 +29,7 @@
 <body>
   <main class="app">
     <header class="topbar">
-      <div class="brand">
+      <a class="brand" href="../" aria-label="Cytomove home">
         <div class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="16" cy="16" r="13" stroke="#0f9f8f" stroke-width="1.8"/>
@@ -42,7 +42,7 @@
           <div class="brand-name">Cytomove</div>
           <div class="brand-tag">Reviewable Wound Healing Analysis</div>
         </div>
-      </div>
+      </a>
       <div class="status-pills">
         <span class="pill"><span class="pill-dot"></span><strong>Area</strong> MVP metric</span>
         <span class="pill"><strong>Width</strong> secondary</span>
@@ -532,7 +532,7 @@
       }
     }());
   </script>
-  <script src="app.js?v=20260612-hard"></script>
+  <script src="app.js?v=20260614-tutorial-playground"></script>
   <script>
     // Mark sidebar sections the user has interacted with (shows a dot when collapsed).
     (function () {

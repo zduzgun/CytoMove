@@ -107,12 +107,10 @@
       id:'tutorial-manual',
       label:'Manual correction tutorial',
       cell:'MDA-MB-231',
-      condition:'MK correction example',
+      condition:'M8F correction example',
       baseUrl:'../assets/tutorial/manual/',
       samples:[
-        { file:'mk_0h_001.png', time:'0h' },
-        { file:'mk_24h_002.png', time:'24h' },
-        { file:'mk_48h_003.png', time:'48h' }
+        { file:'m8f_48h_003.png', time:'48h' }
       ],
       settings:{ presetKey:'rough', scratchOrientation:'vertical' },
       completeBody:'You analyzed a challenging image, used manual correction modes, drew an edit rectangle on the mask, tested undo/reset, and returned to the automatic result.',
@@ -122,7 +120,7 @@
           selector:'#scratchOrientation',
           label:'Horizontal scratch',
           title:'Rotate this horizontal scratch for analysis',
-          body:'This phone-captured example contains a horizontal scratch. Choose Horizontal scratch so Cytomove rotates it into the vertical analysis view.',
+          body:'This M8F example contains a horizontal scratch. Choose Horizontal scratch so Cytomove rotates it into the vertical analysis view.',
           action:'set-value',
           value:'horizontal',
           event:'change'
@@ -154,6 +152,8 @@
           label:'Draw rectangle',
           title:'Drag a small rectangle on the image',
           body:'Drag across a small part of the wound gap. The tutorial continues only after Cytomove applies a manual correction.',
+          mouseHint:'Mouse: press inside the wound gap, drag a small rectangle, then release.',
+          expectedMode:'fill',
           event:'cytomove:manual-correction'
         },
         {
@@ -169,6 +169,8 @@
           label:'Draw erase rectangle',
           title:'Drag a second rectangle',
           body:'Drag across an already-filled part of the mask to practice removing a local false-positive region.',
+          mouseHint:'Mouse: press on a filled mask region, drag a compact rectangle, then release.',
+          expectedMode:'erase',
           event:'cytomove:manual-correction'
         },
         {
@@ -179,11 +181,31 @@
           body:'Add scan rescans a local rectangle instead of filling it blindly. It is useful when the missing wound edge still has texture information.'
         },
         {
+          key:'draw-add',
+          selector:'#canvas',
+          label:'Draw add rectangle',
+          title:'Drag an Add scan rectangle',
+          body:'Drag over a missing wound edge so Cytomove rescans only that local region.',
+          mouseHint:'Mouse: press near a missed wound edge, drag a small rectangle, then release.',
+          expectedMode:'add',
+          event:'cytomove:manual-correction'
+        },
+        {
           key:'clean-mode',
           selector:'button[data-brush-mode="clean"]',
           label:'Clean specks',
           title:'Try Clean specks',
           body:'Clean specks removes tiny mask fragments inside a selected region. It is a conservative cleanup tool for small artifacts.'
+        },
+        {
+          key:'draw-clean',
+          selector:'#canvas',
+          label:'Draw clean rectangle',
+          title:'Drag a Clean specks rectangle',
+          body:'Drag over a small noisy mask region so Cytomove removes only the tiny fragments inside it.',
+          mouseHint:'Mouse: press on a speckled mask area, drag a small rectangle, then release.',
+          expectedMode:'clean',
+          event:'cytomove:manual-correction'
         },
         {
           key:'undo',
@@ -208,9 +230,7 @@
       condition:'WHAD-MCF7 fragmented near-closure example',
       baseUrl:'../assets/tutorial/manual-hard/',
       samples:[
-        { file:'whad_mcf7_036.png', time:'36h' },
-        { file:'whad_mcf7_041.png', time:'41h' },
-        { file:'whad_mcf7_046.png', time:'46h' }
+        { file:'whad_mcf7_026.png', time:'26h' }
       ],
       settings:{ presetKey:'fine', scratchOrientation:'vertical' },
       completeBody:'You reviewed a fragmented near-closure phase-contrast example, used manual cleanup tools, applied local rectangle edits, tested undo/reset, and returned to a controlled mask state.',
@@ -230,48 +250,21 @@
           body:'Run the first segmentation so you can inspect where the automatic mask fragments or overreaches.'
         },
         {
-          key:'mask-view',
-          selector:'button[data-view="mask"]',
-          label:'Mask',
-          title:'Inspect the fragmented mask',
-          body:'Switch to Mask view first. In difficult near-closure frames, the binary mask makes small fragments easier to find.'
-        },
-        {
-          key:'clean-mode',
-          selector:'button[data-brush-mode="clean"]',
-          label:'Clean specks',
-          title:'Select Clean specks',
-          body:'Clean specks removes tiny local mask fragments without blindly erasing a large region.'
-        },
-        {
-          key:'draw-clean',
-          selector:'#canvas',
-          label:'Draw cleanup rectangle',
-          title:'Drag over a fragmented region',
-          body:'Drag over a small region with scattered mask specks. The tutorial continues only after Cytomove applies a cleanup.',
-          event:'cytomove:manual-correction'
-        },
-        {
-          key:'erase-mode',
-          selector:'button[data-brush-mode="erase"]',
-          label:'Erase scan',
-          title:'Select Erase scan',
-          body:'Erase scan is useful when a local cell cluster or artifact is clearly not wound area but was included in the mask.'
-        },
-        {
-          key:'draw-erase',
-          selector:'#canvas',
-          label:'Draw erase rectangle',
-          title:'Drag over a false-positive area',
-          body:'Drag over a local false-positive mask region. If nothing changes, choose a nearby filled region and try again.',
-          event:'cytomove:manual-correction'
-        },
-        {
           key:'add-mode',
           selector:'button[data-brush-mode="add"]',
           label:'Add scan',
-          title:'Try Add scan',
-          body:'Add scan rescans a local region and is safer than direct fill when the missing area still has useful texture.'
+          title:'Start with Add scan',
+          body:'Add scan is the safest first manual correction here because it rescans a local region instead of blindly filling or deleting mask pixels.'
+        },
+        {
+          key:'draw-add',
+          selector:'#canvas',
+          label:'Draw add rectangle',
+          title:'Drag an Add scan rectangle',
+          body:'Drag over a partly missed wound edge so Cytomove recalculates that hard local region before you try stronger edits.',
+          mouseHint:'Mouse: press near the missed wound edge, drag a small rectangle, then release.',
+          expectedMode:'add',
+          event:'cytomove:manual-correction'
         },
         {
           key:'fill-mode',
@@ -279,6 +272,50 @@
           label:'Fill area',
           title:'Try Fill area last',
           body:'Fill area is the most direct edit. Reserve it for obvious wound gaps where the mask should definitely be filled.'
+        },
+        {
+          key:'draw-fill',
+          selector:'#canvas',
+          label:'Draw fill rectangle',
+          title:'Drag a Fill area rectangle',
+          body:'Drag inside an obvious wound gap so the tutorial records one deliberate fill edit before undo/reset.',
+          mouseHint:'Mouse: press inside the obvious gap, drag a small rectangle, then release.',
+          expectedMode:'fill',
+          event:'cytomove:manual-correction'
+        },
+        {
+          key:'erase-mode',
+          selector:'button[data-brush-mode="erase"]',
+          label:'Erase scan',
+          title:'Select Erase scan',
+          body:'Erase scan is useful after fill/add when a local cell cluster or artifact is clearly not wound area but was included in the mask.'
+        },
+        {
+          key:'draw-erase',
+          selector:'#canvas',
+          label:'Draw erase rectangle',
+          title:'Drag over a false-positive area',
+          body:'Drag over a local false-positive mask region. If nothing changes, choose a nearby filled region and try again.',
+          mouseHint:'Mouse: press on a false-positive filled area, drag a small rectangle, then release.',
+          expectedMode:'erase',
+          event:'cytomove:manual-correction'
+        },
+        {
+          key:'clean-mode',
+          selector:'button[data-brush-mode="clean"]',
+          label:'Clean specks',
+          title:'Finish with Clean specks',
+          body:'Clean specks is a final cleanup pass for tiny fragments left after the larger local corrections.'
+        },
+        {
+          key:'draw-clean',
+          selector:'#canvas',
+          label:'Draw cleanup rectangle',
+          title:'Drag a final cleanup rectangle',
+          body:'Drag over a small speckled region. If there are no tiny fragments there, the tutorial still records that you tried the cleanup tool.',
+          mouseHint:'Mouse: press on a speckled mask area, drag a small rectangle, then release.',
+          expectedMode:'clean',
+          event:'cytomove:manual-correction'
         },
         {
           key:'undo',
@@ -2077,6 +2114,7 @@
         return true;
       }
       setLog(`<strong>Clean specks:</strong> no small mask fragments found in the selected ROI.`);
+      emitTutorialManualCorrection('clean',{applied:false});
       return false;
     }
     if(state.brushMode==='fill') {
@@ -2096,6 +2134,7 @@
         return true;
       }
       setLog(`<strong>Fill area:</strong> selected ROI was already filled or outside the analysis field.`);
+      emitTutorialManualCorrection('fill',{applied:false});
       return false;
     }
     if(!add) {
@@ -2114,6 +2153,7 @@
         return true;
       }
       setLog(`<strong>Erase scan:</strong> no existing mask pixels were found in the selected ROI.`);
+      emitTutorialManualCorrection('erase',{applied:false});
       return false;
     }
     const {threshold:localOtsu,maxV:localMaxV}=otsuOnMap(state.varMap,localField,len);
@@ -2150,11 +2190,13 @@
       return true;
     }
     setLog(`<strong>Add scan:</strong> no mask pixels changed in the selected ROI. Try a larger rectangle or adjust scan sensitivity.`);
+    emitTutorialManualCorrection('add',{applied:false});
     return false;
   }
 
-  function emitTutorialManualCorrection(mode) {
-    document.dispatchEvent(new CustomEvent('cytomove:manual-correction',{detail:{mode}}));
+  function emitTutorialManualCorrection(mode, detail={}) {
+    if(!state.tutorial&&detail.applied===false) return;
+    document.dispatchEvent(new CustomEvent('cytomove:manual-correction',{detail:{mode,applied:true,...detail}}));
   }
 
   function applyBrushAt(pt) {
@@ -4007,6 +4049,7 @@
            <h2>${escHtml(config.label)} is ready.</h2>
            <p>${escHtml(config.completeBody||'You selected the preset, analyzed the first image, applied settings to the group, opened the area plot, navigated the series, and inspected the mask.')}</p>
            <div class="tutorial-actions">
+             <button class="tutorial-jump" type="button" data-tutorial-playground>Playground</button>
              <a class="tutorial-link" href="../tutorial/">Back to tutorial page</a>
              <button class="tutorial-secondary" type="button" data-tutorial-restart>Restart</button>
            </div>`
@@ -4014,7 +4057,7 @@
            <h2>${escHtml(current.title)}</h2>
            <p>${escHtml(current.body)}</p>
            <div class="tutorial-required">
-             <span>Required click</span>
+             <span>Next action</span>
              <button class="tutorial-jump" type="button" data-tutorial-jump>${escHtml(current.label)}</button>
            </div>
            <ol class="tutorial-steps">
@@ -4039,6 +4082,9 @@
         state.tutorial.complete=true;
         clearTutorialHighlight();
         render();
+      }
+      if(e.target.closest('[data-tutorial-playground]')) {
+        enterTutorialPlayground(config);
       }
       if(e.target.closest('[data-tutorial-restart]')) {
         state.tutorial.stepIndex=0;
@@ -4068,6 +4114,7 @@
       if(!state.tutorial||state.tutorial.complete) return;
       const step=currentTutorialStep();
       if(!step||step.event!=='cytomove:manual-correction') return;
+      if(step.expectedMode&&e.detail?.mode!==step.expectedMode) return;
       const target=currentTutorialTarget();
       if(!target||target.disabled) return;
       window.setTimeout(()=>advanceTutorialStep(render),500);
@@ -4111,6 +4158,19 @@
 
   function clearTutorialHighlight() {
     document.querySelectorAll('.tutorial-highlight').forEach(node=>node.classList.remove('tutorial-highlight'));
+    const bubble=document.getElementById('tutorialBubble');
+    if(bubble) bubble.classList.remove('visible');
+    const pointer=document.getElementById('tutorialPointer');
+    if(pointer) pointer.classList.remove('moving');
+  }
+
+  function enterTutorialPlayground(config) {
+    clearTutorialHighlight();
+    state.tutorial=null;
+    document.body.classList.remove('tutorial-active');
+    const coach=document.getElementById('tutorialCoach');
+    if(coach) coach.remove();
+    setLog(`<strong>Playground mode.</strong> ${escHtml(config?.label||'Tutorial images')} stays loaded, and you can change settings, redraw rectangles, undo/reset corrections, or export results freely.`);
   }
 
   function updateTutorialHighlight(options={}) {
@@ -4121,6 +4181,7 @@
     if(scroll) scrollTutorialTargetIntoView(target);
     target.classList.add('tutorial-highlight');
     aimTutorialPointer(target,{restart:restartPointer});
+    positionTutorialBubble(target,currentTutorialStep());
     if(restartPointer) window.setTimeout(()=>aimTutorialPointer(target,{restart:false}),420);
   }
 
@@ -4155,6 +4216,48 @@
     pointer.innerHTML='<span class="tutorial-pointer-shaft"></span><span class="tutorial-pointer-head"></span>';
     document.body.appendChild(pointer);
     return pointer;
+  }
+
+  function ensureTutorialBubble() {
+    let bubble=document.getElementById('tutorialBubble');
+    if(bubble) return bubble;
+    bubble=document.createElement('div');
+    bubble.id='tutorialBubble';
+    bubble.className='tutorial-bubble';
+    bubble.setAttribute('role','status');
+    bubble.setAttribute('aria-live','polite');
+    document.body.appendChild(bubble);
+    return bubble;
+  }
+
+  function tutorialActionHint(step, target) {
+    if(!step) return '';
+    if(step.mouseHint) return step.mouseHint;
+    if(step.action==='set-value') return `Choose "${step.label}" from this control.`;
+    if(target&&target.id==='canvas') return 'Mouse: drag a small rectangle on the image, then release.';
+    return `Click "${step.label}" to continue.`;
+  }
+
+  function positionTutorialBubble(target, step) {
+    if(!target||!step) return;
+    const bubble=ensureTutorialBubble();
+    bubble.innerHTML=`<strong>${escHtml(step.title)}</strong><span>${escHtml(tutorialActionHint(step,target))}</span>`;
+    const rect=target.getBoundingClientRect();
+    const margin=12;
+    const maxLeft=window.innerWidth-300-margin;
+    let left=rect.right+margin;
+    let top=rect.top+Math.min(20,Math.max(0,rect.height/2-22));
+    let placement='right';
+    if(left>maxLeft) {
+      left=rect.left-288-margin;
+      placement='left';
+    }
+    if(left<margin) left=Math.min(maxLeft,Math.max(margin,rect.left));
+    top=Math.max(margin,Math.min(window.innerHeight-100,top));
+    bubble.style.left=`${Math.round(left)}px`;
+    bubble.style.top=`${Math.round(top)}px`;
+    bubble.dataset.placement=placement;
+    bubble.classList.add('visible');
   }
 
   function aimTutorialPointer(target, options={}) {

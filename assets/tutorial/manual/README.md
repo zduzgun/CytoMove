@@ -1,11 +1,9 @@
 # Manual Correction Tutorial Images
 
-These example images are selected from the author-acquired smartphone-through-eyepiece MK validation set used in the Cytomove preprint validation package.
+This example image is selected from the M8F validation set used in the Cytomove preprint validation package.
 
-Included tutorial frames:
+Included tutorial frame:
 
-- `mk_0h_001.png`
-- `mk_24h_002.png`
-- `mk_48h_003.png`
+- `m8f_48h_003.png`
 
-They are served as tutorial example inputs for the manual correction workflow.
+It is served as the normal manual correction tutorial input.
