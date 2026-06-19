@@ -7169,6 +7169,31 @@
     await renderGroupContours(samples,{force:true});
   }
 
+  function validationAssetErrorMessage() {
+    return 'Validation images are unavailable in this build. Run the app from the repository root or provide the local validation assets.';
+  }
+
+  function cleanupImportedValidationGroups(imported=[]) {
+    const groupIds=new Set(imported.map(item=>item.groupId).filter(Boolean));
+    const importedSamples=imported.flatMap(item=>Array.isArray(item.samples)?item.samples:[]);
+    const sampleIds=new Set(importedSamples.map(sample=>sample.id).filter(Boolean));
+    const objectUrls=new Set(importedSamples.map(sample=>sample.url).filter(Boolean));
+    objectUrls.forEach(url=>URL.revokeObjectURL(url));
+    state.objectUrls=state.objectUrls.filter(url=>!objectUrls.has(url));
+    state.customGroups=state.customGroups.filter(group=>!groupIds.has(group.id));
+    state.customSamples=state.customSamples.filter(sample=>!sampleIds.has(sample.id));
+    sampleIds.forEach(id=>{
+      releasePreparedQcImage(id);
+      clearQcCropCache(id);
+      delete state.groupResults[id];
+      delete state.manualOverrides[id];
+      delete state.sampleSettings[id];
+      delete state.imageQcState[id];
+    });
+    groupIds.forEach(id=>delete state.lastQcCropTemplateByGroup[id]);
+    populateGroups();
+  }
+
   async function loadServedValidationSet(setId) {
     const config=VALIDATION_SETS[setId];
     if(!config) {
@@ -7177,8 +7202,9 @@
     }
     setSpinner(true);
     if(el.loadBuilderValidationSet) el.loadBuilderValidationSet.disabled=true;
+    const imported=[];
     try {
-      const imported=[];
+      await fetchServedImageFile(config.groups[0].files[0]);
       for(const group of config.groups) {
         const files=[];
         for(const relativePath of group.files) {
@@ -7215,7 +7241,8 @@
       renderPublicationBuilder();
       setLog(`<strong>Validation set loaded:</strong> ${config.label}. Imported ${imported.length} groups and analyzed their image series for replicate testing.`);
     } catch(err) {
-      setLog(`<strong>Validation set load failed.</strong> ${err.message||err}`);
+      cleanupImportedValidationGroups(imported);
+      setLog(`<strong>Validation set unavailable.</strong> ${validationAssetErrorMessage()}`);
     } finally {
       if(el.loadBuilderValidationSet) el.loadBuilderValidationSet.disabled=false;
       setSpinner(false);

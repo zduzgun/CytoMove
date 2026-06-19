@@ -174,6 +174,104 @@ assert(
   'Initialization should sync validation tool visibility after DOM references and event bindings are ready'
 );
 
+const validationMessageSource = js.match(/function validationAssetErrorMessage\(\)\s*\{[\s\S]*?\n  \}/);
+assert(validationMessageSource, 'app.js should expose validationAssetErrorMessage');
+const validationMessageSandbox = {};
+vm.runInNewContext(
+  `${validationMessageSource[0]}; this.validationAssetErrorMessage = validationAssetErrorMessage;`,
+  validationMessageSandbox
+);
+assert(
+  validationMessageSandbox.validationAssetErrorMessage().includes('Validation images are unavailable in this build'),
+  'Validation failure should use a user-safe message'
+);
+
+const validationCleanupSource = js.match(/function cleanupImportedValidationGroups\(imported=\[\]\)\s*\{[\s\S]*?\n  \}/);
+assert(validationCleanupSource, 'app.js should expose cleanupImportedValidationGroups');
+const revokedValidationUrls = [];
+let validationGroupsRefreshCount = 0;
+const validationCleanupSandbox = {
+  state:{
+    customGroups:[
+      {id:'keep-group',sampleIds:['keep-sample']},
+      {id:'remove-group',sampleIds:['remove-sample']}
+    ],
+    customSamples:[
+      {id:'keep-sample',url:'blob:keep'},
+      {id:'remove-sample',url:'blob:remove'}
+    ],
+    objectUrls:['blob:keep','blob:remove'],
+    groupResults:{},
+    manualOverrides:{},
+    sampleSettings:{},
+    imageQcState:{},
+    lastQcCropTemplateByGroup:{}
+  },
+  URL:{revokeObjectURL:url=>revokedValidationUrls.push(url)},
+  releasePreparedQcImage:()=>{},
+  clearQcCropCache:()=>{},
+  populateGroups:()=>{ validationGroupsRefreshCount+=1; }
+};
+vm.runInNewContext(
+  `${validationCleanupSource[0]}; cleanupImportedValidationGroups([{groupId:'remove-group',samples:[{id:'remove-sample',url:'blob:remove'}]}]);`,
+  validationCleanupSandbox
+);
+assert.deepStrictEqual(
+  validationCleanupSandbox.state.customGroups.map(group=>group.id),
+  ['keep-group'],
+  'Validation cleanup should remove only partially imported groups'
+);
+assert.deepStrictEqual(
+  validationCleanupSandbox.state.customSamples.map(sample=>sample.id),
+  ['keep-sample'],
+  'Validation cleanup should remove only partially imported samples'
+);
+assert.deepStrictEqual(
+  validationCleanupSandbox.state.objectUrls,
+  ['blob:keep'],
+  'Validation cleanup should remove revoked URLs from session tracking'
+);
+assert.deepStrictEqual(
+  revokedValidationUrls,
+  ['blob:remove'],
+  'Validation cleanup should revoke imported sample object URLs'
+);
+assert.strictEqual(validationGroupsRefreshCount,1,'Validation cleanup should refresh group options once');
+
+const loaderSource = js.match(/async function loadServedValidationSet\(setId\)\s*\{[\s\S]*?\n  \}/);
+assert(loaderSource, 'app.js should expose loadServedValidationSet');
+const loaderBody = loaderSource[0];
+const importedDeclarationIndex = loaderBody.indexOf('const imported=[];');
+const loaderTryIndex = loaderBody.indexOf('try {');
+const preflightIndex = loaderBody.indexOf('await fetchServedImageFile(config.groups[0].files[0])');
+const firstMutationIndex = loaderBody.indexOf('createCustomGroupFromFiles(');
+assert(importedDeclarationIndex>=0, 'Validation loader should declare imported before entering its try block');
+assert(
+  importedDeclarationIndex<loaderTryIndex,
+  'Validation loader should keep the imported collection available to its catch block'
+);
+assert(preflightIndex>=0, 'Validation loader should probe the first image before importing groups');
+assert(
+  preflightIndex<firstMutationIndex,
+  'Validation loader should complete its asset preflight before creating any custom group'
+);
+assert(
+  loaderBody.includes('cleanupImportedValidationGroups(imported)'),
+  'Validation loader should clean partial imports on failure'
+);
+assert(
+  loaderBody.includes('validationAssetErrorMessage()'),
+  'Validation loader should report the safe asset message'
+);
+assert(
+  !loaderBody.includes('${err.message||err}'),
+  'Validation loader should not expose raw technical paths or fetch errors'
+);
+assert(
+  /finally\s*\{[\s\S]*loadBuilderValidationSet\.disabled=false[\s\S]*setSpinner\(false\)/.test(loaderBody),
+  'Validation loader should always restore its button and spinner'
+);
+
 const cropChoiceSource = js.match(/function cropForQcSample\(qc, template\)\s*\{[\s\S]*?\n  \}/);
 assert(cropChoiceSource, 'app.js should expose cropForQcSample');
 const cropChoiceSandbox = {};
