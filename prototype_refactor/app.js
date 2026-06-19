@@ -401,6 +401,7 @@
     contourStyleUserSet:false,
     tutorial:null,
     imageLoadSeq:0,
+    validationLoadActive:false,
     varMap:null, maskData:null, autoMaskData:null, fieldData:null, sourceData:null, grayData:null, darkGuideThreshold:0,
     brushMode:'off', brushDrawing:false, brushEdited:false, brushAddedPx:0, brushRemovedPx:0,
     correctionSelecting:false, correctionStart:null, correctionRect:null,
@@ -4815,9 +4816,9 @@
       o.textContent=g.label;
       el.groupSelect.appendChild(o);
     });
-    el.groupSelect.disabled=!groups.length;
+    el.groupSelect.disabled=state.validationLoadActive||!groups.length;
     if(el.groupSelectRow) el.groupSelectRow.hidden=!groups.length;
-    if(el.deleteGroup) el.deleteGroup.disabled=!groups.length;
+    if(el.deleteGroup) el.deleteGroup.disabled=state.validationLoadActive||!groups.length;
     const label=document.getElementById('groupSelectLabel');
     if(label) label.hidden=!groups.length;
     populateBuilderGroupSelects();
@@ -7160,17 +7161,24 @@
     return {groupId,samples,groupLabel};
   }
 
-  async function fetchServedImageFile(relativePath) {
-    try {
-      const response=await fetch(relativePath);
-      if(!response.ok) throw new Error(`Failed to fetch ${relativePath} (${response.status})`);
-      const blob=await response.blob();
-      const name=relativePath.split('/').pop()||'image.jpg';
-      return new File([blob],name,{type:blob.type||'image/jpeg'});
-    } catch(err) {
-      err.validationKind='asset';
-      throw err;
+  class ValidationAssetError extends Error {
+    constructor(message='Validation asset unavailable') {
+      super(message);
+      this.name='ValidationAssetError';
     }
+  }
+
+  async function fetchServedImageFile(relativePath) {
+    let response;
+    try {
+      response=await fetch(relativePath);
+    } catch(_) {
+      throw new ValidationAssetError();
+    }
+    if(!response.ok) throw new ValidationAssetError();
+    const blob=await response.blob();
+    const name=relativePath.split('/').pop()||'image.jpg';
+    return new File([blob],name,{type:blob.type||'image/jpeg'});
   }
 
   async function analyzeImportedGroup(groupId) {
@@ -7202,7 +7210,16 @@
       imageName:stateLike.imageName,
       sample:stateLike.sample,
       result:stateLike.result,
+      crop:stateLike.crop?{...stateLike.crop}:stateLike.crop,
+      cropManual:stateLike.cropManual,
+      cropEditing:stateLike.cropEditing,
       rotation:stateLike.rotation,
+      zoom:stateLike.zoom,
+      panX:stateLike.panX,
+      panY:stateLike.panY,
+      rulerVisible:stateLike.rulerVisible,
+      rulerOffsetX:stateLike.rulerOffsetX,
+      rulerOffsetY:stateLike.rulerOffsetY,
       imageIsPreparedQc:stateLike.imageIsPreparedQc,
       maskData:stateLike.maskData,
       autoMaskData:stateLike.autoMaskData,
@@ -7224,41 +7241,53 @@
       builderTreatmentLabel:elements.builderTreatmentLabel?.value||'',
       builderCellType:elements.builderCellType?.value||'',
       builderReplicate:elements.builderReplicate?.value||'',
-      customGroupIds:(stateLike.customGroups||[]).map(group=>group.id),
-      customSampleIds:(stateLike.customSamples||[]).map(sample=>sample.id),
-      objectUrls:[...(stateLike.objectUrls||[])]
+      canvasTitle:elements.canvasTitle?.textContent||'',
+      canvasMeta:elements.canvasMeta?.textContent||'',
+      canvasHidden:!!elements.canvas?.hidden,
+      emptyStateHidden:!!elements.emptyState?.hidden
     };
   }
 
-  function validationAnalysisComplete(samples=[], context={}) {
+  function validationGroupAnalysisComplete(samples=[], context={}) {
     const results=context.groupResults||{};
     const overrides=context.manualOverrides||{};
     const excluded=new Set(context.excludedSampleIds||[]);
-    return samples
-      .filter(sample=>sample?.id&&!excluded.has(sample.id))
-      .every(sample=>!!(overrides[sample.id]?.result||results[sample.id]||(context.currentSampleId===sample.id?context.currentResult:null)));
+    const eligible=samples.filter(sample=>sample?.id&&!excluded.has(sample.id));
+    if(!eligible.length) return false;
+    return eligible.every(sample=>{
+      const result=overrides[sample.id]?.result||results[sample.id]||(context.currentSampleId===sample.id?context.currentResult:null);
+      return Number.isFinite(result?.area)&&Number.isFinite(result?.wMean);
+    });
   }
 
   function validationLoadErrorMessage(err) {
-    return err?.validationKind==='asset'
+    return err?.name==='ValidationAssetError'
       ? validationAssetErrorMessage()
       : 'Validation analysis could not be completed in this session.';
   }
 
-  function cleanupImportedValidationGroups(imported=[], sessionSnapshot=null) {
-    const baselineGroupIds=new Set(sessionSnapshot?.customGroupIds||[]);
-    const baselineSampleIds=new Set(sessionSnapshot?.customSampleIds||[]);
-    const baselineObjectUrls=new Set(sessionSnapshot?.objectUrls||[]);
-    const importedSamples=imported.flatMap(item=>Array.isArray(item.samples)?item.samples:[]);
-    const fallbackGroupIds=new Set(imported.map(item=>item.groupId).filter(Boolean));
-    const fallbackSampleIds=new Set(importedSamples.map(sample=>sample.id).filter(Boolean));
-    const groupIds=new Set(state.customGroups
-      .filter(group=>sessionSnapshot?!baselineGroupIds.has(group.id):fallbackGroupIds.has(group.id))
-      .map(group=>group.id));
-    const sampleIds=new Set(state.customSamples
-      .filter(sample=>sessionSnapshot?!baselineSampleIds.has(sample.id):fallbackSampleIds.has(sample.id))
-      .map(sample=>sample.id));
-    const objectUrls=new Set(state.objectUrls.filter(url=>sessionSnapshot?!baselineObjectUrls.has(url):importedSamples.some(sample=>sample.url===url)));
+  function validationOwnershipSnapshot(stateLike) {
+    return {
+      groupIds:(stateLike.customGroups||[]).map(group=>group.id),
+      sampleIds:(stateLike.customSamples||[]).map(sample=>sample.id),
+      objectUrls:[...(stateLike.objectUrls||[])]
+    };
+  }
+
+  function recordValidationOwnershipChanges(ownership, before, after) {
+    ['groupIds','sampleIds','objectUrls'].forEach(key=>{
+      const prior=new Set(before[key]||[]);
+      const owned=new Set(ownership[key]||[]);
+      (after[key]||[]).forEach(value=>{ if(!prior.has(value)) owned.add(value); });
+      ownership[key]=[...owned];
+    });
+    return ownership;
+  }
+
+  function cleanupValidationOwnedResources(ownership) {
+    const groupIds=new Set(ownership?.groupIds||[]);
+    const sampleIds=new Set(ownership?.sampleIds||[]);
+    const objectUrls=new Set(ownership?.objectUrls||[]);
     objectUrls.forEach(url=>URL.revokeObjectURL(url));
     state.objectUrls=state.objectUrls.filter(url=>!objectUrls.has(url));
     state.customGroups=state.customGroups.filter(group=>!groupIds.has(group.id));
@@ -7275,55 +7304,139 @@
     populateGroups();
   }
 
+  function restoreValidationSessionValues(stateLike, elements, snapshot) {
+    stateLike.appModule=snapshot.appModule;
+    stateLike.mode=snapshot.mode;
+    stateLike.publicationBuilderState=snapshot.publicationBuilderState;
+    stateLike.image=snapshot.image;
+    stateLike.imageOriginal=snapshot.imageOriginal;
+    stateLike.imageName=snapshot.imageName;
+    stateLike.sample=snapshot.sample;
+    stateLike.result=snapshot.result;
+    stateLike.crop=snapshot.crop?{...snapshot.crop}:snapshot.crop;
+    stateLike.cropManual=snapshot.cropManual;
+    stateLike.cropEditing=snapshot.cropEditing;
+    stateLike.rotation=snapshot.rotation;
+    stateLike.zoom=snapshot.zoom;
+    stateLike.panX=snapshot.panX;
+    stateLike.panY=snapshot.panY;
+    stateLike.rulerVisible=snapshot.rulerVisible;
+    stateLike.rulerOffsetX=snapshot.rulerOffsetX;
+    stateLike.rulerOffsetY=snapshot.rulerOffsetY;
+    stateLike.imageIsPreparedQc=snapshot.imageIsPreparedQc;
+    stateLike.maskData=snapshot.maskData;
+    stateLike.autoMaskData=snapshot.autoMaskData;
+    stateLike.fieldData=snapshot.fieldData;
+    stateLike.sourceData=snapshot.sourceData;
+    stateLike.grayData=snapshot.grayData;
+    stateLike.varMap=snapshot.varMap;
+    stateLike.sampleSettings=snapshot.sampleSettings;
+    stateLike.lockedQcSnapshot=snapshot.lockedQcSnapshot;
+    stateLike.calibrationReport=snapshot.calibrationReport;
+    stateLike.microscopeModeUserSet=snapshot.microscopeModeUserSet;
+    stateLike.lastAutoMicroscopeGroupKey=snapshot.lastAutoMicroscopeGroupKey;
+    stateLike.contourStyleUserSet=snapshot.contourStyleUserSet;
+    if(elements.groupSelect) elements.groupSelect.value=snapshot.groupId;
+    if(elements.sampleSelect) elements.sampleSelect.value=snapshot.sampleSelectId;
+    if(elements.builderControlLabel) elements.builderControlLabel.value=snapshot.builderControlLabel;
+    if(elements.builderTreatmentLabel) elements.builderTreatmentLabel.value=snapshot.builderTreatmentLabel;
+    if(elements.builderCellType) elements.builderCellType.value=snapshot.builderCellType;
+    if(elements.builderReplicate) elements.builderReplicate.value=snapshot.builderReplicate;
+    if(elements.canvasTitle) elements.canvasTitle.textContent=snapshot.canvasTitle;
+    if(elements.canvasMeta) elements.canvasMeta.textContent=snapshot.canvasMeta;
+    if(elements.canvas) {
+      elements.canvas.hidden=snapshot.canvasHidden;
+      elements.canvas.style.transform=`scale(${snapshot.zoom}) translate(${snapshot.panX/snapshot.zoom}px,${snapshot.panY/snapshot.zoom}px)`;
+    }
+    if(elements.emptyState) elements.emptyState.hidden=snapshot.emptyStateHidden;
+  }
+
+  function setValidationLoadControlsLocked(locked, previous=null) {
+    if(locked) {
+      const snapshot={
+        fileInputDisabled:!!el.fileInput?.disabled,
+        groupSelectDisabled:!!el.groupSelect?.disabled,
+        deleteGroupDisabled:!!el.deleteGroup?.disabled,
+        openFileAriaDisabled:el.openFile?.getAttribute('aria-disabled'),
+        openFilePointerEvents:el.openFile?.style.pointerEvents||''
+      };
+      if(el.fileInput) el.fileInput.disabled=true;
+      if(el.groupSelect) el.groupSelect.disabled=true;
+      if(el.deleteGroup) el.deleteGroup.disabled=true;
+      if(el.openFile) {
+        el.openFile.setAttribute('aria-disabled','true');
+        el.openFile.style.pointerEvents='none';
+      }
+      return snapshot;
+    }
+    if(el.fileInput) el.fileInput.disabled=!!previous?.fileInputDisabled;
+    if(el.groupSelect) el.groupSelect.disabled=!!previous?.groupSelectDisabled;
+    if(el.deleteGroup) el.deleteGroup.disabled=!!previous?.deleteGroupDisabled;
+    if(el.openFile) {
+      if(previous?.openFileAriaDisabled===null||previous?.openFileAriaDisabled===undefined) el.openFile.removeAttribute('aria-disabled');
+      else el.openFile.setAttribute('aria-disabled',previous.openFileAriaDisabled);
+      el.openFile.style.pointerEvents=previous?.openFilePointerEvents||'';
+    }
+    return previous;
+  }
+
   function restoreValidationSessionState(snapshot) {
     if(!snapshot) return;
+    cancelAutoApply();
     state.imageLoadSeq=(state.imageLoadSeq||0)+1;
-    state.publicationBuilderState=snapshot.publicationBuilderState;
-    state.image=snapshot.image;
-    state.imageOriginal=snapshot.imageOriginal;
-    state.imageName=snapshot.imageName;
-    state.sample=snapshot.sample;
-    state.result=snapshot.result;
-    state.rotation=snapshot.rotation;
-    state.imageIsPreparedQc=snapshot.imageIsPreparedQc;
-    state.maskData=snapshot.maskData;
-    state.autoMaskData=snapshot.autoMaskData;
-    state.fieldData=snapshot.fieldData;
-    state.sourceData=snapshot.sourceData;
-    state.grayData=snapshot.grayData;
-    state.varMap=snapshot.varMap;
-    state.sampleSettings=snapshot.sampleSettings;
-    state.lockedQcSnapshot=snapshot.lockedQcSnapshot;
-    state.calibrationReport=snapshot.calibrationReport;
-    state.microscopeModeUserSet=snapshot.microscopeModeUserSet;
-    state.lastAutoMicroscopeGroupKey=snapshot.lastAutoMicroscopeGroupKey;
-    state.contourStyleUserSet=snapshot.contourStyleUserSet;
+    state.groupRenderSeq=(state.groupRenderSeq||0)+1;
+    state.autoMicroscopeDetectSeq=(state.autoMicroscopeDetectSeq||0)+1;
+    state.cropDragging=false;
+    state.rulerDragging=false;
+    state.panning=false;
+    restoreValidationSessionValues(state,el,snapshot);
     applyPanelSettings(snapshot.panelSettings);
-    if(el.builderControlLabel) el.builderControlLabel.value=snapshot.builderControlLabel;
-    if(el.builderTreatmentLabel) el.builderTreatmentLabel.value=snapshot.builderTreatmentLabel;
-    if(el.builderCellType) el.builderCellType.value=snapshot.builderCellType;
-    if(el.builderReplicate) el.builderReplicate.value=snapshot.builderReplicate;
     populateGroups();
-    if(el.groupSelect&&groupById(snapshot.groupId)) el.groupSelect.value=snapshot.groupId;
-    if(el.sampleSelect&&snapshot.sampleSelectId) el.sampleSelect.value=snapshot.sampleSelectId;
+    if(el.groupSelect) el.groupSelect.value=snapshot.groupId;
     populateBuilderGroupSelects();
     if(el.builderControlGroup) el.builderControlGroup.value=snapshot.builderControlGroup;
     if(el.builderTreatmentGroup) el.builderTreatmentGroup.value=snapshot.builderTreatmentGroup;
-    if(snapshot.mode==='group'&&groupById(snapshot.groupId)) setMode('group');
-    else setMode('single');
-    setAppModule(snapshot.appModule);
+    if(el.modeToggle) el.modeToggle.querySelectorAll('[data-mode]').forEach(btn=>btn.classList.toggle('active',btn.dataset.mode===snapshot.mode));
+    if(el.moduleTabs) el.moduleTabs.querySelectorAll('[data-module]').forEach(btn=>btn.classList.toggle('active',btn.dataset.module===snapshot.appModule));
+    document.querySelectorAll('.sidebar-inner > .section').forEach(section=>{
+      const isBuilder=section.id==='publicationBuilderControls';
+      const isReview=section.id==='reviewModeSection';
+      section.hidden=sidebarSectionHiddenForModule(snapshot.appModule,isBuilder,isReview,section.dataset.moduleDefaultHidden==='1');
+    });
+    if(el.imageQcPanel) el.imageQcPanel.hidden=snapshot.appModule!=='qc';
+    if(el.publicationBuilderPanel) el.publicationBuilderPanel.hidden=snapshot.appModule!=='builder';
+    if(el.dropZone) el.dropZone.hidden=snapshot.appModule==='builder'||snapshot.appModule==='qc';
+    if(el.groupView) el.groupView.hidden=snapshot.appModule==='builder'||snapshot.appModule==='qc'||snapshot.mode!=='group';
+    if(snapshot.appModule==='builder') renderPublicationBuilder();
+    else if(snapshot.appModule==='qc') {
+      drawQcCanvas();
+      renderQcCropOverlay();
+    }
+    else if(snapshot.mode==='group'&&groupById(snapshot.groupId)) renderGroupView();
+    else if(snapshot.image) drawLoadedImage();
+    restoreValidationSessionValues(state,el,snapshot);
+    syncLabels();
+    updateGroupNavButtons();
   }
 
   async function loadServedValidationSet(setId) {
+    if(state.validationLoadActive) {
+      setLog('<strong>Validation set:</strong> a validation load is already in progress.');
+      return;
+    }
     const config=VALIDATION_SETS[setId];
     if(!config) {
       setLog('<strong>Validation set:</strong> choose a known validation set first.');
       return;
     }
     const sessionSnapshot=validationSessionSnapshot({...state,panelSettings:currentPanelSettings()},el);
+    state.validationLoadActive=true;
+    const controlsSnapshot=setValidationLoadControlsLocked(true);
     setSpinner(true);
     if(el.loadBuilderValidationSet) el.loadBuilderValidationSet.disabled=true;
     const imported=[];
+    const ownership={groupIds:[],sampleIds:[],objectUrls:[]};
+    let validationLoaded=false;
     try {
       await fetchServedImageFile(config.groups[0].files[0]);
       for(const group of config.groups) {
@@ -7331,20 +7444,26 @@
         for(const relativePath of group.files) {
           files.push(await fetchServedImageFile(relativePath));
         }
-        imported.push({...group,...createCustomGroupFromFiles(files,group.label,{open:false})});
+        const before=validationOwnershipSnapshot(state);
+        let created;
+        try {
+          created=createCustomGroupFromFiles(files,group.label,{open:false});
+        } finally {
+          recordValidationOwnershipChanges(ownership,before,validationOwnershipSnapshot(state));
+          setValidationLoadControlsLocked(true);
+        }
+        imported.push({...group,...created});
       }
       for(const group of imported) {
         await analyzeImportedGroup(group.groupId);
-        if(!validationAnalysisComplete(group.samples,{
+        if(!validationGroupAnalysisComplete(group.samples,{
           groupResults:state.groupResults,
           manualOverrides:state.manualOverrides,
           currentSampleId:state.sample?.id,
           currentResult:state.result,
           excludedSampleIds:group.samples.filter(sample=>sampleExcludedFromAnalysis(sample.id)).map(sample=>sample.id)
         })) {
-          const analysisError=new Error('Validation analysis incomplete');
-          analysisError.validationKind='analysis';
-          throw analysisError;
+          throw new Error('Validation analysis incomplete');
         }
       }
       const applyImportedAssignments=()=>{
@@ -7371,18 +7490,29 @@
       if(el.builderControlGroup) el.builderControlGroup.value=imported.find(group=>group.condition==='control')?.groupId||el.builderControlGroup.value;
       if(el.builderTreatmentGroup) el.builderTreatmentGroup.value=imported.find(group=>group.condition==='treatment')?.groupId||el.builderTreatmentGroup.value;
       renderPublicationBuilder();
+      validationLoaded=true;
       setLog(`<strong>Validation set loaded:</strong> ${config.label}. Imported ${imported.length} groups and analyzed their image series for replicate testing.`);
     } catch(err) {
-      cleanupImportedValidationGroups(imported,sessionSnapshot);
+      cleanupValidationOwnedResources(ownership);
       restoreValidationSessionState(sessionSnapshot);
       setLog(`<strong>Validation set unavailable.</strong> ${validationLoadErrorMessage(err)}`);
     } finally {
+      state.validationLoadActive=false;
+      setValidationLoadControlsLocked(false,controlsSnapshot);
+      if(validationLoaded) {
+        if(el.groupSelect) el.groupSelect.disabled=!groupOptions().length;
+        if(el.deleteGroup) el.deleteGroup.disabled=!groupOptions().length;
+      }
       if(el.loadBuilderValidationSet) el.loadBuilderValidationSet.disabled=false;
       setSpinner(false);
     }
   }
 
   function loadLocalFiles(files) {
+    if(state.validationLoadActive) {
+      setLog('<strong>Validation load in progress.</strong> Wait for it to finish before opening local images.');
+      return;
+    }
     const picked=Array.from(files||[]);
     const tiffs=picked.filter(f=>/\.(tif|tiff)$/i.test(f.name));
     if(tiffs.length) {

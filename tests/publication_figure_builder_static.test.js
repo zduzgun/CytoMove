@@ -205,6 +205,16 @@ const validationSessionSnapshot = validationSessionSnapshotSandbox.validationSes
     imageName:'prior.jpg',
     sample:priorSampleReference,
     result:priorResultReference,
+    crop:{x:1,y:2,w:30,h:40},
+    cropManual:true,
+    cropEditing:true,
+    rotation:90,
+    zoom:1.5,
+    panX:12,
+    panY:-4,
+    rulerVisible:true,
+    rulerOffsetX:8,
+    rulerOffsetY:9,
     panelSettings:{presetKey:'fine',varianceRadius:7},
     sampleSettings:{'prior-sample':{presetKey:'fine'}},
     lockedQcSnapshot:[{sampleId:'prior-sample'}],
@@ -223,7 +233,11 @@ const validationSessionSnapshot = validationSessionSnapshotSandbox.validationSes
     builderControlLabel:{value:'Old control'},
     builderTreatmentLabel:{value:'Old treatment'},
     builderCellType:{value:'Old cells'},
-    builderReplicate:{value:'n=2'}
+    builderReplicate:{value:'n=2'},
+    canvasTitle:{textContent:'Prior title'},
+    canvasMeta:{textContent:'Prior meta'},
+    canvas:{hidden:false},
+    emptyState:{hidden:true}
   }
 );
 assert.strictEqual(validationSessionSnapshot.image,priorImageReference,'Validation snapshot should preserve the active image reference');
@@ -248,51 +262,59 @@ assert.deepStrictEqual(
   'Validation snapshot should preserve the prior locked QC snapshot'
 );
 assert.deepStrictEqual(
-  [...validationSessionSnapshot.customGroupIds],
-  ['existing-group'],
-  'Validation snapshot should record pre-existing groups for atomic rollback'
-);
-assert.deepStrictEqual(
   JSON.parse(JSON.stringify(validationSessionSnapshot.publicationBuilderState)),
   {controlReplicateIds:['old-control'],treatmentReplicateIds:['old-treatment']},
   'Validation snapshot should preserve builder assignments'
 );
 assert.strictEqual(validationSessionSnapshot.builderControlLabel,'Old control');
+assert(validationSessionSnapshot.crop,'Validation snapshot should include crop state');
+assert.deepStrictEqual(JSON.parse(JSON.stringify(validationSessionSnapshot.crop)),{x:1,y:2,w:30,h:40});
+assert.strictEqual(validationSessionSnapshot.zoom,1.5);
+assert.strictEqual(validationSessionSnapshot.rulerVisible,true);
+assert.strictEqual(validationSessionSnapshot.canvasTitle,'Prior title');
 
-const validationAnalysisCompleteSource = js.match(/function validationAnalysisComplete\(samples=\[\], context=\{\}\)\s*\{[\s\S]*?\n  \}/);
-assert(validationAnalysisCompleteSource, 'app.js should expose validationAnalysisComplete');
+const validationAnalysisCompleteSource = js.match(/function validationGroupAnalysisComplete\(samples=\[\], context=\{\}\)\s*\{[\s\S]*?\n  \}/);
+assert(validationAnalysisCompleteSource, 'app.js should expose validationGroupAnalysisComplete');
 const validationAnalysisSandbox = {};
 vm.runInNewContext(
-  `${validationAnalysisCompleteSource[0]}; this.validationAnalysisComplete = validationAnalysisComplete;`,
+  `${validationAnalysisCompleteSource[0]}; this.validationGroupAnalysisComplete = validationGroupAnalysisComplete;`,
   validationAnalysisSandbox
 );
-const validationSamples = [{id:'a'},{id:'b'},{id:'excluded'}];
 assert.strictEqual(
-  validationAnalysisSandbox.validationAnalysisComplete(validationSamples,{
-    groupResults:{a:{area:1},b:{area:2}},
+  validationAnalysisSandbox.validationGroupAnalysisComplete([],{
+    groupResults:{},
     manualOverrides:{},
-    excludedSampleIds:['excluded']
-  }),
-  true,
-  'Validation analysis should accept results for every non-excluded sample'
-);
-assert.strictEqual(
-  validationAnalysisSandbox.validationAnalysisComplete(validationSamples,{
-    groupResults:{a:{area:1}},
-    manualOverrides:{},
-    excludedSampleIds:['excluded']
+    excludedSampleIds:[]
   }),
   false,
-  'Validation analysis should reject an incomplete non-excluded sample set'
+  'Validation analysis should reject a group with no eligible samples'
 );
 assert.strictEqual(
-  validationAnalysisSandbox.validationAnalysisComplete([{id:'manual'}],{
-    groupResults:{},
-    manualOverrides:{manual:{result:{area:3}}},
+  validationAnalysisSandbox.validationGroupAnalysisComplete([{id:'partial'}],{
+    groupResults:{partial:{area:1}},
+    manualOverrides:{},
+    excludedSampleIds:[]
+  }),
+  false,
+  'Validation analysis should reject a result missing a finite core width metric'
+);
+assert.strictEqual(
+  validationAnalysisSandbox.validationGroupAnalysisComplete([{id:'valid'}],{
+    groupResults:{valid:{area:1,wMean:2}},
+    manualOverrides:{},
     excludedSampleIds:[]
   }),
   true,
-  'Validation analysis should accept a manual override result'
+  'Validation analysis should accept finite core result fields'
+);
+assert.strictEqual(
+  validationAnalysisSandbox.validationGroupAnalysisComplete([{id:'manual'},{id:'excluded'}],{
+    groupResults:{},
+    manualOverrides:{manual:{result:{area:3,wMean:4}}},
+    excludedSampleIds:['excluded']
+  }),
+  true,
+  'Validation analysis should accept a valid manual override and ignore excluded samples'
 );
 
 const validationLoadErrorMessageSource = js.match(/function validationLoadErrorMessage\(err\)\s*\{[\s\S]*?\n  \}/);
@@ -305,7 +327,7 @@ vm.runInNewContext(
   validationLoadErrorSandbox
 );
 assert.strictEqual(
-  validationLoadErrorSandbox.validationLoadErrorMessage({validationKind:'asset'}),
+  validationLoadErrorSandbox.validationLoadErrorMessage({name:'ValidationAssetError'}),
   'Validation images are unavailable in this build.',
   'Asset failures should use the asset-unavailable message'
 );
@@ -320,8 +342,37 @@ assert.strictEqual(
   'Unknown runtime failures should not expose technical paths'
 );
 
-const validationCleanupSource = js.match(/function cleanupImportedValidationGroups\(imported=\[\], sessionSnapshot=null\)\s*\{[\s\S]*?\n  \}/);
-assert(validationCleanupSource, 'app.js should expose cleanupImportedValidationGroups');
+const validationOwnershipSnapshotSource = js.match(/function validationOwnershipSnapshot\(stateLike\)\s*\{[\s\S]*?\n  \}/);
+const recordValidationOwnershipSource = js.match(/function recordValidationOwnershipChanges\(ownership, before, after\)\s*\{[\s\S]*?\n  \}/);
+assert(validationOwnershipSnapshotSource, 'app.js should expose validationOwnershipSnapshot');
+assert(recordValidationOwnershipSource, 'app.js should expose recordValidationOwnershipChanges');
+const ownershipSandbox = {};
+vm.runInNewContext(
+  `${validationOwnershipSnapshotSource[0]}; ${recordValidationOwnershipSource[0]};
+   this.validationOwnershipSnapshot=validationOwnershipSnapshot;
+   this.recordValidationOwnershipChanges=recordValidationOwnershipChanges;`,
+  ownershipSandbox
+);
+const ownership = {groupIds:[],sampleIds:[],objectUrls:[]};
+const ownershipBefore = ownershipSandbox.validationOwnershipSnapshot({
+  customGroups:[{id:'keep-group'}],
+  customSamples:[{id:'keep-sample'}],
+  objectUrls:['blob:keep']
+});
+const ownershipAfter = ownershipSandbox.validationOwnershipSnapshot({
+  customGroups:[{id:'keep-group'},{id:'owned-group'}],
+  customSamples:[{id:'keep-sample'},{id:'owned-sample'}],
+  objectUrls:['blob:keep','blob:owned']
+});
+ownershipSandbox.recordValidationOwnershipChanges(ownership,ownershipBefore,ownershipAfter);
+assert.deepStrictEqual(JSON.parse(JSON.stringify(ownership)),{
+  groupIds:['owned-group'],
+  sampleIds:['owned-sample'],
+  objectUrls:['blob:owned']
+},'Validation ownership should record only resources created by one transaction step');
+
+const validationCleanupSource = js.match(/function cleanupValidationOwnedResources\(ownership\)\s*\{[\s\S]*?\n  \}/);
+assert(validationCleanupSource, 'app.js should expose cleanupValidationOwnedResources');
 const revokedValidationUrls = [];
 let validationGroupsRefreshCount = 0;
 const validationCleanupSandbox = {
@@ -347,10 +398,10 @@ const validationCleanupSandbox = {
   populateGroups:()=>{ validationGroupsRefreshCount+=1; }
 };
 vm.runInNewContext(
-  `${validationCleanupSource[0]}; cleanupImportedValidationGroups([],{
-    customGroupIds:['keep-group'],
-    customSampleIds:['keep-sample'],
-    objectUrls:['blob:keep']
+  `${validationCleanupSource[0]}; cleanupValidationOwnedResources({
+    groupIds:['remove-group'],
+    sampleIds:['remove-sample'],
+    objectUrls:['blob:remove']
   });`,
   validationCleanupSandbox
 );
@@ -376,6 +427,36 @@ assert.deepStrictEqual(
 );
 assert.strictEqual(validationGroupsRefreshCount,1,'Validation cleanup should refresh group options once');
 
+const restoreValidationValuesSource = js.match(/function restoreValidationSessionValues\(stateLike, elements, snapshot\)\s*\{[\s\S]*?\n  \}/);
+assert(restoreValidationValuesSource, 'app.js should expose restoreValidationSessionValues');
+const restoredState = {};
+const restoredElements = {
+  groupSelect:{value:''},
+  sampleSelect:{value:''},
+  builderControlLabel:{value:''},
+  builderTreatmentLabel:{value:''},
+  builderCellType:{value:''},
+  builderReplicate:{value:''},
+  canvasTitle:{textContent:''},
+  canvasMeta:{textContent:''},
+  canvas:{hidden:true,style:{transform:''}},
+  emptyState:{hidden:false}
+};
+vm.runInNewContext(
+  `${restoreValidationValuesSource[0]}; restoreValidationSessionValues(stateLike,elements,snapshot);`,
+  {stateLike:restoredState,elements:restoredElements,snapshot:validationSessionSnapshot}
+);
+assert.strictEqual(restoredState.appModule,'analysis');
+assert.strictEqual(restoredState.mode,'group');
+assert.deepStrictEqual(JSON.parse(JSON.stringify(restoredState.crop)),{x:1,y:2,w:30,h:40});
+assert.strictEqual(restoredState.cropManual,true);
+assert.strictEqual(restoredState.cropEditing,true);
+assert.strictEqual(restoredState.zoom,1.5);
+assert.strictEqual(restoredState.rulerVisible,true);
+assert.strictEqual(restoredElements.groupSelect.value,'existing-group');
+assert.strictEqual(restoredElements.canvasTitle.textContent,'Prior title');
+assert.strictEqual(restoredElements.canvas.hidden,false);
+
 const loaderSource = js.match(/async function loadServedValidationSet\(setId\)\s*\{[\s\S]*?\n  \}/);
 assert(loaderSource, 'app.js should expose loadServedValidationSet');
 const loaderBody = loaderSource[0];
@@ -394,17 +475,22 @@ assert(
   'Validation loader should complete its asset preflight before creating any custom group'
 );
 assert(
-  loaderBody.includes('cleanupImportedValidationGroups(imported,sessionSnapshot)'),
-  'Validation loader should clean partial imports on failure'
+  loaderBody.includes('cleanupValidationOwnedResources(ownership)'),
+  'Validation loader should clean only transaction-owned resources on failure'
 );
 assert(
   loaderBody.includes('restoreValidationSessionState(sessionSnapshot)'),
   'Validation loader should restore its prior session state on failure'
 );
 assert(
-  loaderBody.includes('validationAnalysisComplete('),
+  loaderBody.includes('validationGroupAnalysisComplete('),
   'Validation loader should verify imported analysis completeness before success'
 );
+assert(loaderBody.includes('state.validationLoadActive=true'),'Validation loader should activate its mutation guard');
+assert(loaderBody.includes('setValidationLoadControlsLocked(true)'),'Validation loader should lock local mutation controls');
+assert(loaderBody.includes('recordValidationOwnershipChanges('),'Validation loader should record ownership around each group creation');
+assert(loaderBody.includes('state.validationLoadActive=false'),'Validation loader should clear its mutation guard in finally');
+assert(loaderBody.includes('validationLoaded'),'Validation loader should distinguish success when restoring selector availability');
 assert(
   loaderBody.includes('validationLoadErrorMessage(err)'),
   'Validation loader should select a safe message by failure type'
@@ -431,6 +517,21 @@ assert(
   restoreValidationSessionSource[0].includes('state.imageLoadSeq=(state.imageLoadSeq||0)+1'),
   'Validation rollback should invalidate pending validation image callbacks'
 );
+assert(restoreValidationSessionSource[0].includes('cancelAutoApply()'),'Validation rollback should cancel pending auto-analysis');
+assert(restoreValidationSessionSource[0].includes('state.groupRenderSeq'),'Validation rollback should cancel pending group rendering');
+assert(restoreValidationSessionSource[0].includes('state.autoMicroscopeDetectSeq'),'Validation rollback should cancel pending microscope detection');
+assert(!restoreValidationSessionSource[0].includes('setMode('),'Validation restore should not call scheduling mode helpers');
+assert(!restoreValidationSessionSource[0].includes('setAppModule('),'Validation restore should not call module scheduling helpers');
+assert(!restoreValidationSessionSource[0].includes('scheduleGroupMicroscopeAutoDetect'),'Validation restore should not schedule microscope detection');
+
+const loadLocalFilesSource = js.match(/function loadLocalFiles\(files\)\s*\{[\s\S]*?\n  \}/);
+assert(loadLocalFilesSource, 'app.js should expose loadLocalFiles');
+assert(loadLocalFilesSource[0].includes('state.validationLoadActive'),'Local file loading should guard against validation transactions');
+
+assert(js.includes('class ValidationAssetError extends Error'),'Validation fetch failures should use a specific error class');
+const fetchServedImageFileSource = js.match(/async function fetchServedImageFile\(relativePath\)\s*\{[\s\S]*?\n  \}/);
+assert(fetchServedImageFileSource, 'app.js should expose fetchServedImageFile');
+assert(!fetchServedImageFileSource[0].includes("err.validationKind='asset'"),'Fetch helper should not blanket-tag all exceptions as asset errors');
 const loadImageSource = js.match(/function loadImage\(src,sample=null,name='',keepMode=false,options=\{\}\)\s*\{[\s\S]*?\n  \}/);
 assert(loadImageSource, 'app.js should expose loadImage');
 assert(
