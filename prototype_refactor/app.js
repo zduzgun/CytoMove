@@ -339,7 +339,37 @@
   const SHOW_DEMO_CALIBRATION = false;
   const AUTO_APPLY_DELAY_MS = 1000;
 
+  function validationToolsEnabled(locationLike) {
+    const host=String(locationLike?.hostname||'').toLowerCase();
+    const search=String(locationLike?.search||'');
+    return host==='localhost'||host==='127.0.0.1'||new URLSearchParams(search).get('validation')==='1';
+  }
+
+  function syncValidationToolsVisibility() {
+    const host=document.getElementById('builderValidationTools');
+    if(host) host.hidden=!validationToolsEnabled(window.location);
+  }
+
+  const VALIDATION_SETS = {
+    full_thread_control: {
+      label:'HUVEC control vs FDI (3 replicates)',
+      cellType:'HUVEC',
+      controlLabel:'Control',
+      treatmentLabel:'FDI',
+      groups:[
+        { label:'huvec_control_r1', condition:'control', replicate:'R1', files:['../validation_sets/full_thread_control/huvec_control_r1/0.jpg','../validation_sets/full_thread_control/huvec_control_r1/24.jpg','../validation_sets/full_thread_control/huvec_control_r1/48.jpg'] },
+        { label:'huvec_control_r2', condition:'control', replicate:'R2', files:['../validation_sets/full_thread_control/huvec_control_r2/0.jpg','../validation_sets/full_thread_control/huvec_control_r2/24.jpg','../validation_sets/full_thread_control/huvec_control_r2/48.jpg'] },
+        { label:'huvec_control_r3', condition:'control', replicate:'R3', files:['../validation_sets/full_thread_control/huvec_control_r3/0.jpg','../validation_sets/full_thread_control/huvec_control_r3/24.jpg','../validation_sets/full_thread_control/huvec_control_r3/48.jpg'] },
+        { label:'huvec_fdi_r1', condition:'treatment', replicate:'R1', files:['../validation_sets/full_thread_control/huvec_fdi_r1/0.jpg','../validation_sets/full_thread_control/huvec_fdi_r1/24.jpg','../validation_sets/full_thread_control/huvec_fdi_r1/48.jpg'] },
+        { label:'huvec_fdi_r2', condition:'treatment', replicate:'R2', files:['../validation_sets/full_thread_control/huvec_fdi_r2/0.jpg','../validation_sets/full_thread_control/huvec_fdi_r2/24.jpg','../validation_sets/full_thread_control/huvec_fdi_r2/48.jpg'] },
+        { label:'huvec_fdi_r3', condition:'treatment', replicate:'R3', files:['../validation_sets/full_thread_control/huvec_fdi_r3/0.jpg','../validation_sets/full_thread_control/huvec_fdi_r3/24.jpg','../validation_sets/full_thread_control/huvec_fdi_r3/48.jpg'] }
+      ]
+    }
+  };
+
   const state = {
+    appModule:'qc',
+    pendingPublicationExport:'group',
     mode:'single',
     image:null, imageOriginal:null, imageName:'', sample:null, rotation:0,
     view:'overlay', result:null, rulerVisible:false,
@@ -348,7 +378,21 @@
     sampleSettings:{},
     customSamples:[],
     customGroups:[],
+    imageQcState:{},
+    lockedQcSnapshot:null,
+    lastQcCropTemplateByGroup:{},
+    preparedQcImages:new Map(),
+    imageIsPreparedQc:false,
+    publicationBuilderState:{},
     objectUrls:[],
+    qcPreviewBaseCanvas:null,
+    qcPreviewBaseImage:null,
+    qcDrawFrame:0,
+    qcOverlayDrag:null,
+    cropCache:new Map(), // Cache cropped images for performance
+    qcCropCache:new Map(), // QC crop cache - stores cropped images from QC stage
+    qcCropHistory:[], // Undo/redo history for QC crops
+    qcCropHistoryIndex:-1, // Current position in history
     calibrationReport:null,
     groupRenderSeq:0,
     autoMicroscopeDetectSeq:0,
@@ -367,6 +411,50 @@
   };
 
   const el = {
+    moduleTabs:         document.getElementById('moduleTabs'),
+    publicationBuilderControls: document.getElementById('publicationBuilderControls'),
+    publicationBuilderPanel: document.getElementById('publicationBuilderPanel'),
+    builderControlGroup: document.getElementById('builderControlGroup'),
+    builderTreatmentGroup: document.getElementById('builderTreatmentGroup'),
+    builderControlReplicates: document.getElementById('builderControlReplicates'),
+    builderTreatmentReplicates: document.getElementById('builderTreatmentReplicates'),
+    builderTemplate:    document.getElementById('builderTemplate'),
+    builderMetricSelect: document.getElementById('builderMetricSelect'),
+    builderControlLabel: document.getElementById('builderControlLabel'),
+    builderTreatmentLabel: document.getElementById('builderTreatmentLabel'),
+    builderCellType:    document.getElementById('builderCellType'),
+    builderReplicate:   document.getElementById('builderReplicate'),
+    builderScaleValue:  document.getElementById('builderScaleValue'),
+    builderScaleMode:   document.getElementById('builderScaleMode'),
+    builderPValue:      document.getElementById('builderPValue'),
+    builderStars:       document.getElementById('builderStars'),
+    builderValidationSet: document.getElementById('builderValidationSet'),
+    loadBuilderValidationSet: document.getElementById('loadBuilderValidationSet'),
+    refreshBuilderFigure: document.getElementById('refreshBuilderFigure'),
+    exportBuilderFigure: document.getElementById('exportBuilderFigure'),
+    builderCanvas:      document.getElementById('builderCanvas'),
+    builderEmpty:       document.getElementById('builderEmpty'),
+    builderStatus:      document.getElementById('builderStatus'),
+    builderCaptionText: document.getElementById('builderCaptionText'),
+    imageQcPanel:       document.getElementById('imageQcPanel'),
+    qcStatus:           document.getElementById('qcStatus'),
+    qcImageList:        document.getElementById('qcImageList'),
+    qcPreview:          document.querySelector('#imageQcPanel .qc-preview'),
+    qcCanvas:           document.getElementById('qcCanvas'),
+    qcCropOverlay:      document.getElementById('qcCropOverlay'),
+    qcEmpty:            document.getElementById('qcEmpty'),
+    qcOrientation:      document.getElementById('qcOrientation'),
+    qcRotateLeft:       document.getElementById('qcRotateLeft'),
+    qcRotateRight:      document.getElementById('qcRotateRight'),
+    qcAdjustCrop:       document.getElementById('qcAdjustCrop'),
+    qcSaveCrop:         document.getElementById('qcSaveCrop'),
+    qcUndoCrop:         document.getElementById('qcUndoCrop'),
+    qcRedoCrop:         document.getElementById('qcRedoCrop'),
+    qcExcludeToggle:    document.getElementById('qcExcludeToggle'),
+    goToAnalysisFromQc: document.getElementById('goToAnalysisFromQc'),
+    qcPrevImage:        document.getElementById('qcPrevImage'),
+    qcNextImage:        document.getElementById('qcNextImage'),
+    qcCopyCrop:         document.getElementById('qcCopyCrop'),
     modeToggle:         document.getElementById('modeToggle'),
     groupSelect:        document.getElementById('groupSelect'),
     groupSelectRow:     document.getElementById('groupSelectRow'),
@@ -432,6 +520,10 @@
     plotDialogTitle:    document.getElementById('plotDialogTitle'),
     plotBody:           document.getElementById('plotBody'),
     closePlot:          document.getElementById('closePlot'),
+    exportStylePanel:   document.getElementById('exportStylePanel'),
+    exportStyleGrayscale: document.getElementById('exportStyleGrayscale'),
+    exportStyleColor:   document.getElementById('exportStyleColor'),
+    cancelExportStyle:  document.getElementById('cancelExportStyle'),
     groupView:          document.getElementById('groupView'),
     logMsg:             document.getElementById('logMsg'),
     timerMsg:           document.getElementById('timerMsg'),
@@ -464,7 +556,7 @@
     rerun:'Analyze the current image with the current settings.',
     applySettingsGroup:'Re-analyze all cards in the selected group with current settings.',
     exportGroupPng:'Download one ZIP file containing contour overlay PNGs for the selected group.',
-    exportPlots:'Download wound area and width plots for the selected group as one ZIP.',
+    exportPlots:'Download publication-quality wound area and width figures plus figure-ready data for the selected group.',
     showAreaPlot:'Show the wound area time-course plot without downloading.',
     showWidthPlot:'Show the mean wound width time-course plot without downloading.',
     autoDetectModeGroup:'Sample group images and choose the microscope mode automatically.',
@@ -476,7 +568,7 @@
     resetBrush:'Remove manual correction and return to the automatic mask.',
     exportPng:'Save the current contour overlay as a PNG image.',
     exportCsv:'Export the current metrics as CSV.',
-    exportExcel:'Export metrics as an Excel-compatible table.',
+    exportExcel:'Export figure-ready area and width data plus detailed metrics as an Excel-compatible workbook.',
     zoomIn:'Zoom into the image canvas.',
     zoomOut:'Zoom out of the image canvas.',
     zoomReset:'Reset zoom and pan.',
@@ -729,14 +821,16 @@
 
   function currentCrop() {
     if(!state.image) return null;
+    if(state.imageIsPreparedQc) {
+      return {x:0,y:0,w:state.image.naturalWidth,h:state.image.naturalHeight,active:false};
+    }
     if(state.cropManual&&state.crop) return state.crop;
     if(!el.autoCropFov.checked) return {x:0,y:0,w:state.image.naturalWidth,h:state.image.naturalHeight,active:false};
     if(!state.crop) state.crop=autoCropForImage(state.image);
     return state.crop;
   }
 
-  function clampCrop(crop) {
-    const img=state.image;
+  function clampCrop(crop, img=state.imageOriginal||state.image) {
     if(!img) return crop;
     const minSize=32;
     crop.w=Math.max(minSize,Math.min(img.naturalWidth,Math.round(crop.w)));
@@ -748,7 +842,7 @@
   }
 
   function normalizedCropRatio(crop, img=state.image) {
-    if(!crop||!img) return null;
+    if(!crop||!img||!img.naturalWidth||!img.naturalHeight||img.naturalWidth<=0||img.naturalHeight<=0) return null;
     return {
       x:crop.x/img.naturalWidth,
       y:crop.y/img.naturalHeight,
@@ -847,6 +941,11 @@
     state.cropManual=!!apply;
     el.applyCrop.disabled=true;
     el.canvas.classList.remove('grabbing');
+    // Sync QC state when crop changes in analysis mode
+    if(apply&&state.sample&&state.lockedQcSnapshot) {
+      updateQcState(state.sample.id,{cropRatio:normalizedCropRatio(state.crop,state.imageOriginal||state.image)});
+      invalidateCropCache(state.sample.id); // Clear cache for this sample
+    }
     if(apply) {
       drawLoadedImagePreview('<strong>Crop applied.</strong> Auto-applying in 1 second...');
       scheduleAutoApply('<strong>Crop applied.</strong> Auto-applying in 1 second...');
@@ -854,6 +953,11 @@
   }
 
   function resetCropAndZoom() {
+    // Sync QC state when crop is reset in analysis mode
+    if(state.sample&&state.lockedQcSnapshot) {
+      updateQcState(state.sample.id,{cropRatio:null});
+      invalidateCropCache(state.sample.id); // Clear cache for this sample
+    }
     state.crop=null; state.cropManual=false; state.cropEditing=false; state.cropDragging=false; state.cropDragMode='move';
     state.zoom=1; state.panX=0; state.panY=0;
     el.canvas.style.transform='';
@@ -935,11 +1039,20 @@
     if(!state.image) return;
     const canvas=el.canvas;
     const ctx=canvas.getContext('2d',{willReadFrequently:true});
-    canvas.width=state.image.naturalWidth||state.image.width;
-    canvas.height=state.image.naturalHeight||state.image.height;
-    ctx.drawImage(state.image,0,0,canvas.width,canvas.height);
+
+    const crop=currentCrop();
+    if(crop&&crop.active) {
+      canvas.width=crop.w;
+      canvas.height=crop.h;
+      ctx.drawImage(state.image,crop.x,crop.y,crop.w,crop.h,0,0,crop.w,crop.h);
+    } else {
+      canvas.width=state.image.naturalWidth||state.image.width;
+      canvas.height=state.image.naturalHeight||state.image.height;
+      ctx.drawImage(state.image,0,0,canvas.width,canvas.height);
+    }
     clearAnalysisState();
-    el.canvasMeta.textContent=`${canvas.width}x${canvas.height} px`;
+    const cropNote=crop&&crop.active?` &middot; crop ${crop.w}x${crop.h}`:'';
+    el.canvasMeta.textContent=`${canvas.width}x${canvas.height} px${cropNote}`;
     el.rerun.disabled=false;
     syncLabels();
     setSpinner(false);
@@ -1135,6 +1248,11 @@
   }
 
   async function warnIfHorizontalScratchDetected(samples=selectedGroupSamples()) {
+    if((state.lockedQcSnapshot||[]).length&&samples.some(sample=>qcSnapshotForSample(sample.id))) {
+      showOrientationHint('');
+      renderOrientationSeriesWarning('');
+      return;
+    }
     if(!samples.length) {
       showOrientationHint('');
       renderOrientationSeriesWarning('');
@@ -1143,7 +1261,7 @@
     try {
       const votes=[];
       for(const sample of samples.slice(0,Math.min(samples.length,3))) {
-        const img=await loadImageElement(sampleUrl(sample));
+        const img=await loadImageElement(analysisImageUrl(sample));
         votes.push(classifyScratchOrientation(img));
       }
       const horizontal=votes.filter(v=>v.orientation==='horizontal').length;
@@ -1241,6 +1359,25 @@
       if(prior?.mask&&prior.analysisW===W&&prior.analysisH===H) return prior.mask;
     }
     return null;
+  }
+
+  function updateQcOverlayRect(start, dx, dy, mode, bounds, minSize) {
+    let left=start.left;
+    let top=start.top;
+    let right=start.left+start.width;
+    let bottom=start.top+start.height;
+    if(mode==='move') {
+      left=Math.max(bounds.left,Math.min(bounds.right-start.width,start.left+dx));
+      top=Math.max(bounds.top,Math.min(bounds.bottom-start.height,start.top+dy));
+      right=left+start.width;
+      bottom=top+start.height;
+    } else {
+      if(mode.includes('left')) left=Math.max(bounds.left,Math.min(right-minSize,start.left+dx));
+      if(mode.includes('right')) right=Math.min(bounds.right,Math.max(left+minSize,start.left+start.width+dx));
+      if(mode.includes('top')) top=Math.max(bounds.top,Math.min(bottom-minSize,start.top+dy));
+      if(mode.includes('bottom')) bottom=Math.min(bounds.bottom,Math.max(top+minSize,start.top+start.height+dy));
+    }
+    return {left,top,width:right-left,height:bottom-top};
   }
 
   function groupPriorMaskForSample(sample,W,H) {
@@ -1840,19 +1977,20 @@
     return boundary;
   }
 
-  function drawContour(d,mask,W,H,boundaryOverride=null) {
+  function drawContour(d,mask,W,H,boundaryOverride=null, style={}) {
     const boundary=boundaryOverride||boundaryPixels(mask,W,H);
-    const thickness=Number(el.contourThickness.value);
+    const thickness=Number.isFinite(style.thickness)?style.thickness:Number(el.contourThickness.value);
     const radius=Math.max(0,Math.floor((thickness-1)/2));
-    const haloRadius=radius+2;
-    const [r,g,b]=hexToRgb(el.contourColor.value);
+    const haloRadius=Number.isFinite(style.haloRadius)?style.haloRadius:radius+2;
+    const [r,g,b]=hexToRgb(style.color||el.contourColor.value);
+    const [hr,hg,hb]=style.haloColor?hexToRgb(style.haloColor):[16,32,39];
     const dashed=el.contourStyle.value==='dashed';
     for(const p of boundary){
       const x=p%W,y=(p/W)|0;
       if(dashed&&((x+y)%34)>20) continue;
       for(let oy=-haloRadius;oy<=haloRadius;oy++) for(let ox=-haloRadius;ox<=haloRadius;ox++) {
         if(Math.abs(ox)+Math.abs(oy)>haloRadius) continue;
-        paintPixel(d,W,H,x+ox,y+oy,16,32,39);
+        paintPixel(d,W,H,x+ox,y+oy,hr,hg,hb);
       }
     }
     for(const p of boundary){
@@ -2810,7 +2948,156 @@
     window.setTimeout(()=>URL.revokeObjectURL(url),2000);
   }
 
-  function groupOverlayPngBytes(sample) {
+  function concatBytes(parts) {
+    const total=parts.reduce((sum,part)=>sum+part.length,0);
+    const out=new Uint8Array(total);
+    let offset=0;
+    parts.forEach(part=>{ out.set(part,offset); offset+=part.length; });
+    return out;
+  }
+
+  function canvasToPngBytes(canvas) {
+    return dataUrlToBytes(canvas.toDataURL('image/png'));
+  }
+
+  function canvasToJpegBytes(canvas, quality=0.94) {
+    return dataUrlToBytes(canvas.toDataURL('image/jpeg',quality));
+  }
+
+  function pdfStringBytes(value) {
+    return new TextEncoder().encode(value);
+  }
+
+  function pdfFromCanvas(canvas) {
+    const imageBytes=canvasToJpegBytes(canvas);
+    const pageW=842;
+    const pageH=Math.max(1,Math.round(pageW*canvas.height/canvas.width));
+    const content=`q\n${pageW} 0 0 ${pageH} 0 0 cm\n/Im0 Do\nQ\n`;
+    const objects=[
+      '<< /Type /Catalog /Pages 2 0 R >>',
+      '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW} ${pageH}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`,
+      `<< /Type /XObject /Subtype /Image /Width ${canvas.width} /Height ${canvas.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imageBytes.length} >>\nstream\n`,
+      `<< /Length ${content.length} >>\nstream\n${content}endstream`
+    ];
+    const chunks=[pdfStringBytes('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n')];
+    const offsets=[0];
+    let offset=chunks[0].length;
+    objects.forEach((obj,i)=>{
+      offsets.push(offset);
+      let bytes;
+      if(i===3) {
+        bytes=concatBytes([pdfStringBytes(`4 0 obj\n${obj}`),imageBytes,pdfStringBytes('\nendstream\nendobj\n')]);
+      } else {
+        bytes=pdfStringBytes(`${i+1} 0 obj\n${obj}\nendobj\n`);
+      }
+      chunks.push(bytes);
+      offset+=bytes.length;
+    });
+    const xrefStart=offset;
+    let xref=`xref\n0 ${objects.length+1}\n0000000000 65535 f \n`;
+    for(let i=1;i<offsets.length;i++) xref+=`${String(offsets[i]).padStart(10,'0')} 00000 n \n`;
+    xref+=`trailer\n<< /Size ${objects.length+1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF\n`;
+    chunks.push(pdfStringBytes(xref));
+    return concatBytes(chunks);
+  }
+
+  function xmlEsc(value) {
+    return String(value??'')
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&apos;');
+  }
+
+  const PPTX_W=12192000;
+  const PPTX_H=6858000;
+  const PPTX_SX=PPTX_W/2600;
+  const PPTX_SY=PPTX_H/1550;
+
+  function pptUnitsX(value) { return Math.round(value*PPTX_SX); }
+  function pptUnitsY(value) { return Math.round(value*PPTX_SY); }
+  function pptHex(color) { return String(color||'#111827').replace('#','').toUpperCase(); }
+
+  function pptShape(id, name, x, y, w, h, fill='#ffffff', line='#ffffff') {
+    return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="${xmlEsc(name)}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${pptUnitsX(x)}" y="${pptUnitsY(y)}"/><a:ext cx="${pptUnitsX(w)}" cy="${pptUnitsY(h)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="${pptHex(fill)}"/></a:solidFill><a:ln w="12700"><a:solidFill><a:srgbClr val="${pptHex(line)}"/></a:solidFill></a:ln></p:spPr><p:txBody><a:bodyPr/><a:lstStyle/><a:p/></p:txBody></p:sp>`;
+  }
+
+  function pptText(id, name, text, x, y, w, h, size=20, bold=false, color='#111827', align='l') {
+    return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="${xmlEsc(name)}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${pptUnitsX(x)}" y="${pptUnitsY(y)}"/><a:ext cx="${pptUnitsX(w)}" cy="${pptUnitsY(h)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln></p:spPr><p:txBody><a:bodyPr wrap="square"/><a:lstStyle/><a:p><a:pPr algn="${align}"/><a:r><a:rPr lang="en-US" sz="${Math.round(size*100)}"${bold?' b="1"':''}><a:solidFill><a:srgbClr val="${pptHex(color)}"/></a:solidFill><a:latin typeface="Arial"/></a:rPr><a:t>${xmlEsc(text)}</a:t></a:r><a:endParaRPr lang="en-US" sz="${Math.round(size*100)}"/></a:p></p:txBody></p:sp>`;
+  }
+
+  function pptLine(id, name, x1, y1, x2, y2, color='#111827', width=2) {
+    const x=Math.min(x1,x2), y=Math.min(y1,y2);
+    const w=Math.max(1,Math.abs(x2-x1)), h=Math.max(1,Math.abs(y2-y1));
+    const flipH=x2<x1?' flipH="1"':'';
+    const flipV=y2<y1?' flipV="1"':'';
+    return `<p:cxnSp><p:nvCxnSpPr><p:cNvPr id="${id}" name="${xmlEsc(name)}"/><p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr><p:spPr><a:xfrm${flipH}${flipV}><a:off x="${pptUnitsX(x)}" y="${pptUnitsY(y)}"/><a:ext cx="${pptUnitsX(w)}" cy="${pptUnitsY(h)}"/></a:xfrm><a:prstGeom prst="line"><a:avLst/></a:prstGeom><a:ln w="${Math.round(width*12700)}"><a:solidFill><a:srgbClr val="${pptHex(color)}"/></a:solidFill></a:ln></p:spPr></p:cxnSp>`;
+  }
+
+  function pptPic(id, name, relId, x, y, w, h) {
+    return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="${xmlEsc(name)}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="${relId}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="${pptUnitsX(x)}" y="${pptUnitsY(y)}"/><a:ext cx="${pptUnitsX(w)}" cy="${pptUnitsY(h)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`;
+  }
+
+  function pptxSlideXml(index, elements) {
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+  <p:cSld>
+    <p:spTree>
+      <p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>
+      <p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>
+      ${elements.join('')}
+    </p:spTree>
+  </p:cSld>
+  <p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>
+</p:sld>`;
+  }
+
+  function makePptxDeck(slides) {
+    const files=[];
+    const enc=new TextEncoder();
+    const contentTypes=[
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+      '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">',
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>',
+      '<Default Extension="xml" ContentType="application/xml"/>',
+      '<Default Extension="png" ContentType="image/png"/>',
+      '<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>',
+      '<Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>',
+      '<Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>',
+      '<Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>',
+      '<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>',
+      '<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>'
+    ];
+    slides.forEach((_,i)=>contentTypes.push(`<Override PartName="/ppt/slides/slide${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`));
+    contentTypes.push('</Types>');
+    files.push({name:'[Content_Types].xml',bytes:enc.encode(contentTypes.join(''))});
+    files.push({name:'_rels/.rels',bytes:enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>`)});
+    files.push({name:'docProps/core.xml',bytes:enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>Cytomove publication figures</dc:title><dc:creator>Cytomove</dc:creator><cp:lastModifiedBy>Cytomove</cp:lastModifiedBy><dcterms:created xsi:type="dcterms:W3CDTF">${new Date().toISOString()}</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">${new Date().toISOString()}</dcterms:modified></cp:coreProperties>`)});
+    files.push({name:'docProps/app.xml',bytes:enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>Cytomove</Application><PresentationFormat>On-screen Show (16:9)</PresentationFormat><Slides>${slides.length}</Slides></Properties>`)});
+    files.push({name:'ppt/presentation.xml',bytes:enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst><p:sldIdLst>${slides.map((_,i)=>`<p:sldId id="${256+i}" r:id="rId${i+2}"/>`).join('')}</p:sldIdLst><p:sldSz cx="12192000" cy="6858000" type="screen16x9"/><p:notesSz cx="6858000" cy="9144000"/><p:defaultTextStyle><a:defPPr><a:defRPr lang="en-US"/></a:defPPr></p:defaultTextStyle></p:presentation>`)});
+    files.push({name:'ppt/_rels/presentation.xml.rels',bytes:enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>${slides.map((_,i)=>`<Relationship Id="rId${i+2}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide${i+1}.xml"/>`).join('')}</Relationships>`)});
+    files.push({name:'ppt/slideMasters/slideMaster1.xml',bytes:enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:sldMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:bg><p:bgPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr></p:spTree></p:cSld><p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/><p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst><p:txStyles><p:titleStyle/><p:bodyStyle/><p:otherStyle/></p:txStyles></p:sldMaster>`)});
+    files.push({name:'ppt/slideMasters/_rels/slideMaster1.xml.rels',bytes:enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme1.xml"/></Relationships>`)});
+    files.push({name:'ppt/slideLayouts/slideLayout1.xml',bytes:enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" type="blank" preserve="1"><p:cSld name="Blank"><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr></p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>`)});
+    files.push({name:'ppt/slideLayouts/_rels/slideLayout1.xml.rels',bytes:enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster1.xml"/></Relationships>`)});
+    files.push({name:'ppt/theme/theme1.xml',bytes:enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Cytomove"><a:themeElements><a:clrScheme name="Cytomove"><a:dk1><a:srgbClr val="111827"/></a:dk1><a:lt1><a:srgbClr val="FFFFFF"/></a:lt1><a:dk2><a:srgbClr val="52615F"/></a:dk2><a:lt2><a:srgbClr val="F8FBFA"/></a:lt2><a:accent1><a:srgbClr val="0F9F8F"/></a:accent1><a:accent2><a:srgbClr val="2F6FED"/></a:accent2><a:accent3><a:srgbClr val="64748B"/></a:accent3><a:accent4><a:srgbClr val="E5E7EB"/></a:accent4><a:accent5><a:srgbClr val="111827"/></a:accent5><a:accent6><a:srgbClr val="B9D4CF"/></a:accent6><a:hlink><a:srgbClr val="2F6FED"/></a:hlink><a:folHlink><a:srgbClr val="0F9F8F"/></a:folHlink></a:clrScheme><a:fontScheme name="Cytomove"><a:majorFont><a:latin typeface="Arial"/></a:majorFont><a:minorFont><a:latin typeface="Arial"/></a:minorFont></a:fontScheme><a:fmtScheme name="Cytomove"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst><a:lnStyleLst><a:ln w="9525"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst><a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst></a:fmtScheme></a:themeElements><a:objectDefaults/><a:extraClrSchemeLst/></a:theme>`)});
+    slides.forEach((slide,i)=>{
+      const n=i+1;
+      const mediaRels=(slide.media||[]).map((media,j)=>`<Relationship Id="rId${j+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/slide${n}_image${j+1}.png"/>`).join('');
+      files.push({name:`ppt/slides/slide${n}.xml`,bytes:enc.encode(pptxSlideXml(n,slide.elements||[]))});
+      files.push({name:`ppt/slides/_rels/slide${n}.xml.rels`,bytes:enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${mediaRels}<Relationship Id="rId${(slide.media||[]).length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/></Relationships>`)});
+      (slide.media||[]).forEach((media,j)=>{
+        files.push({name:`ppt/media/slide${n}_image${j+1}.png`,bytes:media.bytes});
+      });
+    });
+    return makeZip(files);
+  }
+
+  function groupOverlayCanvas(sample, options={}) {
+    const style=options.style||(options.grayscale?'grayscale':'color');
+    const cfg=figureStyleConfig(style);
     const override=state.manualOverrides[sample.id];
     const result=override?.result||state.groupResults[sample.id]||(state.sample?.id===sample.id?state.result:null);
     const source=override?.sourceData||result?.src;
@@ -2827,6 +3114,12 @@
     const out=new ImageData(new Uint8ClampedArray(source.data),W,H);
     const d=out.data;
     const len=W*H;
+    if(options.grayscale||cfg.grayscale) {
+      for(let p=0,i=0;p<len;p++,i+=4) {
+        const g=Math.round(d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114);
+        d[i]=g; d[i+1]=g; d[i+2]=g;
+      }
+    }
     if(field) {
       for(let p=0,i=0;p<len;p++,i+=4) {
         if(!field[p]) {
@@ -2836,9 +3129,16 @@
         }
       }
     }
-    drawContour(d,mask,W,H);
+    if(options.grayscale||cfg.grayscale) drawContour(d,mask,W,H,null,{color:cfg.contour,haloColor:cfg.contourHalo,thickness:2,haloRadius:4});
+    else drawContour(d,mask,W,H);
     ctx.putImageData(out,0,0);
-    return {bytes:dataUrlToBytes(canvas.toDataURL('image/png')),width:W,height:H};
+    return {canvas,width:W,height:H};
+  }
+
+  function groupOverlayPngBytes(sample) {
+    const overlay=groupOverlayCanvas(sample);
+    if(!overlay) return null;
+    return {bytes:dataUrlToBytes(overlay.canvas.toDataURL('image/png')),width:overlay.width,height:overlay.height};
   }
 
   async function exportGroupPngOverlays() {
@@ -2894,7 +3194,7 @@
   }
 
   function groupPlotRows() {
-    return selectedGroupSamples().map((sample,index)=>{
+    const rows=selectedGroupSamples().filter(sample=>!sampleExcludedFromAnalysis(sample.id)).map((sample,index)=>{
       const r=state.manualOverrides[sample.id]?.result||state.groupResults[sample.id]||(state.sample?.id===sample.id?state.result:null);
       if(!r) return null;
       const parsed=parseTimeHours(sample.time);
@@ -2903,16 +3203,93 @@
         x:Number.isFinite(parsed)?parsed:index+1,
         label:sample.time||String(index+1),
         areaPct:Number(r.areaPct),
-        width:Number(r.wMean)
+        areaPx:Number(r.area),
+        width:Number(r.wMean),
+        medianWidth:Number(r.wMedian),
+        qc:r.segmentationQualityScore,
+        recommended:r.recommendedPrimaryMetric||'',
+        warnings:r.warnings||[]
       };
-    }).filter(row=>row&&Number.isFinite(row.x));
+    }).filter(row=>row&&Number.isFinite(row.x)).sort((a,b)=>a.x-b.x||a.index-b.index);
+    const base=rows[0]||{};
+    return rows.map(row=>({
+      ...row,
+      areaNormalizedPct:Number.isFinite(base.areaPx)&&base.areaPx?row.areaPx*100/base.areaPx:null,
+      widthNormalizedPct:Number.isFinite(base.width)&&base.width?row.width*100/base.width:null,
+      areaClosurePct:Number.isFinite(base.areaPx)&&base.areaPx?100-(row.areaPx*100/base.areaPx):null,
+      widthClosurePct:Number.isFinite(base.width)&&base.width?100-(row.width*100/base.width):null
+    }));
   }
 
-  function drawTimePlot(rows, metric, title, yLabel, color) {
+  function groupFigureRows(samples=selectedGroupSamples()) {
+    const rows=groupPlotRows().filter(row=>samples.some(sample=>sample.id===row.sample.id));
+    if(!rows.length) return [];
+    return rows.map(row=>({
+      figure_time_h:row.x,
+      figure_time_label:row.label,
+      image_name:row.sample.path.split('/').pop()||row.sample.path,
+      wound_area_px:Number.isFinite(row.areaPx)?Math.round(row.areaPx):'',
+      wound_area_percent:Number.isFinite(row.areaPct)?row.areaPct.toFixed(4):'',
+      normalized_area_percent:Number.isFinite(row.areaNormalizedPct)?row.areaNormalizedPct.toFixed(4):'',
+      mean_width_px:Number.isFinite(row.width)?row.width.toFixed(2):'',
+      median_width_px:Number.isFinite(row.medianWidth)?row.medianWidth.toFixed(2):'',
+      normalized_width_percent:Number.isFinite(row.widthNormalizedPct)?row.widthNormalizedPct.toFixed(4):'',
+      area_closure_percent:Number.isFinite(row.areaClosurePct)?row.areaClosurePct.toFixed(4):'',
+      width_closure_percent:Number.isFinite(row.widthClosurePct)?row.widthClosurePct.toFixed(4):'',
+      recommended_metric:row.recommended,
+      qc_score:Number.isFinite(row.qc)?Math.round(row.qc):'',
+      qc_notes:(row.warnings||[]).join(' | ')
+    }));
+  }
+
+  function figureDataCsv(rows) {
+    if(!rows.length) return '';
+    const headers=Object.keys(rows[0]);
+    return [headers, ...rows.map(r=>headers.map(h=>r[h]))].map(row=>row.map(csvCell).join(',')).join('\n');
+  }
+
+  function figureStyleConfig(style='grayscale') {
+    const grayscale=style!=='color';
+    if(grayscale) {
+      return {
+        name:'grayscale',
+        grayscale:true,
+        area:'#111111',
+        width:'#666666',
+        axis:'#111111',
+        text:'#111111',
+        muted:'#555555',
+        grid:'#DADADA',
+        contour:'#1F1F1F',
+        contourHalo:'#F7F7F7'
+      };
+    }
+    return {
+      name:'color',
+      grayscale:false,
+      area:'#0f9f8f',
+      width:'#2f6fed',
+      axis:'#111827',
+      text:'#111827',
+      muted:'#52615f',
+      grid:'#D8E7E4',
+      contour:el.contourColor?.value||'#0f9f8f',
+      contourHalo:'#102027'
+    };
+  }
+
+  function metricFigureColor(metricKind, style='grayscale') {
+    const cfg=figureStyleConfig(style);
+    return metricKind==='width'?cfg.width:cfg.area;
+  }
+
+  function drawTimePlot(rows, metric, title, yLabel, color, panelLabel='', style='grayscale') {
     const valid=rows.filter(row=>Number.isFinite(row[metric]));
     if(valid.length<2) return null;
-    const W=1400,H=900;
-    const margin={left:115,right:50,top:90,bottom:115};
+    const metricKind=/width/i.test(metric)?'width':'area';
+    const cfg=figureStyleConfig(style);
+    const W=2200,H=1500;
+    const margin={left:230,right:115,top:185,bottom:175};
     const plotW=W-margin.left-margin.right;
     const plotH=H-margin.top-margin.bottom;
     const canvas=document.createElement('canvas');
@@ -2920,37 +3297,45 @@
     const ctx=canvas.getContext('2d');
     ctx.fillStyle='#ffffff';
     ctx.fillRect(0,0,W,H);
-    ctx.fillStyle='#102027';
-    ctx.font='700 34px Arial, sans-serif';
-    ctx.fillText(title,margin.left,52);
-    ctx.font='500 20px Arial, sans-serif';
-    ctx.fillStyle='#5b7370';
-    ctx.fillText('Cytomove group export',margin.left,82);
+    const plotColor=style==='color'&&color?color:metricFigureColor(metricKind,style);
+    ctx.fillStyle=cfg.text;
+    ctx.font='700 50px Arial, sans-serif';
+    ctx.textAlign='left';
+    ctx.textBaseline='alphabetic';
+    if(panelLabel) {
+      ctx.fillText(panelLabel,70,82);
+    }
+    ctx.fillText(title,margin.left,88);
+    ctx.font='500 30px Arial, sans-serif';
+    ctx.fillStyle=cfg.muted;
+    ctx.fillText('Normalized to baseline (0h = 100%)',margin.left,132);
 
     const xs=valid.map(row=>row.x), ys=valid.map(row=>row[metric]);
     let minX=Math.min(...xs), maxX=Math.max(...xs);
     let minY=Math.min(...ys), maxY=Math.max(...ys);
     if(minX===maxX){ minX-=1; maxX+=1; }
+    const isPercent=/Pct$/i.test(metric);
     if(minY===maxY){ minY=Math.max(0,minY-1); maxY+=1; }
     const yPad=(maxY-minY)*0.12;
-    minY=Math.max(0,minY-yPad); maxY=maxY+yPad;
+    minY=isPercent?0:Math.max(0,minY-yPad);
+    maxY=isPercent?Math.max(110,maxY+yPad):maxY+yPad;
     const xToPx=x=>margin.left+(x-minX)*plotW/(maxX-minX);
     const yToPx=y=>margin.top+plotH-(y-minY)*plotH/(maxY-minY);
 
-    ctx.strokeStyle='#d5e4e1';
+    ctx.strokeStyle=cfg.grid;
     ctx.lineWidth=2;
-    ctx.fillStyle='#6d8581';
-    ctx.font='18px Arial, sans-serif';
+    ctx.fillStyle=cfg.text;
+    ctx.font='26px Arial, sans-serif';
     ctx.textAlign='right';
     ctx.textBaseline='middle';
     for(let i=0;i<=5;i++) {
       const y=minY+(maxY-minY)*i/5;
       const py=yToPx(y);
       ctx.beginPath(); ctx.moveTo(margin.left,py); ctx.lineTo(W-margin.right,py); ctx.stroke();
-      ctx.fillText(metric==='areaPct'?fmt(y,1):fmt(y,0),margin.left-14,py);
+      ctx.fillText(isPercent?fmt(y,0):fmt(y,0),margin.left-26,py);
     }
-    ctx.strokeStyle='#102027';
-    ctx.lineWidth=3;
+    ctx.strokeStyle=cfg.axis;
+    ctx.lineWidth=4;
     ctx.beginPath();
     ctx.moveTo(margin.left,margin.top);
     ctx.lineTo(margin.left,margin.top+plotH);
@@ -2959,26 +3344,29 @@
 
     ctx.textAlign='center';
     ctx.textBaseline='top';
+    ctx.font='28px Arial, sans-serif';
     valid.forEach(row=>{
       const px=xToPx(row.x);
-      ctx.fillStyle='#6d8581';
+      ctx.fillStyle=cfg.text;
       ctx.fillText(row.label,px,margin.top+plotH+20);
     });
     ctx.save();
-    ctx.translate(34,margin.top+plotH/2);
+    ctx.translate(64,margin.top+plotH/2);
     ctx.rotate(-Math.PI/2);
-    ctx.fillStyle='#102027';
-    ctx.font='700 22px Arial, sans-serif';
+    ctx.fillStyle=cfg.text;
+    ctx.font='700 32px Arial, sans-serif';
     ctx.textAlign='center';
     ctx.fillText(yLabel,0,0);
     ctx.restore();
-    ctx.fillStyle='#102027';
-    ctx.font='700 22px Arial, sans-serif';
+    ctx.fillStyle=cfg.text;
+    ctx.font='700 32px Arial, sans-serif';
     ctx.textAlign='center';
-    ctx.fillText('Timepoint',margin.left+plotW/2,H-46);
+    ctx.fillText('Timepoint',margin.left+plotW/2,H-70);
 
-    ctx.strokeStyle=color;
-    ctx.lineWidth=5;
+    ctx.strokeStyle=plotColor;
+    ctx.lineWidth=7;
+    ctx.lineJoin='round';
+    ctx.lineCap='round';
     ctx.beginPath();
     valid.forEach((row,i)=>{
       const px=xToPx(row.x), py=yToPx(row[metric]);
@@ -2988,36 +3376,1135 @@
     valid.forEach(row=>{
       const px=xToPx(row.x), py=yToPx(row[metric]);
       ctx.fillStyle='#ffffff';
-      ctx.beginPath(); ctx.arc(px,py,9,0,Math.PI*2); ctx.fill();
-      ctx.strokeStyle=color; ctx.lineWidth=5; ctx.stroke();
-      ctx.fillStyle='#102027';
-      ctx.font='700 18px Arial, sans-serif';
-      ctx.textBaseline='bottom';
-      ctx.fillText(metric==='areaPct'?`${fmt(row[metric],1)}%`:fmt(row[metric],0),px,py-15);
+      ctx.beginPath(); ctx.arc(px,py,14,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle=plotColor; ctx.lineWidth=6; ctx.stroke();
     });
     return canvas;
   }
 
-  function exportGroupPlotsZip() {
+  function drawFittedImage(ctx,img,x,y,w,h) {
+    const ratio=Math.max(w/img.width,h/img.height);
+    const sw=w/ratio, sh=h/ratio;
+    const sx=Math.max(0,(img.width-sw)/2), sy=Math.max(0,(img.height-sh)/2);
+    ctx.drawImage(img,sx,sy,sw,sh,x,y,w,h);
+  }
+
+  function drawClosureBars(ctx,rows,x,y,w,h,metricKind='area',style='grayscale',includeHeader=true) {
+    const metric=metricKind==='width'?'widthClosurePct':'areaClosurePct';
+    const label=metricKind==='width'?'Width closure':'Area closure';
+    const cfg=figureStyleConfig(style);
+    const color=metricFigureColor(metricKind,style);
+    const valid=rows.filter(row=>Number.isFinite(row[metric])&&row.x!==rows[0].x);
+    ctx.save();
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(x,y,w,h);
+    ctx.fillStyle=cfg.text;
+    if(includeHeader) {
+      ctx.font='700 34px Arial, sans-serif';
+      ctx.fillText('B',x,y-24);
+      ctx.font='700 30px Arial, sans-serif';
+      ctx.fillText(label,x+76,y-24);
+    }
+    const left=x+95, right=x+w-35, top=y+(includeHeader?50:28), bottom=y+h-90;
+    ctx.strokeStyle=cfg.axis;
+    ctx.lineWidth=4;
+    ctx.beginPath();
+    ctx.moveTo(left,top);
+    ctx.lineTo(left,bottom);
+    ctx.lineTo(right,bottom);
+    ctx.stroke();
+    ctx.font='22px Arial, sans-serif';
+    ctx.fillStyle=cfg.text;
+    ctx.textAlign='right';
+    ctx.textBaseline='middle';
+    for(let i=0;i<=5;i++) {
+      const val=i*20;
+      const py=bottom-(val/100)*(bottom-top);
+      ctx.strokeStyle=cfg.grid;
+      ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(left,py); ctx.lineTo(right,py); ctx.stroke();
+      ctx.fillStyle=cfg.text;
+      ctx.fillText(String(val),left-16,py);
+    }
+    const barW=Math.min(80,(right-left)/(valid.length*2.4));
+    ctx.textAlign='center';
+    valid.forEach((row,i)=>{
+      const px=left+(i+0.65)*(right-left)/valid.length;
+      const barH=Math.max(0,Math.min(100,row[metric]))/100*(bottom-top);
+      ctx.fillStyle=color;
+      ctx.fillRect(px-barW/2,bottom-barH,barW,barH);
+      ctx.font='700 24px Arial, sans-serif';
+      ctx.fillText(row.label,px,bottom+28);
+    });
+    ctx.save();
+    ctx.translate(x+26,top+(bottom-top)/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.font='700 26px Arial, sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText(`${metricKind==='width'?'Width':'Area'} closure (%)`,0,0);
+    ctx.restore();
+    ctx.font='700 26px Arial, sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('Incubation time',left+(right-left)/2,y+h-26);
+    ctx.restore();
+  }
+
+  function drawNormalizedLinePanel(ctx,rows,x,y,w,h,metricKind='area',style='grayscale',includeHeader=true) {
+    const metric=metricKind==='width'?'widthNormalizedPct':'areaNormalizedPct';
+    const label=metricKind==='width'?'Width':'Area';
+    const cfg=figureStyleConfig(style);
+    const color=metricFigureColor(metricKind,style);
+    const valid=rows.filter(row=>Number.isFinite(row[metric]));
+    if(valid.length<2) return;
+    ctx.save();
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(x,y,w,h);
+    ctx.fillStyle=cfg.text;
+    if(includeHeader) {
+      ctx.font='700 34px Arial, sans-serif';
+      ctx.fillText('C',x,y-24);
+      ctx.font='700 30px Arial, sans-serif';
+      ctx.fillText(`Normalized ${label.toLowerCase()}`,x+76,y-24);
+    }
+    const left=x+95, right=x+w-35, top=y+(includeHeader?50:28), bottom=y+h-90;
+    const minX=Math.min(...valid.map(r=>r.x)), maxX=Math.max(...valid.map(r=>r.x));
+    const xToPx=v=>left+(v-minX)*(right-left)/(maxX-minX||1);
+    const yToPx=v=>bottom-(v/110)*(bottom-top);
+    ctx.strokeStyle=cfg.axis;
+    ctx.lineWidth=4;
+    ctx.beginPath(); ctx.moveTo(left,top); ctx.lineTo(left,bottom); ctx.lineTo(right,bottom); ctx.stroke();
+    ctx.font='22px Arial, sans-serif';
+    ctx.textAlign='right';
+    ctx.textBaseline='middle';
+    for(let i=0;i<=5;i++) {
+      const val=i*20;
+      const py=yToPx(val);
+      ctx.strokeStyle=cfg.grid; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(left,py); ctx.lineTo(right,py); ctx.stroke();
+      ctx.fillStyle=cfg.text; ctx.fillText(String(val),left-16,py);
+    }
+    ctx.strokeStyle=color; ctx.lineWidth=5; ctx.lineJoin='round'; ctx.lineCap='round';
+    ctx.beginPath();
+    valid.forEach((row,i)=>{
+      const px=xToPx(row.x), py=yToPx(row[metric]);
+      if(i) ctx.lineTo(px,py); else ctx.moveTo(px,py);
+    });
+    ctx.stroke();
+    valid.forEach(row=>{
+      const px=xToPx(row.x), py=yToPx(row[metric]);
+      ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(px,py,7,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle=color; ctx.lineWidth=4; ctx.stroke();
+    });
+    ctx.textAlign='center';
+    ctx.fillStyle=cfg.text;
+    ctx.font='700 24px Arial, sans-serif';
+    valid.forEach(row=>ctx.fillText(row.label,xToPx(row.x),bottom+28));
+    ctx.save();
+    ctx.translate(x+26,top+(bottom-top)/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.font='700 26px Arial, sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('% of 0h',0,0);
+    ctx.restore();
+    ctx.font='700 24px Arial, sans-serif';
+    ctx.textAlign='left';
+    const lx=left+20, ly=y+h-28;
+    ctx.fillStyle=color; ctx.fillRect(lx,ly-16,30,10);
+    ctx.fillStyle=cfg.text; ctx.fillText(label,lx+42,ly-10);
+    ctx.restore();
+  }
+
+  function drawOverlayGridBlock(groupLabel, samples, style='grayscale') {
+    const cfg=figureStyleConfig(style);
+    const overlays=samples.slice(0,48).map(sample=>({sample,overlay:groupOverlayCanvas(sample,{style})})).filter(item=>item.overlay);
+    if(!overlays.length) return null;
+    const W=1360,H=1100;
+    const canvas=document.createElement('canvas');
+    canvas.width=W; canvas.height=H;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(0,0,W,H);
+    const gap=18;
+    const grid=computeFigureGrid(overlays.length,W,H-90);
+    const cellW=grid.cellW;
+    const cellH=grid.cellH-40;
+    const tileH=cellH+40;
+    overlays.forEach((item,i)=>{
+      const col=i%grid.cols;
+      const row=Math.floor(i/grid.cols);
+      const x=col*(cellW+gap);
+      const y=40+row*(tileH+gap);
+      ctx.fillStyle=cfg.text;
+      ctx.font=`700 ${Math.max(18,Math.min(34,cellW/8))}px Arial, sans-serif`;
+      ctx.textAlign='center';
+      ctx.fillText(item.sample.time||String(i+1),x+cellW/2,y-12);
+      drawFittedImage(ctx,item.overlay.canvas,x,y,cellW,cellH);
+      ctx.strokeStyle='#ffffff';
+      ctx.lineWidth=Math.max(2,Math.min(5,cellW/80));
+      ctx.strokeRect(x,y,cellW,cellH);
+    });
+    return canvas;
+  }
+
+  function drawClosureBarBlock(rows, metricKind='area', style='grayscale') {
+    const W=860,H=520;
+    const canvas=document.createElement('canvas');
+    canvas.width=W; canvas.height=H;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(0,0,W,H);
+    drawClosureBars(ctx,rows,0,0,W,H,metricKind,style,false);
+    return canvas;
+  }
+
+  function drawNormalizedLineBlock(rows, metricKind='area', style='grayscale') {
+    const W=860,H=520;
+    const canvas=document.createElement('canvas');
+    canvas.width=W; canvas.height=H;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(0,0,W,H);
+    drawNormalizedLinePanel(ctx,rows,0,0,W,H,metricKind,style,false);
+    return canvas;
+  }
+
+  function computeFigureGrid(count, maxW, maxH) {
+    const n=Math.max(1,Math.min(48,count));
+    let best=null;
+    for(let cols=1;cols<=n;cols++) {
+      const rows=Math.ceil(n/cols);
+      const cellW=(maxW-(cols-1)*18)/cols;
+      const cellH=(maxH-(rows-1)*58)/rows;
+      const size=Math.min(cellW,cellH);
+      const shapePenalty=Math.abs(cols-rows)*18;
+      const unusedPenalty=(cols*rows-n)*22;
+      const score=size-shapePenalty-unusedPenalty;
+      if(!best||score>best.score) best={cols,rows,cellW,cellH,size,score};
+    }
+    return best;
+  }
+
+  function drawFigure2StylePanel(rows, groupLabel, samples, metricKind='area', style='grayscale') {
+    const cfg=figureStyleConfig(style);
+    const overlays=samples.slice(0,48).map(sample=>({sample,overlay:groupOverlayCanvas(sample,{style})})).filter(item=>item.overlay);
+    if(!overlays.length||rows.length<2) return null;
+    const W=2600,H=1550;
+    const canvas=document.createElement('canvas');
+    canvas.width=W; canvas.height=H;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle=cfg.text;
+    ctx.font='700 58px Arial, sans-serif';
+    ctx.fillText('A',70,86);
+    ctx.font='700 42px Arial, sans-serif';
+    ctx.fillText(groupLabel,145,86);
+    const gridX=145, gridY=145, gap=18;
+    const gridMaxW=1360, gridMaxH=1100;
+    const grid=computeFigureGrid(overlays.length,gridMaxW,gridMaxH);
+    const cellW=grid.cellW;
+    const cellH=grid.cellH-40;
+    const tileH=cellH+40;
+    overlays.forEach((item,i)=>{
+      const col=i%grid.cols;
+      const row=Math.floor(i/grid.cols);
+      const x=gridX+col*(cellW+gap);
+      const y=gridY+row*(tileH+gap);
+      ctx.fillStyle=cfg.text;
+      ctx.font=`700 ${Math.max(18,Math.min(34,cellW/8))}px Arial, sans-serif`;
+      ctx.textAlign='center';
+      ctx.fillText(item.sample.time||String(i+1),x+cellW/2,y-12);
+      drawFittedImage(ctx,item.overlay.canvas,x,y,cellW,cellH);
+      ctx.strokeStyle='#ffffff';
+      ctx.lineWidth=Math.max(2,Math.min(5,cellW/80));
+      ctx.strokeRect(x,y,cellW,cellH);
+    });
+    const usedRows=Math.ceil(overlays.length/grid.cols);
+    const gridBottom=gridY+usedRows*(tileH+gap)-gap;
+    ctx.textAlign='left';
+    ctx.fillStyle=cfg.text;
+    ctx.font='700 30px Arial, sans-serif';
+    ctx.fillText('Contour overlay',gridX,gridBottom+45);
+    ctx.font='500 26px Arial, sans-serif';
+    ctx.fillStyle=cfg.muted;
+    const countNote=samples.length>48?'First 48 analysed images are shown.':'Same analysed group, arranged by timepoint';
+    ctx.fillText(countNote,gridX,gridBottom+82);
+    drawClosureBars(ctx,rows,1580,170,860,520,metricKind,style,true);
+    drawNormalizedLinePanel(ctx,rows,1580,925,860,520,metricKind,style,true);
+    return canvas;
+  }
+
+  function pptFittedImageBox(imgW, imgH, x, y, w, h) {
+    const ratio=Math.max(w/imgW,h/imgH);
+    const shownW=imgW*ratio;
+    const shownH=imgH*ratio;
+    return {
+      x:x-(shownW-w)/2,
+      y:y-(shownH-h)/2,
+      w:shownW,
+      h:shownH
+    };
+  }
+
+  function buildEditablePanelSlide(rows, groupLabel, samples, metricKind='area', style='grayscale') {
+    const gridBlock=drawOverlayGridBlock(groupLabel,samples,style);
+    const barBlock=drawClosureBarBlock(rows,metricKind,style);
+    const lineBlock=drawNormalizedLineBlock(rows,metricKind,style);
+    if(!gridBlock||rows.length<2) return null;
+    let nextId=2;
+    const elements=[];
+    const media=[];
+    const addText=(name,text,x,y,w,h,size,bold=false,color='#111827',align='l')=>elements.push(pptText(nextId++,name,text,x,y,w,h,size,bold,color,align));
+    const addPic=(name,canvas,x,y,w,h)=>{
+      media.push({bytes:canvasToPngBytes(canvas)});
+      elements.push(pptPic(nextId++,name,`rId${media.length}`,x,y,w,h));
+    };
+
+    addText('Panel A','A',70,34,70,60,34,true);
+    addText('Group title',groupLabel,145,38,980,60,24,true);
+    const gridX=145;
+    addPic('Panel A image grid',gridBlock,gridX,145,1360,1100);
+    const gridBottom=1245;
+    addText('Contour overlay label','Contour overlay',gridX,gridBottom+28,420,32,18,true);
+    addText('Contour overlay note',samples.length>48?'First 48 analysed images are shown.':'Same analysed group, arranged by timepoint',gridX,gridBottom+62,720,32,15,false,'#52615F');
+
+    const metricLabel=metricKind==='width'?'Width':'Area';
+    const bx=1580, by=170, bw=860, bh=520;
+    addText('Panel B','B',bx,by-76,55,48,24,true);
+    addText('Panel B title',`${metricLabel} closure`,bx+76,by-72,420,44,18,true);
+    addPic('Panel B bar plot',barBlock,bx,by,bw,bh);
+
+    const lx=1580, ly=925, lw=860, lh=520;
+    addText('Panel C','C',lx,ly-76,55,48,24,true);
+    addText('Panel C title',`Normalized ${metricLabel.toLowerCase()}`,lx+76,ly-72,500,44,18,true);
+    addPic('Panel C line plot',lineBlock,lx,ly,lw,lh);
+    return {elements,media};
+  }
+
+  function groupById(id) {
+    return groupOptions().find(group=>group.id===id)||null;
+  }
+
+  function groupSamplesById(groupId) {
+    const group=groupById(groupId);
+    return group ? group.sampleIds.map(id=>sampleById(id)).filter(Boolean) : [];
+  }
+
+  function resultForSample(sample) {
+    return state.manualOverrides[sample.id]?.result||state.groupResults[sample.id]||(state.sample?.id===sample.id?state.result:null);
+  }
+
+  function uniqueIds(list) {
+    return [...new Set((list||[]).filter(Boolean))];
+  }
+
+  function resetLockedQcSnapshot() {
+    state.lockedQcSnapshot=null;
+  }
+
+  function qcStateForSample(sampleId) {
+    const store=state.imageQcState||(state.imageQcState={});
+    return store[sampleId]||(store[sampleId]={
+      orientation:'vertical',
+      cropRatio:null,
+      cropSaved:false,
+      rotation:0,
+      excluded:false,
+      editedAt:null,
+      needsCrop:false,
+      borderCheckPerformed:false
+    });
+  }
+
+  function cropForQcSample(qc, template) {
+    if(qc?.cropSaved&&qc.cropRatio) return qc.cropRatio;
+    return template||qc?.cropRatio||null;
+  }
+
+  function qcPreviewCrop(qc, crop) {
+    return qc?.cropSaved&&crop?.active?crop:null;
+  }
+
+  function qcCropAutoAdvanceTarget(currentIndex, sampleCount) {
+    return currentIndex>=0&&currentIndex<sampleCount-1?currentIndex+1:null;
+  }
+
+  function currentGroupCropTemplate() {
+    const group=selectedGroup();
+    return group?.id ? state.lastQcCropTemplateByGroup[group.id]||null : null;
+  }
+
+  // Auto-detect if an image needs cropping based on border analysis
+  function detectImageBorderIssues(imgElement) {
+    if(!imgElement || !imgElement.complete || !imgElement.naturalWidth) return false;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = imgElement.naturalWidth;
+    canvas.height = imgElement.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(imgElement, 0, 0);
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    const w = canvas.width;
+    const h = canvas.height;
+
+    // Sample the borders (top, bottom, left, right edges)
+    const edgeSampleSize = Math.min(50, Math.floor(w / 4), Math.floor(h / 4));
+    const darkPixelThreshold = 40; // Pixels darker than this are considered "dark"
+    const darkFractionThreshold = 0.4; // If >40% of edge pixels are dark, flag it
+
+    let topDark = 0, bottomDark = 0, leftDark = 0, rightDark = 0;
+    let topTotal = 0, bottomTotal = 0, leftTotal = 0, rightTotal = 0;
+
+    // Sample top edge (horizontal strip along top)
+    for (let y = 0; y < edgeSampleSize; y++) {
+      for (let x = 0; x < w; x += Math.max(1, Math.floor(w / 100))) {
+        const idx = (y * w + x) * 4;
+        const brightness = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+        if (brightness < darkPixelThreshold) topDark++;
+        topTotal++;
+      }
+    }
+
+    // Sample bottom edge
+    for (let y = h - edgeSampleSize; y < h; y++) {
+      for (let x = 0; x < w; x += Math.max(1, Math.floor(w / 100))) {
+        const idx = (y * w + x) * 4;
+        const brightness = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+        if (brightness < darkPixelThreshold) bottomDark++;
+        bottomTotal++;
+      }
+    }
+
+    // Sample left edge
+    for (let x = 0; x < edgeSampleSize; x++) {
+      for (let y = 0; y < h; y += Math.max(1, Math.floor(h / 100))) {
+        const idx = (y * w + x) * 4;
+        const brightness = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+        if (brightness < darkPixelThreshold) leftDark++;
+        leftTotal++;
+      }
+    }
+
+    // Sample right edge
+    for (let x = w - edgeSampleSize; x < w; x++) {
+      for (let y = 0; y < h; y += Math.max(1, Math.floor(h / 100))) {
+        const idx = (y * w + x) * 4;
+        const brightness = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+        if (brightness < darkPixelThreshold) rightDark++;
+        rightTotal++;
+      }
+    }
+
+    // Check if any edge has too many dark pixels
+    const topDarkFrac = topDark / topTotal;
+    const bottomDarkFrac = bottomDark / bottomTotal;
+    const leftDarkFrac = leftDark / leftTotal;
+    const rightDarkFrac = rightDark / rightTotal;
+
+    const hasDarkCorners = (
+      topDarkFrac > darkFractionThreshold ||
+      bottomDarkFrac > darkFractionThreshold ||
+      leftDarkFrac > darkFractionThreshold ||
+      rightDarkFrac > darkFractionThreshold
+    );
+
+    return hasDarkCorners;
+  }
+
+  function updateQcState(sampleId, patch) {
+    if(!sampleId) return null;
+    const current=qcStateForSample(sampleId);
+    const next={...current,...patch,editedAt:Date.now()};
+    state.imageQcState[sampleId]=next;
+    resetLockedQcSnapshot();
+    return next;
+  }
+
+  function syncPublicationBuilderSelections(groups=groupOptions()) {
+    const builderState=state.publicationBuilderState||(state.publicationBuilderState={});
+    const valid=new Set(groups.map(group=>group.id));
+    const defaultControl=groups[0]?.id||'';
+    const defaultTreatment=groups[1]?.id||groups[0]?.id||'';
+    builderState.controlReplicateIds=uniqueIds((builderState.controlReplicateIds||[]).filter(id=>valid.has(id)));
+    builderState.treatmentReplicateIds=uniqueIds((builderState.treatmentReplicateIds||[]).filter(id=>valid.has(id)));
+    if(!builderState.controlReplicateIds.length&&defaultControl) builderState.controlReplicateIds=[defaultControl];
+    if(!builderState.treatmentReplicateIds.length&&defaultTreatment) builderState.treatmentReplicateIds=[defaultTreatment];
+    builderState.controlRepresentativeId=valid.has(builderState.controlRepresentativeId)?builderState.controlRepresentativeId:(builderState.controlReplicateIds[0]||defaultControl);
+    builderState.treatmentRepresentativeId=valid.has(builderState.treatmentRepresentativeId)?builderState.treatmentRepresentativeId:(builderState.treatmentReplicateIds[0]||defaultTreatment);
+    if(builderState.controlReplicateIds.length&&!builderState.controlReplicateIds.includes(builderState.controlRepresentativeId)) {
+      builderState.controlRepresentativeId=builderState.controlReplicateIds[0];
+    }
+    if(builderState.treatmentReplicateIds.length&&!builderState.treatmentReplicateIds.includes(builderState.treatmentRepresentativeId)) {
+      builderState.treatmentRepresentativeId=builderState.treatmentReplicateIds[0];
+    }
+  }
+
+  function renderBuilderReplicateOptions() {
+    if(!el.builderControlReplicates||!el.builderTreatmentReplicates) return;
+    const groups=groupOptions();
+    syncPublicationBuilderSelections(groups);
+    const builderState=state.publicationBuilderState;
+    const render=(host,key,label)=>{
+      if(!groups.length) {
+        host.innerHTML='<div class="builder-replicate-empty">No analyzed groups yet.</div>';
+        return;
+      }
+      host.innerHTML=groups.map(group=>`
+        <label class="builder-replicate-row">
+          <input type="checkbox" data-builder-replicate="${escHtml(key)}" value="${escHtml(group.id)}" ${builderState[key].includes(group.id)?'checked':''}>
+          <span>${escHtml(group.label)}</span>
+        </label>
+      `).join('');
+      host.dataset.conditionLabel=label;
+    };
+    render(el.builderControlReplicates,'controlReplicateIds','Control');
+    render(el.builderTreatmentReplicates,'treatmentReplicateIds','Treatment');
+  }
+
+  function selectedBuilderReplicateIds(key, fallback=[]) {
+    const host=key==='controlReplicateIds'?el.builderControlReplicates:el.builderTreatmentReplicates;
+    if(host) {
+      const checked=[...host.querySelectorAll('input[data-builder-replicate]:checked')].map(input=>input.value);
+      if(checked.length) return uniqueIds(checked);
+    }
+    return uniqueIds(fallback);
+  }
+
+  function builderReplicateStateKey(value) {
+    return value==='controlReplicateIds'||value==='treatmentReplicateIds'?value:'';
+  }
+
+  function populateBuilderGroupSelects() {
+    if(!el.builderControlGroup||!el.builderTreatmentGroup) return;
+    const groups=groupOptions();
+    syncPublicationBuilderSelections(groups);
+    const builderState=state.publicationBuilderState;
+    const fillSelect=(select, ids, fallbackId)=>{
+      const options=ids.map(id=>groupById(id)).filter(Boolean);
+      select.innerHTML='';
+      options.forEach(group=>{
+        const option=document.createElement('option');
+        option.value=group.id;
+        option.textContent=group.label;
+        select.appendChild(option);
+      });
+      select.disabled=!options.length;
+      if(options.length) select.value=options.some(group=>group.id===fallbackId)?fallbackId:options[0].id;
+    };
+    fillSelect(el.builderControlGroup,builderState.controlReplicateIds,builderState.controlRepresentativeId||groups[0]?.id);
+    fillSelect(el.builderTreatmentGroup,builderState.treatmentReplicateIds,builderState.treatmentRepresentativeId||(groups[1]?.id||groups[0]?.id));
+    renderBuilderReplicateOptions();
+    if(el.exportBuilderFigure) el.exportBuilderFigure.disabled=groups.length<2;
+  }
+
+  function builderSettings() {
+    populateBuilderGroupSelects();
+    const builderState=state.publicationBuilderState||(state.publicationBuilderState={});
+    const controlId=el.builderControlGroup?.value||builderState.controlRepresentativeId||groupOptions()[0]?.id||'';
+    const treatmentId=el.builderTreatmentGroup?.value||builderState.treatmentRepresentativeId||groupOptions()[1]?.id||controlId;
+    builderState.controlRepresentativeId=controlId;
+    builderState.treatmentRepresentativeId=treatmentId;
+    const controlReplicateIds=selectedBuilderReplicateIds('controlReplicateIds',(builderState.controlReplicateIds||[]).filter(id=>groupById(id)));
+    const treatmentReplicateIds=selectedBuilderReplicateIds('treatmentReplicateIds',(builderState.treatmentReplicateIds||[]).filter(id=>groupById(id)));
+    builderState.controlReplicateIds=controlReplicateIds;
+    builderState.treatmentReplicateIds=treatmentReplicateIds;
+    return {
+      controlId,
+      treatmentId,
+      controlReplicateIds,
+      treatmentReplicateIds,
+      controlLabel:(el.builderControlLabel?.value||'Control').trim()||'Control',
+      treatmentLabel:(el.builderTreatmentLabel?.value||'Treatment').trim()||'Treatment',
+      cellType:(el.builderCellType?.value||'cells').trim()||'cells',
+      replicate:(el.builderReplicate?.value||'').trim(),
+      metric:el.builderMetricSelect?.value==='width'?'width':'area',
+      scaleValue:Number(el.builderScaleValue?.value),
+      scaleMode:el.builderScaleMode?.value||'um_per_pixel',
+      pValue:(el.builderPValue?.value||'').trim(),
+      stars:(el.builderStars?.value||'').trim()
+    };
+  }
+
+  function builderGroupRows(groupId, conditionKey, conditionLabel, replicateLabel='') {
+    const samples=groupSamplesById(groupId);
+    const rows=samples.map((sample,index)=>{
+      const r=resultForSample(sample);
+      if(!r) return null;
+      const parsed=parseTimeHours(sample.time);
+      return {
+        sample,index,conditionKey,conditionLabel,replicateGroupId:groupId,replicateLabel,
+        x:Number.isFinite(parsed)?parsed:index+1,
+        label:sample.time||String(index+1),
+        areaPx:Number(r.area),
+        areaPct:Number(r.areaPct),
+        width:Number(r.wMean),
+        medianWidth:Number(r.wMedian),
+        qc:r.segmentationQualityScore,
+        warnings:r.warnings||[]
+      };
+    }).filter(row=>row&&Number.isFinite(row.x)).sort((a,b)=>a.x-b.x||a.index-b.index);
+    const base=rows[0]||{};
+    return rows.map(row=>({
+      ...row,
+      areaNormalizedPct:Number.isFinite(base.areaPx)&&base.areaPx?row.areaPx*100/base.areaPx:null,
+      widthNormalizedPct:Number.isFinite(base.width)&&base.width?row.width*100/base.width:null,
+      areaClosurePct:Number.isFinite(base.areaPx)&&base.areaPx?100-(row.areaPx*100/base.areaPx):null,
+      widthClosurePct:Number.isFinite(base.width)&&base.width?100-(row.width*100/base.width):null
+    }));
+  }
+
+  function builderConditionRows(groupIds, representativeId, conditionKey, conditionLabel) {
+    const ids=uniqueIds(groupIds);
+    return ids.flatMap((groupId,index)=>builderGroupRows(groupId,conditionKey,conditionLabel,`R${index+1}`));
+  }
+
+  function average(values) {
+    const valid=values.filter(Number.isFinite);
+    return valid.length?valid.reduce((sum,value)=>sum+value,0)/valid.length:null;
+  }
+
+  function sampleStandardDeviation(values) {
+    const valid=values.filter(Number.isFinite);
+    if(valid.length<2) return null;
+    const mean=average(valid);
+    const variance=valid.reduce((sum,value)=>sum+(value-mean)**2,0)/(valid.length-1);
+    return Math.sqrt(variance);
+  }
+
+  function aggregateBuilderConditionRows(rows, conditionKey, conditionLabel) {
+    const grouped=new Map();
+    rows.filter(row=>row.conditionKey===conditionKey).forEach(row=>{
+      const key=String(row.x);
+      if(!grouped.has(key)) grouped.set(key,[]);
+      grouped.get(key).push(row);
+    });
+    return [...grouped.values()].map(groupRows=>{
+      const first=groupRows[0];
+      return {
+        conditionKey,
+        conditionLabel,
+        x:first.x,
+        label:first.label,
+        replicateCount:groupRows.length,
+        areaPx:average(groupRows.map(row=>row.areaPx)),
+        areaPxSd:sampleStandardDeviation(groupRows.map(row=>row.areaPx)),
+        width:average(groupRows.map(row=>row.width)),
+        widthSd:sampleStandardDeviation(groupRows.map(row=>row.width)),
+        medianWidth:average(groupRows.map(row=>row.medianWidth)),
+        medianWidthSd:sampleStandardDeviation(groupRows.map(row=>row.medianWidth)),
+        areaNormalizedPct:average(groupRows.map(row=>row.areaNormalizedPct)),
+        areaNormalizedPctSd:sampleStandardDeviation(groupRows.map(row=>row.areaNormalizedPct)),
+        widthNormalizedPct:average(groupRows.map(row=>row.widthNormalizedPct)),
+        widthNormalizedPctSd:sampleStandardDeviation(groupRows.map(row=>row.widthNormalizedPct)),
+        areaClosurePct:average(groupRows.map(row=>row.areaClosurePct)),
+        areaClosurePctSd:sampleStandardDeviation(groupRows.map(row=>row.areaClosurePct)),
+        widthClosurePct:average(groupRows.map(row=>row.widthClosurePct)),
+        widthClosurePctSd:sampleStandardDeviation(groupRows.map(row=>row.widthClosurePct))
+      };
+    }).sort((a,b)=>a.x-b.x);
+  }
+
+  function builderFigureRows(settings=builderSettings()) {
+    const controlRows=builderConditionRows(settings.controlReplicateIds,settings.controlId,'control',settings.controlLabel);
+    const treatmentRows=builderConditionRows(settings.treatmentReplicateIds,settings.treatmentId,'treatment',settings.treatmentLabel);
+    return [...controlRows,...treatmentRows].sort((a,b)=>a.x-b.x||a.conditionKey.localeCompare(b.conditionKey));
+  }
+
+  function builderRepresentativeRows(settings=builderSettings()) {
+    return [
+      ...builderGroupRows(settings.controlId,'control',settings.controlLabel,'representative'),
+      ...builderGroupRows(settings.treatmentId,'treatment',settings.treatmentLabel,'representative')
+    ].sort((a,b)=>a.x-b.x||a.conditionKey.localeCompare(b.conditionKey));
+  }
+
+  function builderPlotRows(settings=builderSettings(), rows=builderFigureRows(settings)) {
+    return [
+      ...aggregateBuilderConditionRows(rows,'control',settings.controlLabel),
+      ...aggregateBuilderConditionRows(rows,'treatment',settings.treatmentLabel)
+    ].sort((a,b)=>a.x-b.x||a.conditionKey.localeCompare(b.conditionKey));
+  }
+
+  function builderTimepoints(rows) {
+    const map=new Map();
+    rows.forEach(row=>{
+      const key=String(row.x);
+      if(!map.has(key)) map.set(key,{x:row.x,label:row.label});
+    });
+    return [...map.values()].sort((a,b)=>a.x-b.x);
+  }
+
+  function builderRowAt(rows, conditionKey, x) {
+    return rows.find(row=>row.conditionKey===conditionKey&&row.x===x)||null;
+  }
+
+  function drawScaleBar(ctx,x,y,w,h,overlay,settings,cfg) {
+    if(!Number.isFinite(settings.scaleValue)||settings.scaleValue<=0||!overlay) return null;
+    const originalPixels=settings.scaleMode==='pixels_per_100um'
+      ? settings.scaleValue
+      : 100/settings.scaleValue;
+    if(!Number.isFinite(originalPixels)||originalPixels<=0) return null;
+    const ratio=Math.max(w/overlay.width,h/overlay.height);
+    const barW=Math.max(34,Math.min(w*0.42,originalPixels*ratio));
+    const barH=Math.max(5,Math.min(11,h*0.026));
+    const bx=x+w-barW-26;
+    const by=y+h-34;
+    ctx.save();
+    ctx.fillStyle=cfg.grayscale?'rgba(255,255,255,0.82)':'rgba(255,255,255,0.78)';
+    ctx.fillRect(bx-10,by-22,barW+20,34);
+    ctx.fillStyle=cfg.text;
+    ctx.fillRect(bx,by,barW,barH);
+    ctx.font='700 18px Arial, sans-serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='bottom';
+    ctx.fillText('100 um',bx+barW/2,by-4);
+    ctx.restore();
+    return {scale_bar:'100 um',scale_bar_px:originalPixels};
+  }
+
+  function drawBuilderErrorBar(ctx, centerX, mean, sd, yToPx, color) {
+    if(!Number.isFinite(mean)||!Number.isFinite(sd)||sd<0) return;
+    const top=yToPx(mean+sd);
+    const bottom=yToPx(mean-sd);
+    const cap=12;
+    ctx.save();
+    ctx.strokeStyle=color;
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.moveTo(centerX,top);
+    ctx.lineTo(centerX,bottom);
+    ctx.moveTo(centerX-cap,top);
+    ctx.lineTo(centerX+cap,top);
+    ctx.moveTo(centerX-cap,bottom);
+    ctx.lineTo(centerX+cap,bottom);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawBuilderClosurePlot(ctx,rows,x,y,w,h,settings,style='grayscale',includeHeader=true) {
+    const cfg=figureStyleConfig(style);
+    const metric='areaClosurePct';
+    const timepoints=builderTimepoints(rows).filter(tp=>tp.x!==builderTimepoints(rows)[0]?.x);
+    const colors=style==='color'?{control:'#111827',treatment:'#0f9f8f'}:{control:'#111111',treatment:'#777777'};
+    ctx.save();
+    ctx.fillStyle='#fff'; ctx.fillRect(x,y,w,h);
+    ctx.fillStyle=cfg.text;
+    if(includeHeader) {
+      ctx.font='700 34px Arial, sans-serif'; ctx.fillText('B',x,y-24);
+      ctx.font='700 30px Arial, sans-serif'; ctx.fillText('Wound closure',x+76,y-24);
+    }
+    const left=x+95,right=x+w-35,top=y+48,bottom=y+h-90;
+    const yToPx=v=>bottom-(Math.max(0,Math.min(110,v))/110)*(bottom-top);
+    ctx.strokeStyle=cfg.axis; ctx.lineWidth=4;
+    ctx.beginPath(); ctx.moveTo(left,top); ctx.lineTo(left,bottom); ctx.lineTo(right,bottom); ctx.stroke();
+    ctx.font='22px Arial, sans-serif'; ctx.textAlign='right'; ctx.textBaseline='middle';
+    for(let i=0;i<=5;i++) {
+      const val=i*20, py=bottom-(val/100)*(bottom-top);
+      ctx.strokeStyle=cfg.grid; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(left,py); ctx.lineTo(right,py); ctx.stroke();
+      ctx.fillStyle=cfg.text; ctx.fillText(String(val),left-16,py);
+    }
+    const slotW=(right-left)/Math.max(1,timepoints.length);
+    const barW=Math.min(54,slotW*0.26);
+    timepoints.forEach((tp,i)=>{
+      ['control','treatment'].forEach((condition,j)=>{
+        const row=builderRowAt(rows,condition,tp.x);
+        if(!row||!Number.isFinite(row[metric])) return;
+        const center=left+slotW*(i+0.5)+(j?barW*0.62:-barW*0.62);
+        const barH=Math.max(0,Math.min(110,row[metric]))/110*(bottom-top);
+        ctx.fillStyle=colors[condition];
+        ctx.fillRect(center-barW/2,bottom-barH,barW,barH);
+        if(row.replicateCount>=2) {
+          drawBuilderErrorBar(ctx,center,row[metric],row.areaClosurePctSd,yToPx,colors[condition]);
+        }
+      });
+      ctx.fillStyle=cfg.text; ctx.textAlign='center'; ctx.font='700 22px Arial, sans-serif';
+      ctx.fillText(tp.label,left+slotW*(i+0.5),bottom+28);
+    });
+    if(settings.stars) {
+      ctx.fillStyle=cfg.text; ctx.font='700 30px Arial, sans-serif'; ctx.textAlign='center';
+      ctx.fillText(settings.stars,right-80,top+35);
+    }
+    ctx.save(); ctx.translate(x+26,top+(bottom-top)/2); ctx.rotate(-Math.PI/2);
+    ctx.font='700 26px Arial, sans-serif'; ctx.textAlign='center'; ctx.fillStyle=cfg.text;
+    ctx.fillText('Wound closure (%)',0,0); ctx.restore();
+    ctx.font='700 24px Arial, sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Time post scratch',left+(right-left)/2,y+h-24);
+    const ly=y+h-58;
+    ctx.textAlign='left'; ctx.font='700 21px Arial, sans-serif';
+    ctx.fillStyle=colors.control; ctx.fillRect(left+28,ly-14,24,10); ctx.fillStyle=cfg.text; ctx.fillText(settings.controlLabel,left+60,ly-6);
+    ctx.fillStyle=colors.treatment; ctx.fillRect(left+235,ly-14,24,10); ctx.fillStyle=cfg.text; ctx.fillText(settings.treatmentLabel,left+267,ly-6);
+    ctx.restore();
+  }
+
+  function drawBuilderLinePlot(ctx,rows,x,y,w,h,settings,style='grayscale',includeHeader=true) {
+    const cfg=figureStyleConfig(style);
+    const metric=settings.metric==='width'?'widthNormalizedPct':'areaNormalizedPct';
+    const sdMetric=`${metric}Sd`;
+    const label=settings.metric==='width'?'Normalized width':'Normalized area';
+    const colors=style==='color'?{control:'#111827',treatment:'#2f6fed'}:{control:'#111111',treatment:'#777777'};
+    const timepoints=builderTimepoints(rows);
+    ctx.save();
+    ctx.fillStyle='#fff'; ctx.fillRect(x,y,w,h);
+    ctx.fillStyle=cfg.text;
+    if(includeHeader) {
+      ctx.font='700 34px Arial, sans-serif'; ctx.fillText('C',x,y-24);
+      ctx.font='700 30px Arial, sans-serif'; ctx.fillText(label,x+76,y-24);
+    }
+    const left=x+95,right=x+w-35,top=y+48,bottom=y+h-90;
+    const minX=Math.min(...timepoints.map(tp=>tp.x)), maxX=Math.max(...timepoints.map(tp=>tp.x));
+    const xToPx=v=>left+(v-minX)*(right-left)/(maxX-minX||1);
+    const yToPx=v=>bottom-(Math.max(0,Math.min(110,v))/110)*(bottom-top);
+    ctx.strokeStyle=cfg.axis; ctx.lineWidth=4;
+    ctx.beginPath(); ctx.moveTo(left,top); ctx.lineTo(left,bottom); ctx.lineTo(right,bottom); ctx.stroke();
+    ctx.font='22px Arial, sans-serif'; ctx.textAlign='right'; ctx.textBaseline='middle';
+    for(let i=0;i<=5;i++) {
+      const val=i*20, py=yToPx(val);
+      ctx.strokeStyle=cfg.grid; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(left,py); ctx.lineTo(right,py); ctx.stroke();
+      ctx.fillStyle=cfg.text; ctx.fillText(String(val),left-16,py);
+    }
+    ['control','treatment'].forEach(condition=>{
+      const series=rows.filter(row=>row.conditionKey===condition&&Number.isFinite(row[metric])).sort((a,b)=>a.x-b.x);
+      ctx.strokeStyle=colors[condition]; ctx.lineWidth=5; ctx.lineJoin='round'; ctx.lineCap='round';
+      ctx.beginPath();
+      series.forEach((row,i)=>{ const px=xToPx(row.x), py=yToPx(row[metric]); if(i) ctx.lineTo(px,py); else ctx.moveTo(px,py); });
+      ctx.stroke();
+      series.forEach(row=>{
+        if(row.replicateCount>=2) drawBuilderErrorBar(ctx,xToPx(row.x),row[metric],row[sdMetric],yToPx,colors[condition]);
+      });
+      series.forEach(row=>{ const px=xToPx(row.x), py=yToPx(row[metric]); ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(px,py,7,0,Math.PI*2); ctx.fill(); ctx.strokeStyle=colors[condition]; ctx.lineWidth=4; ctx.stroke(); });
+    });
+    ctx.fillStyle=cfg.text; ctx.textAlign='center'; ctx.font='700 22px Arial, sans-serif';
+    timepoints.forEach(tp=>ctx.fillText(tp.label,xToPx(tp.x),bottom+28));
+    ctx.save(); ctx.translate(x+26,top+(bottom-top)/2); ctx.rotate(-Math.PI/2);
+    ctx.font='700 26px Arial, sans-serif'; ctx.textAlign='center'; ctx.fillText('% of baseline',0,0); ctx.restore();
+    ctx.font='700 21px Arial, sans-serif'; ctx.textAlign='left';
+    const ly=y+h-38;
+    ctx.fillStyle=colors.control; ctx.fillRect(left+28,ly-14,24,10); ctx.fillStyle=cfg.text; ctx.fillText(settings.controlLabel,left+60,ly-6);
+    ctx.fillStyle=colors.treatment; ctx.fillRect(left+235,ly-14,24,10); ctx.fillStyle=cfg.text; ctx.fillText(settings.treatmentLabel,left+267,ly-6);
+    ctx.restore();
+  }
+
+  function drawBuilderFigurePanel(style='grayscale', options={}) {
+    const textAsExternal=!!options.textAsExternal;
+    const settings=builderSettings();
+    const rows=builderFigureRows(settings);
+    const representativeRows=builderRepresentativeRows(settings);
+    const plotRows=builderPlotRows(settings,rows);
+    const timepoints=builderTimepoints(representativeRows.length?representativeRows:plotRows).slice(0,24);
+    if(plotRows.length<2||!timepoints.length) return null;
+    const cfg=figureStyleConfig(style);
+    const W=2600,H=1580;
+    const canvas=document.createElement('canvas');
+    canvas.width=W; canvas.height=H;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+    if(!textAsExternal) {
+      ctx.fillStyle=cfg.text; ctx.font='700 58px Arial, sans-serif'; ctx.fillText('A',70,88);
+      ctx.font='700 42px Arial, sans-serif'; ctx.fillText(settings.cellType,145,88);
+    }
+    const gridX=165,gridY=175,gap=18,labelW=85,gridW=1300;
+    const colW=(gridW-labelW-gap)/2;
+    const rowH=Math.max(128,Math.min(310,(1130-(timepoints.length-1)*gap)/Math.max(1,timepoints.length)));
+    if(!textAsExternal) {
+      ctx.font='700 30px Arial, sans-serif'; ctx.textAlign='center';
+      ctx.fillText(settings.controlLabel,gridX+labelW+colW/2,gridY-45);
+      ctx.fillText(settings.treatmentLabel,gridX+labelW+colW+gap+colW/2,gridY-45);
+    }
+    let scaleMeta=null;
+    timepoints.forEach((tp,rowIndex)=>{
+      const y=gridY+rowIndex*(rowH+gap);
+      if(!textAsExternal) {
+        ctx.fillStyle=cfg.text; ctx.font='700 27px Arial, sans-serif'; ctx.textAlign='right'; ctx.textBaseline='middle';
+        ctx.fillText(tp.label,gridX+labelW-18,y+rowH/2);
+      }
+      ['control','treatment'].forEach((condition,colIndex)=>{
+        const row=builderRowAt(representativeRows,condition,tp.x);
+        const x=gridX+labelW+colIndex*(colW+gap);
+        ctx.fillStyle='#f4f4f4'; ctx.fillRect(x,y,colW,rowH);
+        if(row) {
+          const overlay=groupOverlayCanvas(row.sample,{style});
+          if(overlay) {
+            drawFittedImage(ctx,overlay.canvas,x,y,colW,rowH);
+            const meta=drawScaleBar(ctx,x,y,colW,rowH,overlay,settings,cfg);
+            if(meta) scaleMeta=meta;
+          }
+        }
+        ctx.strokeStyle='#fff'; ctx.lineWidth=4; ctx.strokeRect(x,y,colW,rowH);
+      });
+    });
+    const bottom=gridY+timepoints.length*(rowH+gap)-gap;
+    if(!textAsExternal) {
+      ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+      ctx.fillStyle=cfg.text; ctx.font='700 30px Arial, sans-serif'; ctx.fillText('Contour overlay',gridX+labelW,bottom+46);
+      ctx.fillStyle=cfg.muted; ctx.font='500 25px Arial, sans-serif'; ctx.fillText(scaleMeta?'Representative analysed groups with scale bar.':'Representative analysed groups; add calibration to draw a scale bar.',gridX+labelW,bottom+82);
+    }
+    drawBuilderClosurePlot(ctx,plotRows,1580,175,860,520,settings,style,!textAsExternal);
+    drawBuilderLinePlot(ctx,plotRows,1580,930,860,520,settings,style,!textAsExternal);
+    canvas.builderMeta={settings,rows,plotRows,representativeRows,scaleMeta};
+    return canvas;
+  }
+
+  function builderCaptionDraft(settings=builderSettings(), rows=builderFigureRows(settings)) {
+    const metric=settings.metric==='width'?'normalized wound width':'normalized wound area';
+    const timeLabels=builderTimepoints(rows).map(tp=>tp.label).join(', ');
+    const replicateSummary=settings.replicate||`n=${Math.min(settings.controlReplicateIds.length,settings.treatmentReplicateIds.length)||Math.max(settings.controlReplicateIds.length,settings.treatmentReplicateIds.length)||1}`;
+    const stats=settings.pValue||settings.stars ? ` Statistical annotation: ${[settings.stars,settings.pValue].filter(Boolean).join(' ')}.` : '';
+    const scale=Number.isFinite(settings.scaleValue)&&settings.scaleValue>0 ? ' Scale bar: 100 um.' : '';
+    return `Representative wound healing scratch assay images and quantification for ${settings.cellType||'cells'}. Panel A shows contour overlays for ${settings.controlLabel} and ${settings.treatmentLabel} across ${timeLabels||'the analyzed timepoints'}.${scale} Panel B shows wound closure normalized to baseline. Panel C shows ${metric}. Bars and points show mean ± SD when at least two replicates are available. ${replicateSummary}. ${stats}`.replace(/\s+/g,' ').trim();
+  }
+
+  function builderDataCsv(settings, rows, scaleMeta) {
+    const data=rows.map(row=>({
+      row_type:'replicate',
+      condition:row.conditionLabel,
+      replicate_group_id:row.replicateGroupId||'',
+      replicate_label:row.replicateLabel||'',
+      time_h:row.x,
+      time_label:row.label,
+      image_name:row.sample.path.split('/').pop()||row.sample.path,
+      wound_area_px:Number.isFinite(row.areaPx)?Math.round(row.areaPx):'',
+      normalized_area_percent:Number.isFinite(row.areaNormalizedPct)?row.areaNormalizedPct.toFixed(4):'',
+      area_closure_percent:Number.isFinite(row.areaClosurePct)?row.areaClosurePct.toFixed(4):'',
+      mean_width_px:Number.isFinite(row.width)?row.width.toFixed(2):'',
+      normalized_width_percent:Number.isFinite(row.widthNormalizedPct)?row.widthNormalizedPct.toFixed(4):'',
+      width_closure_percent:Number.isFinite(row.widthClosurePct)?row.widthClosurePct.toFixed(4):'',
+      scale_bar:scaleMeta?.scale_bar||'',
+      scale_bar_px:scaleMeta?.scale_bar_px?scaleMeta.scale_bar_px.toFixed(2):'',
+      cell_type:settings.cellType,
+      replicate:settings.replicate||`control=${settings.controlReplicateIds.length}; treatment=${settings.treatmentReplicateIds.length}`,
+      p_value_label:settings.pValue,
+      significance:settings.stars,
+      summary_metric:'',
+      summary_mean:'',
+      summary_sd:'',
+      summary_n:''
+    }));
+    const panelCMetric=settings.metric==='width'?'widthNormalizedPct':'areaNormalizedPct';
+    const summaries=builderPlotRows(settings,rows).flatMap(row=>[
+      ['area_closure_percent','areaClosurePct','areaClosurePctSd'],
+      [settings.metric==='width'?'normalized_width_percent':'normalized_area_percent',panelCMetric,`${panelCMetric}Sd`]
+    ].map(([label,meanKey,sdKey])=>({
+      row_type:'summary',
+      condition:row.conditionLabel,
+      replicate_group_id:'',
+      replicate_label:'',
+      time_h:row.x,
+      time_label:row.label,
+      image_name:'',
+      wound_area_px:'',
+      normalized_area_percent:'',
+      area_closure_percent:'',
+      mean_width_px:'',
+      normalized_width_percent:'',
+      width_closure_percent:'',
+      scale_bar:scaleMeta?.scale_bar||'',
+      scale_bar_px:scaleMeta?.scale_bar_px?scaleMeta.scale_bar_px.toFixed(2):'',
+      cell_type:settings.cellType,
+      replicate:settings.replicate||`control=${settings.controlReplicateIds.length}; treatment=${settings.treatmentReplicateIds.length}`,
+      p_value_label:settings.pValue,
+      significance:settings.stars,
+      summary_metric:label,
+      summary_mean:Number.isFinite(row[meanKey])?row[meanKey].toFixed(4):'',
+      summary_sd:Number.isFinite(row[sdKey])?row[sdKey].toFixed(4):'',
+      summary_n:row.replicateCount
+    })));
+    return figureDataCsv([...data,...summaries]);
+  }
+
+  function buildBuilderPptxSlide(canvas, settings, style='grayscale') {
+    const pptCanvas=drawBuilderFigurePanel(style,{textAsExternal:true})||canvas;
+    const rows=pptCanvas.builderMeta?.rows||[];
+    const timepoints=builderTimepoints(rows).slice(0,24);
+    const gridX=165,gridY=175,gap=18,labelW=85,gridW=1300;
+    const colW=(gridW-labelW-gap)/2;
+    const rowH=Math.max(128,Math.min(310,(1130-(timepoints.length-1)*gap)/Math.max(1,timepoints.length)));
+    const metricTitle=settings.metric==='width'?'Normalized width':'Normalized area';
+    const elements=[];
+    const media=[{bytes:canvasToPngBytes(pptCanvas)}];
+    let nextId=2;
+    elements.push(pptPic(nextId++,'Builder figure blocks','rId1',0,0,2600,1580));
+    elements.push(pptText(nextId++,'Panel A','A',70,34,70,60,34,true,'#111827'));
+    elements.push(pptText(nextId++,'Panel A title',settings.cellType,145,38,980,60,24,true,'#111827'));
+    elements.push(pptText(nextId++,'Control condition',settings.controlLabel,gridX+labelW,128,colW,34,18,true,'#111827','ctr'));
+    elements.push(pptText(nextId++,'Treatment condition',settings.treatmentLabel,gridX+labelW+colW+gap,128,colW,34,18,true,'#111827','ctr'));
+    timepoints.forEach((tp,index)=>{
+      const y=gridY+index*(rowH+gap)+rowH/2-15;
+      elements.push(pptText(nextId++,`Timepoint ${tp.label}`,tp.label,gridX, y, labelW-20,34,16,true,'#111827','r'));
+    });
+    const bottom=gridY+timepoints.length*(rowH+gap)-gap;
+    elements.push(pptText(nextId++,'Panel A note title','Contour overlay',gridX+labelW,bottom+26,420,32,17,true,'#111827'));
+    elements.push(pptText(nextId++,'Panel A note','Representative analysed groups; scale bar appears when calibration is provided.',gridX+labelW,bottom+60,760,32,14,false,'#52615F'));
+    elements.push(pptText(nextId++,'Panel B','B',1580,99,55,48,24,true,'#111827'));
+    elements.push(pptText(nextId++,'Panel B title','Wound closure',1656,103,420,44,18,true,'#111827'));
+    elements.push(pptText(nextId++,'Panel C','C',1580,854,55,48,24,true,'#111827'));
+    elements.push(pptText(nextId++,'Panel C title',metricTitle,1656,858,500,44,18,true,'#111827'));
+    elements.push(pptText(nextId++,'Editable caption hint','Panel labels and titles can be edited; image and plot blocks are embedded as publication-ready rasters.',145,1490,1800,34,14,false,'#52615F'));
+    return {elements,media};
+  }
+
+  function renderPublicationBuilder() {
+    if(!el.builderCanvas) return;
+    populateBuilderGroupSelects();
+    const settings=builderSettings();
+    if(!settings.controlReplicateIds.length||!settings.treatmentReplicateIds.length) {
+      el.builderCanvas.hidden=true;
+      el.builderEmpty.hidden=false;
+      if(el.builderStatus) el.builderStatus.textContent='Assign at least one replicate group to both Control and Treatment.';
+      if(el.builderCaptionText) el.builderCaptionText.textContent='Caption draft will appear after preview.';
+      if(el.exportBuilderFigure) el.exportBuilderFigure.disabled=true;
+      return;
+    }
+    const canvas=drawBuilderFigurePanel('grayscale');
+    if(!canvas) {
+      el.builderCanvas.hidden=true;
+      el.builderEmpty.hidden=false;
+      if(el.builderStatus) el.builderStatus.textContent='Select two analyzed groups with at least one result each.';
+      if(el.builderCaptionText) el.builderCaptionText.textContent='Caption draft will appear after preview.';
+      if(el.exportBuilderFigure) el.exportBuilderFigure.disabled=true;
+      return;
+    }
+    el.builderCanvas.width=canvas.width;
+    el.builderCanvas.height=canvas.height;
+    el.builderCanvas.getContext('2d').drawImage(canvas,0,0);
+    el.builderCanvas.hidden=false;
+    el.builderEmpty.hidden=true;
+    const rows=builderFigureRows(settings);
+    if(el.builderCaptionText) el.builderCaptionText.textContent=builderCaptionDraft(settings,rows);
+    if(el.builderStatus) el.builderStatus.textContent=`${settings.controlLabel} (${settings.controlReplicateIds.length} replicate) vs ${settings.treatmentLabel} (${settings.treatmentReplicateIds.length} replicate): ${builderTimepoints(canvas.builderMeta.plotRows||rows).length} timepoint(s).`;
+    if(el.exportBuilderFigure) el.exportBuilderFigure.disabled=false;
+  }
+
+  async function exportPublicationBuilderZip(style='grayscale') {
+    const exportStyle=style==='color'?'color':'grayscale';
+    const canvas=drawBuilderFigurePanel(exportStyle);
+    if(!canvas) {
+      setLog('<strong>Publication Figure Builder:</strong> select two analyzed groups before export.');
+      return;
+    }
+    const settings=canvas.builderMeta.settings;
+    const rows=canvas.builderMeta.rows;
+    const groupName=safeFilenamePart(`${settings.controlLabel}_vs_${settings.treatmentLabel}`,'builder');
+    const caption=builderCaptionDraft(settings,rows);
+    const slide=buildBuilderPptxSlide(canvas,settings,exportStyle);
+    const files=[
+      {name:`figures/cytomove_${groupName}_${exportStyle}_control_vs_treatment_figure.png`,bytes:canvasToPngBytes(canvas)},
+      {name:`pdf/cytomove_${groupName}_${exportStyle}_control_vs_treatment_figure.pdf`,bytes:pdfFromCanvas(canvas)},
+      {name:`pptx/cytomove_${groupName}_${exportStyle}_control_vs_treatment_figure.pptx`,bytes:new Uint8Array(await makePptxDeck([slide]).arrayBuffer())},
+      {name:`data/cytomove_${groupName}_${exportStyle}_builder_figure_data.csv`,bytes:new TextEncoder().encode(builderDataCsv(settings,rows,canvas.builderMeta.scaleMeta))},
+      {name:`caption/cytomove_${groupName}_${exportStyle}_caption_draft.md`,bytes:new TextEncoder().encode(`# Caption draft\n\n${caption}\n`)}
+    ];
+    downloadBlob(`cytomove_${groupName}_${exportStyle}_publication_builder.zip`,makeZip(files));
+    setLog(`<strong>Publication Figure Builder export complete (${exportStyle}):</strong> ${files.length} files were packed into one ZIP.`);
+  }
+
+  async function exportGroupPlotsZip(style='grayscale') {
+    const exportStyle=style==='color'?'color':'grayscale';
     const rows=groupPlotRows();
     if(state.mode!=='group') setMode('group');
     if(rows.length<2) {
-      setLog('<strong>Plot export:</strong> at least two analyzed group images are needed.');
+      setLog('<strong>Publication figure export:</strong> at least two analyzed group images are needed.');
       return;
     }
     const group=selectedGroup();
+    const samples=selectedGroupSamples();
     const groupName=safeFilenamePart(group.label,'group');
-    const areaPlot=drawTimePlot(rows,'areaPct',`${group.label} - Wound area`,'Wound area (%)','#0f9f8f');
-    const widthPlot=drawTimePlot(rows,'width',`${group.label} - Mean wound width`,'Mean wound width (px)','#2f6fed');
+    const figureRows=groupFigureRows();
+    const areaPanelFigure=drawFigure2StylePanel(rows,group.label,samples,'area',exportStyle);
+    const widthPanelFigure=drawFigure2StylePanel(rows,group.label,samples,'width',exportStyle);
+    const areaPlot=drawTimePlot(rows,'areaNormalizedPct',`${group.label} - normalized wound area`,'Area (% of 0h)','#0f9f8f','A',exportStyle);
+    const widthPlot=drawTimePlot(rows,'widthNormalizedPct',`${group.label} - normalized mean width`,'Width (% of 0h)','#2f6fed','B',exportStyle);
     const files=[];
-    if(areaPlot) files.push({name:`cytomove_${groupName}_wound_area_plot.png`,bytes:dataUrlToBytes(areaPlot.toDataURL('image/png'))});
-    if(widthPlot) files.push({name:`cytomove_${groupName}_mean_width_plot.png`,bytes:dataUrlToBytes(widthPlot.toDataURL('image/png'))});
+    const pptSlides=[];
+    if(areaPanelFigure) files.push({name:`figures/cytomove_${groupName}_${exportStyle}_area_three_panel_figure.png`,bytes:dataUrlToBytes(areaPanelFigure.toDataURL('image/png'))});
+    if(widthPanelFigure) files.push({name:`figures/cytomove_${groupName}_${exportStyle}_width_three_panel_figure.png`,bytes:dataUrlToBytes(widthPanelFigure.toDataURL('image/png'))});
+    if(areaPlot) files.push({name:`figures/cytomove_${groupName}_${exportStyle}_normalized_wound_area_figure.png`,bytes:dataUrlToBytes(areaPlot.toDataURL('image/png'))});
+    if(widthPlot) files.push({name:`figures/cytomove_${groupName}_${exportStyle}_normalized_mean_width_figure.png`,bytes:dataUrlToBytes(widthPlot.toDataURL('image/png'))});
+    if(areaPanelFigure) {
+      files.push({name:`pdf/cytomove_${groupName}_${exportStyle}_area_three_panel_figure.pdf`,bytes:pdfFromCanvas(areaPanelFigure)});
+    }
+    if(widthPanelFigure) {
+      files.push({name:`pdf/cytomove_${groupName}_${exportStyle}_width_three_panel_figure.pdf`,bytes:pdfFromCanvas(widthPanelFigure)});
+    }
+    if(areaPlot) {
+      files.push({name:`pdf/cytomove_${groupName}_${exportStyle}_normalized_wound_area_figure.pdf`,bytes:pdfFromCanvas(areaPlot)});
+    }
+    if(widthPlot) {
+      files.push({name:`pdf/cytomove_${groupName}_${exportStyle}_normalized_mean_width_figure.pdf`,bytes:pdfFromCanvas(widthPlot)});
+    }
+    const editableAreaSlide=buildEditablePanelSlide(rows,group.label,samples,'area',exportStyle);
+    const editableWidthSlide=buildEditablePanelSlide(rows,group.label,samples,'width',exportStyle);
+    if(editableAreaSlide) pptSlides.push(editableAreaSlide);
+    if(editableWidthSlide) pptSlides.push(editableWidthSlide);
+    if(pptSlides.length) files.push({name:`pptx/cytomove_${groupName}_${exportStyle}_publication_figures.pptx`,bytes:new Uint8Array(await makePptxDeck(pptSlides).arrayBuffer())});
+    if(figureRows.length) files.push({name:`data/cytomove_${groupName}_${exportStyle}_figure_ready_data.csv`,bytes:new TextEncoder().encode(figureDataCsv(figureRows))});
     if(!files.length) {
-      setLog('<strong>Plot export:</strong> no plottable area or width values were found.');
+      setLog('<strong>Publication figure export:</strong> no plottable area or width values were found.');
       return;
     }
-    downloadBlob(`cytomove_${groupName}_plots.zip`,makeZip(files));
-    setLog(`<strong>Plot export complete:</strong> ${files.length} plot PNG${files.length>1?'s were':' was'} packed into one ZIP.`);
+    downloadBlob(`cytomove_${groupName}_${exportStyle}_publication_figures.zip`,makeZip(files));
+    setLog(`<strong>Publication figure export complete (${exportStyle}):</strong> ${files.length} file${files.length>1?'s were':' was'} packed into one ZIP.`);
+  }
+
+  function showExportStylePanel(exportTarget='group') {
+    state.pendingPublicationExport=exportTarget;
+    if(!el.exportStylePanel) {
+      if(exportTarget==='builder') exportPublicationBuilderZip('grayscale');
+      else exportGroupPlotsZip('grayscale');
+      return;
+    }
+    el.exportStylePanel.hidden=false;
+  }
+
+  function closeExportStylePanel() {
+    if(el.exportStylePanel) el.exportStylePanel.hidden=true;
+  }
+
+  async function exportGroupPlotsWithStyle(style) {
+    closeExportStylePanel();
+    if(state.pendingPublicationExport==='builder') await exportPublicationBuilderZip(style);
+    else await exportGroupPlotsZip(style);
+  }
+
+  function sidebarSectionHiddenForModule(module, isBuilder, isReview, defaultHidden) {
+    if(module==='builder') return !isBuilder;
+    if(module==='qc') return !isReview;
+    if(isBuilder) return true;
+    return defaultHidden;
+  }
+
+  function setAppModule(module) {
+    state.appModule=module==='builder'?'builder':module==='qc'?'qc':'analysis';
+    if(el.moduleTabs) {
+      el.moduleTabs.querySelectorAll('[data-module]').forEach(btn=>{
+        btn.classList.toggle('active',btn.dataset.module===state.appModule);
+      });
+    }
+    document.querySelectorAll('.sidebar-inner > .section').forEach(section=>{
+      const isBuilder=section.id==='publicationBuilderControls';
+      const isReview=section.id==='reviewModeSection';
+      if(section.dataset.moduleDefaultHidden===undefined) {
+        section.dataset.moduleDefaultHidden=section.hidden?'1':'0';
+      }
+      section.hidden=sidebarSectionHiddenForModule(
+        state.appModule,
+        isBuilder,
+        isReview,
+        section.dataset.moduleDefaultHidden==='1'
+      );
+    });
+    if(el.imageQcPanel) el.imageQcPanel.hidden=state.appModule!=='qc';
+    if(el.publicationBuilderPanel) el.publicationBuilderPanel.hidden=state.appModule!=='builder';
+    if(el.dropZone) el.dropZone.hidden=state.appModule==='builder'||state.appModule==='qc';
+    if(el.groupView) el.groupView.hidden=state.appModule==='builder'||state.appModule==='qc'||state.mode!=='group';
+    if(state.appModule==='builder') renderPublicationBuilder();
+    else if(state.appModule==='qc') renderImageQcPanel();
+    else {
+      if(state.mode==='group') renderGroupView();
+      else if(state.image) drawLoadedImage();
+    }
   }
 
   function showGroupPlot(metric) {
@@ -3029,18 +4516,20 @@
     }
     const group=selectedGroup();
     const isArea=metric==='areaPct';
+    const normalizedMetric=isArea?'areaNormalizedPct':'widthNormalizedPct';
     const canvas=drawTimePlot(
       rows,
-      metric,
-      `${group.label} - ${isArea?'Wound area':'Mean wound width'}`,
-      isArea?'Wound area (%)':'Mean wound width (px)',
-      isArea?'#0f9f8f':'#2f6fed'
+      normalizedMetric,
+      `${group.label} - ${isArea?'Normalized wound area':'Normalized mean wound width'}`,
+      isArea?'Area (% of 0h)':'Width (% of 0h)',
+      isArea?'#0f9f8f':'#2f6fed',
+      isArea?'A':'B'
     );
     if(!canvas) {
       setLog(`<strong>Plot preview:</strong> no plottable ${isArea?'area':'width'} values were found.`);
       return;
     }
-    el.plotDialogTitle.textContent=isArea?'Wound area plot':'Mean wound width plot';
+    el.plotDialogTitle.textContent=isArea?'Normalized wound area plot':'Normalized mean width plot';
     el.plotBody.innerHTML='';
     el.plotBody.appendChild(canvas);
     el.plotPanel.hidden=false;
@@ -3052,7 +4541,7 @@
   }
 
   function groupExportRows(samples=selectedGroupSamples()) {
-    return samples.map(s=>{
+    return samples.filter(s=>!sampleExcludedFromAnalysis(s.id)).map(s=>{
       const r=state.manualOverrides[s.id]?.result||state.groupResults[s.id]||(state.sample?.id===s.id?state.result:null);
       if(!r) return null;
       return {
@@ -3247,27 +4736,57 @@
     return `<h2>${escHtml(title)}</h2><table><thead><tr>${headers.map(h=>`<th>${escHtml(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${headers.map(h=>`<td>${escHtml(r[h])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
   }
 
+  function figureRowsFromMetricRows(rows) {
+    if(!rows.length) return [];
+    const baseArea=Number(rows[0].wound_area_px);
+    const baseWidth=Number(rows[0].mean_wound_width_px);
+    return rows.map(row=>{
+      const area=Number(row.wound_area_px);
+      const width=Number(row.mean_wound_width_px);
+      return {
+        figure_time_h:row.time_hours||row.timepoint||'',
+        figure_time_label:row.timepoint||row.time_hours||'',
+        image_name:row.filename||row.image_name||'',
+        wound_area_px:Number.isFinite(area)?Math.round(area):row.wound_area_px,
+        wound_area_percent:row.wound_area_fraction_percent||'',
+        normalized_area_percent:Number.isFinite(baseArea)&&baseArea&&Number.isFinite(area)?(area*100/baseArea).toFixed(4):'',
+        mean_width_px:row.mean_wound_width_px||'',
+        median_width_px:row.median_wound_width_px||'',
+        normalized_width_percent:Number.isFinite(baseWidth)&&baseWidth&&Number.isFinite(width)?(width*100/baseWidth).toFixed(4):'',
+        area_closure_percent:Number.isFinite(baseArea)&&baseArea&&Number.isFinite(area)?(((baseArea-area)/baseArea)*100).toFixed(4):'',
+        width_closure_percent:Number.isFinite(baseWidth)&&baseWidth&&Number.isFinite(width)?(((baseWidth-width)/baseWidth)*100).toFixed(4):'',
+        recommended_metric:row.recommended_primary_metric||'',
+        qc_score:row.segmentation_quality_score||'',
+        qc_notes:row.warnings||''
+      };
+    });
+  }
+
   function exportExcel() {
     const now=new Date().toISOString();
     let rows=[];
+    let figureRows=[];
     let filename='cytomove_metrics.xls';
     let title='CytoMove Single Image Metrics';
     if(state.mode==='group') {
       rows=groupExportRows();
+      figureRows=groupFigureRows();
       const group=selectedGroup();
-      filename=`cytomove_${(group.label||'group').replace(/[^\w\-]+/g,'_')}_group_metrics.xls`;
-      title=`CytoMove Group Metrics - ${group.label}`;
+      filename=`cytomove_${(group.label||'group').replace(/[^\w\-]+/g,'_')}_figure_data.xls`;
+      title=`CytoMove Figure Data - ${group.label}`;
     } else if(state.result) {
       rows=groupExportRows([state.sample||{id:'single',imageId:'single',path:state.imageName||'image',cell:'',condition:'',time:'',area:null,areaPct:null,width:null,closure:null}]);
       if(!rows.length) rows=[{image_name:state.imageName||'image', wound_area_px:state.result.area, wound_area_fraction_percent:state.result.areaPct, mean_wound_width_px:state.result.wMean, segmentation_quality_score:state.result.segmentationQualityScore, recommended_primary_metric:state.result.recommendedPrimaryMetric, warnings:(state.result.warnings||[]).join(' | ')}];
-      filename=`cytomove_${(state.sample?.imageId||state.imageName||'image').replace(/[^\w\-]+/g,'_')}_metrics.xls`;
+      figureRows=figureRowsFromMetricRows(rows);
+      filename=`cytomove_${(state.sample?.imageId||state.imageName||'image').replace(/[^\w\-]+/g,'_')}_figure_data.xls`;
     }
     if(!rows.length) {
       setLog('<strong>No exportable results yet.</strong> Run a single image or wait for group analysis to finish.');
       return;
     }
-    const summary=[{created_at:now, algorithm_version:CYTOMOVE_ALGORITHM_VERSION, export_scope:state.mode, image_count:rows.length, export_basis:'last displayed segmentation result per image'}];
-    const html=`<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Arial,sans-serif}h1{font-size:18px}h2{font-size:14px;margin-top:18px}table{border-collapse:collapse;margin-bottom:18px}th{background:#e8f4f2;font-weight:700}td,th{border:1px solid #b9d4cf;padding:6px 8px;font-size:12px;mso-number-format:"\\@";}</style></head><body><h1>${escHtml(title)}</h1>${htmlTable('Export summary',summary)}${htmlTable('Per-image metrics',rows)}</body></html>`;
+    if(!figureRows.length) figureRows=figureRowsFromMetricRows(rows);
+    const summary=[{created_at:now, algorithm_version:CYTOMOVE_ALGORITHM_VERSION, export_scope:state.mode, image_count:rows.length, export_basis:'last displayed segmentation result per image', first_table:'Figure-ready data for publication plots'}];
+    const html=`<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Arial,sans-serif;color:#111827}h1{font-size:20px;margin-bottom:6px}h2{font-size:15px;margin-top:22px;margin-bottom:8px}p{color:#52615f;font-size:12px}table{border-collapse:collapse;margin-bottom:18px}th{background:#dff3f0;color:#0f3f3a;font-weight:700}td,th{border:1px solid #b9d4cf;padding:6px 8px;font-size:12px;mso-number-format:"\\@";}.figure-table th{background:#0f9f8f;color:#fff}.summary th{background:#e8f4f2}</style></head><body><h1>${escHtml(title)}</h1><p>The first table contains the area and width values needed for publication-quality figures. Detailed audit metrics are kept below.</p><div class="figure-table">${htmlTable('Figure-ready data',figureRows)}</div><div class="summary">${htmlTable('Export summary',summary)}</div>${htmlTable('Detailed per-image metrics',rows)}</body></html>`;
     downloadText(filename,'application/vnd.ms-excel',html);
   }
 
@@ -3300,6 +4819,7 @@
     if(el.deleteGroup) el.deleteGroup.disabled=!groups.length;
     const label=document.getElementById('groupSelectLabel');
     if(label) label.hidden=!groups.length;
+    populateBuilderGroupSelects();
   }
 
   function populateSamples() {
@@ -3330,9 +4850,687 @@
   function selectedGroupKey() {
     return selectedGroupSamples().map(s=>`${s.id}:${s.path}:${s.time}`).join('|');
   }
+
+  function qcStatusLabel(sample) {
+    if(!sample) return 'Ready';
+    const qc=qcStateForSample(sample.id);
+    if(qc.excluded) return 'Excluded';
+    if(qc.cropRatio||qc.rotation||qc.orientation!=='vertical') return 'Edited';
+    if(qc.needsCrop) return 'Needs Crop';
+    return 'Ready';
+  }
+
+  function renderQcImageList(samples=selectedGroupSamples()) {
+    if(!el.qcImageList) return;
+    if(!samples.length) {
+      el.qcImageList.innerHTML='<div class="builder-empty"><strong>No group loaded</strong><span>Drop multiple images or open a local series to begin QC.</span></div>';
+      return;
+    }
+    el.qcImageList.innerHTML=samples.map((sample,index)=>{
+      const status=qcStatusLabel(sample);
+      const active=state.sample?.id===sample.id;
+      const excluded=status==='Excluded';
+      const needsCrop=status==='Needs Crop';
+      return `
+        <button class="qc-image-row ${active?'active':''} ${excluded?'excluded':''} ${needsCrop?'needs-crop':''}" data-qc-index="${index}" type="button">
+          <span>${escHtml(sample.time||String(index+1))}</span>
+          <strong class="${needsCrop?'warning':''}">${escHtml(status)}</strong>
+        </button>
+      `;
+    }).join('');
+  }
+
+  function drawQcCanvas() {
+    if(!el.qcCanvas||!el.qcEmpty) return;
+    const sample=state.sample;
+    const originalImg=state.imageOriginal||state.image;
+    if(!originalImg||state.appModule!=='qc') {
+      el.qcCanvas.hidden=true;
+      el.qcEmpty.hidden=false;
+      if(el.qcCropOverlay) el.qcCropOverlay.hidden=true;
+      return;
+    }
+
+    const displayImg=originalImg;
+    const qc=sample?qcStateForSample(sample.id):null;
+    const previewCrop=!state.cropEditing?qcPreviewCrop(qc,state.crop):null;
+    const sourceW=previewCrop?.w||displayImg.naturalWidth;
+    const sourceH=previewCrop?.h||displayImg.naturalHeight;
+    const maxW=1100, maxH=760;
+    const scale=Math.min(1,maxW/sourceW,maxH/sourceH);
+    const w=Math.max(1,Math.round(sourceW*scale));
+    const h=Math.max(1,Math.round(sourceH*scale));
+
+    if(el.qcCanvas.width!==w) el.qcCanvas.width=w;
+    if(el.qcCanvas.height!==h) el.qcCanvas.height=h;
+
+    const ctx=el.qcCanvas.getContext('2d');
+    ctx.clearRect(0,0,w,h);
+
+    if(previewCrop) {
+      ctx.drawImage(displayImg,previewCrop.x,previewCrop.y,previewCrop.w,previewCrop.h,0,0,w,h);
+      state.qcPreviewBaseCanvas=null;
+      state.qcPreviewBaseImage=null;
+    } else {
+      if(
+        state.qcPreviewBaseImage!==displayImg
+        || !state.qcPreviewBaseCanvas
+        || state.qcPreviewBaseCanvas.width!==w
+        || state.qcPreviewBaseCanvas.height!==h
+      ) {
+        const base=document.createElement('canvas');
+        base.width=w;
+        base.height=h;
+        base.getContext('2d').drawImage(displayImg,0,0,w,h);
+        state.qcPreviewBaseCanvas=base;
+        state.qcPreviewBaseImage=displayImg;
+      }
+      ctx.drawImage(state.qcPreviewBaseCanvas,0,0);
+    }
+
+    if(state.cropEditing) {
+      const crop=state.crop||currentCrop();
+      if(crop&&crop.active) {
+        const sx=w/originalImg.naturalWidth, sy=h/originalImg.naturalHeight;
+        ctx.save();
+        ctx.fillStyle='rgba(11,31,36,0.38)';
+        ctx.fillRect(0,0,w,crop.y*sy);
+        ctx.fillRect(0,crop.y*sy,crop.x*sx,crop.h*sy);
+        ctx.fillRect((crop.x+crop.w)*sx,crop.y*sy,w-(crop.x+crop.w)*sx,crop.h*sy);
+        ctx.fillRect(0,(crop.y+crop.h)*sy,w,h-(crop.y+crop.h)*sy);
+        ctx.strokeStyle='#ffffff';
+        ctx.lineWidth=2;
+        ctx.strokeRect(crop.x*sx,crop.y*sy,crop.w*sx,crop.h*sy);
+        ctx.restore();
+      }
+    }
+
+    el.qcCanvas.hidden=false;
+    el.qcEmpty.hidden=true;
+    renderQcCropOverlay();
+  }
+
+  function scheduleQcCanvasDraw() {
+    if(state.qcDrawFrame) return;
+    state.qcDrawFrame=requestAnimationFrame(()=>{
+      state.qcDrawFrame=0;
+      drawQcCanvas();
+    });
+  }
+
+  function qcOverlayMetrics() {
+    const img=state.imageOriginal||state.image;
+    if(!img||!el.qcPreview||!el.qcCanvas) return null;
+    const previewRect=el.qcPreview.getBoundingClientRect();
+    const canvasRect=el.qcCanvas.getBoundingClientRect();
+    if(canvasRect.width<=0||canvasRect.height<=0) return null;
+    return {
+      canvasLeft:canvasRect.left-previewRect.left,
+      canvasTop:canvasRect.top-previewRect.top,
+      canvasWidth:canvasRect.width,
+      canvasHeight:canvasRect.height,
+      naturalWidth:img.naturalWidth,
+      naturalHeight:img.naturalHeight
+    };
+  }
+
+  function cropToQcOverlayRect(crop, metrics) {
+    return {
+      left:metrics.canvasLeft+(crop.x/metrics.naturalWidth)*metrics.canvasWidth,
+      top:metrics.canvasTop+(crop.y/metrics.naturalHeight)*metrics.canvasHeight,
+      width:(crop.w/metrics.naturalWidth)*metrics.canvasWidth,
+      height:(crop.h/metrics.naturalHeight)*metrics.canvasHeight
+    };
+  }
+
+  function qcOverlayRectToCrop(rect, metrics) {
+    return clampCrop({
+      x:((rect.left-metrics.canvasLeft)/metrics.canvasWidth)*metrics.naturalWidth,
+      y:((rect.top-metrics.canvasTop)/metrics.canvasHeight)*metrics.naturalHeight,
+      w:(rect.width/metrics.canvasWidth)*metrics.naturalWidth,
+      h:(rect.height/metrics.canvasHeight)*metrics.naturalHeight,
+      active:true
+    },state.imageOriginal||state.image);
+  }
+
+  function setQcCropOverlayRect(rect) {
+    if(!el.qcCropOverlay) return;
+    el.qcCropOverlay.style.left=`${rect.left}px`;
+    el.qcCropOverlay.style.top=`${rect.top}px`;
+    el.qcCropOverlay.style.width=`${rect.width}px`;
+    el.qcCropOverlay.style.height=`${rect.height}px`;
+  }
+
+  function renderQcCropOverlay() {
+    if(!el.qcCropOverlay) return;
+    const metrics=qcOverlayMetrics();
+    if(!state.cropEditing||!state.crop||!metrics||state.appModule!=='qc') {
+      el.qcCropOverlay.hidden=true;
+      return;
+    }
+    setQcCropOverlayRect(cropToQcOverlayRect(state.crop,metrics));
+    el.qcCropOverlay.hidden=false;
+  }
+
+  function beginQcOverlayDrag(event) {
+    if(!state.cropEditing||!state.crop||event.button!==0) return;
+    const metrics=qcOverlayMetrics();
+    if(!metrics) return;
+    const handle=event.target.closest('[data-crop-handle]');
+    const mode=handle?.dataset.cropHandle||'move';
+    state.qcOverlayDrag={
+      pointerId:event.pointerId,
+      startX:event.clientX,
+      startY:event.clientY,
+      startRect:cropToQcOverlayRect(state.crop,metrics),
+      mode,
+      metrics,
+      bounds:{
+        left:metrics.canvasLeft,
+        top:metrics.canvasTop,
+        right:metrics.canvasLeft+metrics.canvasWidth,
+        bottom:metrics.canvasTop+metrics.canvasHeight
+      },
+      minSize:Math.max(24,32*metrics.canvasWidth/metrics.naturalWidth)
+    };
+    el.qcCropOverlay.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  }
+
+  function updateQcOverlayDrag(event) {
+    const drag=state.qcOverlayDrag;
+    if(!drag||drag.pointerId!==event.pointerId) return;
+    const rect=updateQcOverlayRect(
+      drag.startRect,
+      event.clientX-drag.startX,
+      event.clientY-drag.startY,
+      drag.mode,
+      drag.bounds,
+      drag.minSize
+    );
+    setQcCropOverlayRect(rect);
+    state.crop=qcOverlayRectToCrop(rect,drag.metrics);
+  }
+
+  function finishQcOverlayDrag(event) {
+    const drag=state.qcOverlayDrag;
+    if(!drag||drag.pointerId!==event.pointerId) return;
+    updateQcOverlayDrag(event);
+    if(el.qcCropOverlay.hasPointerCapture?.(event.pointerId)) {
+      el.qcCropOverlay.releasePointerCapture(event.pointerId);
+    }
+    state.qcOverlayDrag=null;
+  }
+
+  // Crop cache management for performance optimization
+  function buildCropCacheKey(sampleId, cropRatio, rotation) {
+    if(!cropRatio) return null;
+    const r = cropRatio;
+    return `${sampleId}_${r.x.toFixed(4)}_${r.y.toFixed(4)}_${r.w.toFixed(4)}_${r.h.toFixed(4)}_${rotation}`;
+  }
+
+  function getCachedCroppedImage(sample, originalImg, cropRatio, rotation=0) {
+    if(!sample||!originalImg||!cropRatio) return null;
+    const cacheKey = buildCropCacheKey(sample.id, cropRatio, rotation);
+    if(!cacheKey) return null;
+
+    // Check cache
+    if(state.cropCache.has(cacheKey)) {
+      const cached = state.cropCache.get(cacheKey);
+      if(cached && cached.img) {
+        return cached.img;
+      }
+    }
+
+    // Create cropped image and cache it
+    const crop = cropFromRatio(originalImg, cropRatio);
+    if(!crop || !crop.active) return null;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = crop.w;
+    canvas.height = crop.h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(originalImg, crop.x, crop.y, crop.w, crop.h, 0, 0, crop.w, crop.h);
+
+    const croppedImg = new Image();
+    croppedImg.src = canvas.toDataURL('image/png');
+
+    // Cache it (store the canvas for quick access)
+    state.cropCache.set(cacheKey, {img: croppedImg, canvas, crop});
+
+    // Limit cache size (keep last 50 cached images)
+    if(state.cropCache.size > 50) {
+      const firstKey = state.cropCache.keys().next().value;
+      state.cropCache.delete(firstKey);
+    }
+
+    return croppedImg;
+  }
+
+  function invalidateCropCache(sampleId = null) {
+    if(sampleId) {
+      // Invalidate all cache entries for this sample
+      const keysToDelete = [];
+      for(const key of state.cropCache.keys()) {
+        if(key.startsWith(sampleId + '_')) {
+          keysToDelete.push(key);
+        }
+      }
+      keysToDelete.forEach(key => state.cropCache.delete(key));
+    } else {
+      // Clear entire cache
+      state.cropCache.clear();
+    }
+  }
+
+  function applyQcStateToCurrentImage(sample=state.sample, options={}) {
+    if(!sample||!state.imageOriginal) return;
+    const qc=qcStateForSample(sample.id);
+    if(!qc) return;
+    if(el.qcOrientation) el.qcOrientation.value=qc.orientation||'vertical';
+    if(el.scratchOrientation) el.scratchOrientation.value=qc.orientation||'vertical';
+    state.rotation=Number(qc.rotation)||0;
+    const cropRatio=options.preparedInput?null:cropForQcSample(qc,currentGroupCropTemplate());
+    state.crop=cropRatio?cropFromRatio(state.imageOriginal,cropRatio):null;
+    state.cropManual=!!cropRatio;
+    state.cropEditing=!!options.openAdjust;
+    state.cropDragging=false;
+    state.qcOverlayDrag=null;
+  }
+
+  function renderImageQcPanel() {
+    const samples=selectedGroupSamples();
+    renderQcImageList(samples);
+    const sample=state.sample&&samples.some(s=>s.id===state.sample.id)?state.sample:samples[0]||null;
+    if(sample&&state.sample?.id!==sample.id) {
+      loadQcSampleAt(samples.findIndex(s=>s.id===sample.id));
+      return;
+    }
+    const qc=sample?qcStateForSample(sample.id):null;
+    if(sample&&state.imageOriginal&&state.sample?.id===sample.id&&!state.cropEditing) applyQcStateToCurrentImage(sample);
+
+    // Auto-detect border issues for current image if not already checked
+    if(sample&&state.imageOriginal&&!qc?.borderCheckPerformed&&!qc?.cropRatio) {
+      const hasIssues = detectImageBorderIssues(state.imageOriginal);
+      updateQcState(sample.id, {
+        needsCrop: hasIssues,
+        borderCheckPerformed: true
+      });
+      // Re-render to show updated status
+      renderQcImageList(samples);
+    }
+
+    if(el.qcStatus) {
+      el.qcStatus.textContent=sample
+        ? `${selectedGroup().label}: ${samples.length} image(s), ${samples.filter(s=>qcStateForSample(s.id).excluded).length} excluded.`
+        : 'Load a group, then review images before analysis.';
+    }
+    if(el.qcOrientation&&qc) el.qcOrientation.value=qc.orientation||'vertical';
+    if(el.qcExcludeToggle) el.qcExcludeToggle.checked=!!qc?.excluded;
+    if(el.qcAdjustCrop) el.qcAdjustCrop.disabled=!sample;
+    if(el.qcSaveCrop) el.qcSaveCrop.disabled=!state.cropEditing;
+    // Navigation buttons
+    if(el.qcPrevImage) el.qcPrevImage.disabled=!samples.length||samples.length<=1;
+    if(el.qcNextImage) el.qcNextImage.disabled=!samples.length||samples.length<=1;
+    // Copy crop button - only enabled if current sample has a crop
+    if(el.qcCopyCrop) el.qcCopyCrop.disabled=!sample||!qc?.cropRatio;
+    if(el.goToAnalysisFromQc) el.goToAnalysisFromQc.disabled=!samples.length;
+    updateQcUndoRedoButtons();
+    drawQcCanvas();
+  }
+
+  function loadQcSampleAt(index, options={}) {
+    const samples=selectedGroupSamples();
+    const sample=samples[index];
+    if(!sample) {
+      renderImageQcPanel();
+      return;
+    }
+    loadImage(sampleUrl(sample),sample,sample.path,true,{
+      fromQc:true,
+      autoApplyAfterLoad:false,
+      openAdjust:!!options.openAdjust
+    });
+  }
+
+  function qcPreviousImage() {
+    const samples=selectedGroupSamples();
+    if(!samples.length) return;
+    const currentIndex=state.sample ? samples.findIndex(s=>s.id===state.sample.id) : 0;
+    const prevIndex=currentIndex<=0 ? samples.length-1 : currentIndex-1;
+    loadQcSampleAt(prevIndex);
+  }
+
+  function qcNextImage() {
+    const samples=selectedGroupSamples();
+    if(!samples.length) return;
+    const currentIndex=state.sample ? samples.findIndex(s=>s.id===state.sample.id) : -1;
+    const nextIndex=(currentIndex+1)%samples.length;
+    loadQcSampleAt(nextIndex);
+  }
+
+  function qcCopyCropToAll() {
+    if(!state.sample||!state.crop) return;
+
+    const samples=selectedGroupSamples();
+    const currentCropRatio=normalizedCropRatio(state.crop,state.imageOriginal||state.image);
+    if(!currentCropRatio) return;
+
+    let copiedCount=0;
+    samples.forEach(sample=>{
+      if(sample.id!==state.sample.id){
+        updateQcState(sample.id,{cropRatio:{...currentCropRatio}});
+        copiedCount++;
+      }
+    });
+
+    setLog(`<strong>Crop copied to ${copiedCount} other image(s).</strong> The same crop ratio will be applied to all images in analysis.`);
+  }
+
+  function beginQcCropEdit() {
+    if(!state.sample||!state.imageOriginal) return;
+    state.crop=state.crop||currentCrop();
+    if(!state.crop?.active) {
+      const marginX=Math.round(state.imageOriginal.naturalWidth*0.08);
+      const marginY=Math.round(state.imageOriginal.naturalHeight*0.08);
+      state.crop={
+        x:marginX,
+        y:marginY,
+        w:state.imageOriginal.naturalWidth-marginX*2,
+        h:state.imageOriginal.naturalHeight-marginY*2,
+        active:true
+      };
+    }
+    state.cropEditing=true;
+    state.cropDragging=false;
+    state.qcOverlayDrag=null;
+    if(el.qcSaveCrop) el.qcSaveCrop.disabled=false;
+    drawQcCanvas();
+  }
+
+  function applyQcOrientation(value) {
+    if(!state.sample) return;
+    updateQcState(state.sample.id,{orientation:value==='horizontal'?'horizontal':'vertical'});
+    renderImageQcPanel();
+  }
+
+  function applyQcRotation(delta) {
+    if(!state.sample) return;
+    const qc=qcStateForSample(state.sample.id);
+    updateQcState(state.sample.id,{rotation:(Number(qc.rotation||0)+delta+360)%360});
+    renderImageQcPanel();
+  }
+
+  // QC Crop cache management
+  function saveQcCropToCache(sample, croppedImage, crop) {
+    if(!sample) return;
+    state.qcCropCache.set(sample.id, {
+      img: croppedImage,
+      crop: {...crop},
+      timestamp: Date.now()
+    });
+
+    // Add to history for undo/redo
+    // Remove any future history if we're not at the end
+    if(state.qcCropHistoryIndex < state.qcCropHistory.length - 1) {
+      state.qcCropHistory = state.qcCropHistory.slice(0, state.qcCropHistoryIndex + 1);
+    }
+
+    state.qcCropHistory.push({
+      sampleId: sample.id,
+      crop: {...crop},
+      timestamp: Date.now()
+    });
+    state.qcCropHistoryIndex = state.qcCropHistory.length - 1;
+
+    // Limit history to 20 entries
+    if(state.qcCropHistory.length > 20) {
+      state.qcCropHistory.shift();
+      state.qcCropHistoryIndex--;
+    }
+  }
+
+  function getQcCropFromCache(sampleId) {
+    return state.qcCropCache.get(sampleId);
+  }
+
+  function clearQcCropCache(sampleId = null) {
+    if(sampleId) {
+      state.qcCropCache.delete(sampleId);
+    } else {
+      state.qcCropCache.clear();
+      state.qcCropHistory = [];
+      state.qcCropHistoryIndex = -1;
+    }
+  }
+
+  function releasePreparedQcImage(sampleId) {
+    const prepared=state.preparedQcImages.get(sampleId);
+    if(prepared?.url) URL.revokeObjectURL(prepared.url);
+    state.preparedQcImages.delete(sampleId);
+  }
+
+  function canvasPngBlob(canvas) {
+    return new Promise((resolve,reject)=>{
+      canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Could not create prepared crop image.')),'image/png');
+    });
+  }
+
+  async function prepareQcAnalysisInput(sample, rawImage, crop) {
+    if(!sample||!rawImage||!crop) return null;
+    const safeCrop=clampCrop({...crop},rawImage);
+    const canvas=document.createElement('canvas');
+    canvas.width=safeCrop.w;
+    canvas.height=safeCrop.h;
+    canvas.getContext('2d').drawImage(
+      rawImage,
+      safeCrop.x,safeCrop.y,safeCrop.w,safeCrop.h,
+      0,0,safeCrop.w,safeCrop.h
+    );
+    const blob=await canvasPngBlob(canvas);
+    releasePreparedQcImage(sample.id);
+    const url=URL.createObjectURL(blob);
+    const prepared={
+      sampleId:sample.id,
+      url,
+      width:safeCrop.w,
+      height:safeCrop.h,
+      crop:{...safeCrop},
+      cropRatio:normalizedCropRatio(safeCrop,rawImage),
+      createdAt:Date.now()
+    };
+    state.preparedQcImages.set(sample.id,prepared);
+    return prepared;
+  }
+
+  function preparedQcImage(sampleId) {
+    return state.preparedQcImages.get(sampleId)||null;
+  }
+
+  function analysisImageUrl(sample) {
+    return preparedQcImage(sample?.id)?.url||sampleUrl(sample);
+  }
+
+  function undoQcCrop() {
+    if(state.qcCropHistoryIndex <= 0) return;
+
+    state.qcCropHistoryIndex--;
+
+    const historyEntry = state.qcCropHistory[state.qcCropHistoryIndex];
+    if(!historyEntry) return;
+
+    // Restore crop from history
+    const sample = state.sample;
+    if(!sample || sample.id !== historyEntry.sampleId) {
+      // Find the correct sample
+      const samples = selectedGroupSamples();
+      sample = samples.find(s => s.id === historyEntry.sampleId);
+    }
+
+    if(sample) {
+      state.crop = {...historyEntry.crop};
+      updateQcState(sample.id, {cropRatio: normalizedCropRatio(state.crop, state.imageOriginal || state.image)});
+
+      // Re-create cached image
+      const canvas = document.createElement('canvas');
+      canvas.width = state.crop.w;
+      canvas.height = state.crop.h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(state.imageOriginal || state.image, state.crop.x, state.crop.y, state.crop.w, state.crop.h, 0, 0, state.crop.w, state.crop.h);
+
+      const croppedImg = new Image();
+      croppedImg.src = canvas.toDataURL('image/png');
+      croppedImg.onload = () => {
+        saveQcCropToCache(sample, croppedImg, state.crop);
+        // Don't add to history since we're undoing
+        state.qcCropHistoryIndex--; // Compensate for saveQcCropToCache increment
+        scheduleQcCanvasDraw();
+        renderImageQcPanel();
+      };
+    }
+  }
+
+  function redoQcCrop() {
+    if(state.qcCropHistoryIndex >= state.qcCropHistory.length - 1) return;
+
+    state.qcCropHistoryIndex++;
+
+    const historyEntry = state.qcCropHistory[state.qcCropHistoryIndex];
+    if(!historyEntry) return;
+
+    const sample = state.sample;
+    if(!sample || sample.id !== historyEntry.sampleId) {
+      const samples = selectedGroupSamples();
+      sample = samples.find(s => s.id === historyEntry.sampleId);
+    }
+
+    if(sample) {
+      state.crop = {...historyEntry.crop};
+      updateQcState(sample.id, {cropRatio: normalizedCropRatio(state.crop, state.imageOriginal || state.image)});
+
+      const canvas = document.createElement('canvas');
+      canvas.width = state.crop.w;
+      canvas.height = state.crop.h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(state.imageOriginal || state.image, state.crop.x, state.crop.y, state.crop.w, state.crop.h, 0, 0, state.crop.w, state.crop.h);
+
+      const croppedImg = new Image();
+      croppedImg.src = canvas.toDataURL('image/png');
+      croppedImg.onload = () => {
+        saveQcCropToCache(sample, croppedImg, state.crop);
+        state.qcCropHistoryIndex--; // Compensate for saveQcCropToCache increment
+        scheduleQcCanvasDraw();
+        renderImageQcPanel();
+      };
+    }
+  }
+
+  function updateQcUndoRedoButtons() {
+    if(!el.qcUndoCrop || !el.qcRedoCrop) return;
+
+    el.qcUndoCrop.disabled = state.qcCropHistoryIndex <= 0;
+    el.qcRedoCrop.disabled = state.qcCropHistoryIndex >= state.qcCropHistory.length - 1;
+  }
+
+  function applyQcCrop() {
+    if(!state.sample||!state.crop) return;
+    const sample=state.sample;
+    const rawImage=state.imageOriginal||state.image;
+    const savedCrop=clampCrop({...state.crop},rawImage);
+    const cropRatio=normalizedCropRatio(savedCrop,rawImage);
+    const samples=selectedGroupSamples();
+    const currentIndex=samples.findIndex(item=>item.id===sample.id);
+    const group=selectedGroup();
+    if(el.qcSaveCrop) el.qcSaveCrop.disabled=true;
+    setLog('<strong>Preparing crop:</strong> creating the temporary Analysis image...');
+    return prepareQcAnalysisInput(sample,rawImage,savedCrop).then(()=>{
+      updateQcState(sample.id,{cropRatio:{...cropRatio},cropSaved:true});
+      if(group?.id) state.lastQcCropTemplateByGroup[group.id]={...cropRatio};
+      state.crop={...savedCrop};
+      state.cropEditing=false;
+      state.cropDragging=false;
+      state.qcOverlayDrag=null;
+      setLog('<strong>Crop saved.</strong> This image keeps its crop; the next unsaved image starts from the same position.');
+      const nextIndex=qcCropAutoAdvanceTarget(currentIndex,samples.length);
+      renderImageQcPanel();
+      if(nextIndex!==null) loadQcSampleAt(nextIndex,{openAdjust:true});
+    }).catch(error=>{
+      state.cropEditing=true;
+      state.cropDragging=false;
+      state.qcOverlayDrag=null;
+      if(el.qcSaveCrop) el.qcSaveCrop.disabled=false;
+      drawQcCanvas();
+      setLog(`<strong>Crop preparation failed.</strong> ${escHtml(error?.message||String(error))}`);
+    });
+  }
+
+  function toggleQcExclude(checked) {
+    if(!state.sample) return;
+    updateQcState(state.sample.id,{excluded:!!checked});
+    renderImageQcPanel();
+  }
+
+  function buildLockedQcSnapshot(samples=selectedGroupSamples()) {
+    const group=selectedGroup();
+    return samples.map(sample=>{
+      const qc=qcStateForSample(sample.id);
+      return {
+        sampleId:sample.id,
+        groupId:group.id,
+        orientation:qc.orientation||'vertical',
+        cropRatio:qc.cropRatio?{...qc.cropRatio}:null,
+        cropSaved:!!qc.cropSaved,
+        prepared:!!preparedQcImage(sample.id),
+        rotation:Number(qc.rotation)||0,
+        excluded:!!qc.excluded,
+        editedAt:qc.editedAt||null
+      };
+    });
+  }
+
+  function analysisInputFromQcSnapshot(snapshot=state.lockedQcSnapshot) {
+    return (snapshot||[]).filter(entry=>!entry.excluded);
+  }
+
+  function qcSnapshotForSample(sampleId) {
+    return (state.lockedQcSnapshot||[]).find(entry=>entry.sampleId===sampleId)||null;
+  }
+
+  function sampleExcludedFromAnalysis(sampleId) {
+    return !!qcSnapshotForSample(sampleId)?.excluded;
+  }
+
+  function settingsWithQcSnapshot(settings, sample) {
+    const qc=sample?qcSnapshotForSample(sample.id):null;
+    if(!qc) return settings;
+    const prepared=!!preparedQcImage(sample.id);
+    const orientation=qc.orientation||settings.scratchOrientation||'vertical';
+    const orientationRotation=orientationRotationDeg(orientation);
+    const manualRotation=Number(qc.rotation)||0;
+    return {
+      ...settings,
+      cropRatio:prepared?null:(qc.cropRatio||settings.cropRatio||null),
+      autoCrop:prepared?false:settings.autoCrop,
+      preparedQcInput:prepared,
+      scratchOrientation:orientation,
+      manualRotation,
+      orientationRotation,
+      rotation:(manualRotation+orientationRotation)%360
+    };
+  }
+
+  function continueFromQcToAnalysis() {
+    const samples=selectedGroupSamples();
+    state.lockedQcSnapshot=buildLockedQcSnapshot(samples);
+    if(samples.length) setMode('group',{force:true});
+    setAppModule('analysis');
+    const preparedCount=samples.filter(sample=>preparedQcImage(sample.id)).length;
+    setLog(`<strong>Image QC locked:</strong> ${analysisInputFromQcSnapshot().length}/${samples.length} image(s) will be used for analysis; ${preparedCount} prepared crop image(s) ready.`);
+  }
+
   function clearMainImage() {
     cancelAutoApply();
-    state.image=null; state.imageOriginal=null; state.sample=null; state.result=null;
+    state.image=null; state.imageOriginal=null; state.imageIsPreparedQc=false; state.sample=null; state.result=null;
     state.maskData=null; state.autoMaskData=null; state.fieldData=null; state.sourceData=null;
     state.grayData=null; state.varMap=null; state.imageName='';
     el.canvas.hidden=true; el.emptyState.hidden=false;
@@ -3369,7 +5567,8 @@
       el.sampleSelect.value=sample.id;
       updateSampleMeta();
     }
-    loadImage(sampleUrl(sample),sample,sample.path,true,{restoreGroupResult:true});
+    const prepared=preparedQcImage(sample.id);
+    loadImage(analysisImageUrl(sample),sample,sample.path,true,{restoreGroupResult:true,preparedQc:!!prepared});
   }
   function stepGroupSample(delta) {
     const idx=currentGroupSampleIndex();
@@ -3387,10 +5586,14 @@
     state.customSamples=state.customSamples.filter(s=>!ids.has(s.id));
     state.customGroups=state.customGroups.filter(g=>g.id!==group.id);
     ids.forEach(id=>{
+      releasePreparedQcImage(id);
+      clearQcCropCache(id);
       delete state.groupResults[id];
       delete state.manualOverrides[id];
       delete state.sampleSettings[id];
+      delete state.imageQcState[id];
     });
+    delete state.lastQcCropTemplateByGroup[group.id];
     state.calibrationReport=null;
     state.lastAutoMicroscopeGroupKey='';
     populateGroups();
@@ -3809,7 +6012,7 @@
     try {
       const votes=[];
       for(const sample of samples.slice(0,Math.min(samples.length,12))) {
-        const img=await loadImageElement(sampleUrl(sample));
+        const img=await loadImageElement(analysisImageUrl(sample));
         votes.push(classifyMicroscopeImage(img));
       }
       if(seq!==state.autoMicroscopeDetectSeq) return;
@@ -4592,8 +6795,18 @@
         ctx.fillText('Preview failed',18,28);
       };
       try {
-        const settings=currentSegmentationSettings();
-        const img=await loadImageElement(sampleUrl(sample));
+        if(sampleExcludedFromAnalysis(sample.id)) {
+          ctx.fillStyle='#fff7f6';
+          ctx.fillRect(0,0,canvas.width,canvas.height);
+          ctx.fillStyle='#b42336';
+          ctx.font='800 15px Inter, sans-serif';
+          ctx.fillText('Excluded from analysis',18,32);
+          delete state.groupResults[sample.id];
+          renderSeriesSummary(samples);
+          continue;
+        }
+        const settings=settingsWithQcSnapshot(currentSegmentationSettings(),sample);
+        const img=await loadImageElement(analysisImageUrl(sample));
         if(renderSeq!==state.groupRenderSeq) return;
         const workImg=await transformImageElement(img,settings);
         if(renderSeq!==state.groupRenderSeq) return;
@@ -4640,8 +6853,8 @@
     state.mode=mode;
     el.modeToggle.querySelectorAll('[data-mode]').forEach(btn=>btn.classList.toggle('active',btn.dataset.mode===mode));
     const isGroup=mode==='group';
-    el.dropZone.hidden=false;
-    el.groupView.hidden=!isGroup;
+    el.dropZone.hidden=state.appModule==='builder'||state.appModule==='qc';
+    el.groupView.hidden=state.appModule==='builder'||state.appModule==='qc'||!isGroup;
     if(isGroup) {
       renderGroupView(options);
       setLog('<strong>Group review:</strong> images are ready. Click a card to tune one image, then use Apply to group.');
@@ -4657,6 +6870,8 @@
       }
       setLog(state.result?'<strong>Single image mode:</strong> segmentation result is ready.':'Ready.');
     }
+    if(state.appModule==='builder') renderPublicationBuilder();
+    if(state.appModule==='qc') renderImageQcPanel();
     updateGroupNavButtons();
   }
 
@@ -4821,11 +7036,19 @@
     const img=new Image(); img.decoding='async';
     img.onload=()=>{
       state.image=img; state.imageOriginal=img; state.sample=sample; state.rotation=0;
+      state.imageIsPreparedQc=!!options.preparedQc;
       el.deskewAngle.value=0; el.deskewAngleVal.value=0;
       state.rulerOffsetX=0; state.rulerOffsetY=0; state.rulerDragging=false; state.rulerDragStart=null;
       state.imageName=name||sample?.path||'local image';
       resetCropAndZoom();
       applyPanelSettings(sampleSettings(sample)||defaultPanelSettings());
+      // Apply QC state when loading from QC or when in analysis mode with QC snapshot
+      if((options.fromQc||state.lockedQcSnapshot)&&sample) {
+        applyQcStateToCurrentImage(sample,{
+          preparedInput:!!options.preparedQc,
+          openAdjust:!!options.openAdjust
+        });
+      }
       state.zoom=1; state.panX=0; state.panY=0;
       el.canvas.style.transform='';
       el.canvas.hidden=false; el.emptyState.hidden=true;
@@ -4838,6 +7061,7 @@
         if(options.restoreGroupResult&&restoreGroupResultToMainCanvas(sample)) return;
         previewLoadedImageAndMaybeAutoApply(readyMessage,!!options.autoApplyAfterLoad,options.autoApplyMessage);
         if(sample) warnIfHorizontalScratchDetected([sample]);
+        if(options.fromQc||state.appModule==='qc') renderImageQcPanel();
       };
       if(effectiveRotationDeg()||(Number(el.deskewAngle.value)||0)) applyImageTransform({restoreManual:true,analyze:false,restoreGroupResult:!!options.restoreGroupResult,autoApplyAfterLoad:!!options.autoApplyAfterLoad,logMessage:readyMessage});
       else showReadyPreview();
@@ -4892,7 +7116,8 @@
   function customFileTimeMatch(stem) {
     return stem.match(/(?:^|[_\-\s])t(\d+)(?:[_\-\s]|$)/i)
       || stem.match(/(\d+)\s*h/i)
-      || stem.match(/_(\d+)$/);
+      || stem.match(/_(\d+)$/)
+      || stem.match(/^(\d+)$/);
   }
 
   function customFileSortKey(file, index) {
@@ -4905,26 +7130,7 @@
     };
   }
 
-  function loadLocalFiles(files) {
-    const picked=Array.from(files||[]);
-    const tiffs=picked.filter(f=>/\.(tif|tiff)$/i.test(f.name));
-    if(tiffs.length) {
-      setLog(`<strong>TIFF is not browser-decodable here.</strong> Use PNG/JPEG copies for review. Converted WHAD/CAMAD PNGs are under <code>validation_ref_sets/browser_ready/whad_camad_png/</code>.`);
-      return;
-    }
-    const images=picked
-      .filter(f=>f.type.startsWith('image/')||/\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(f.name))
-      .map((file,index)=>({file,key:customFileSortKey(file,index)}))
-      .sort((a,b)=>(a.key.time-b.key.time)||a.key.name.localeCompare(b.key.name)||a.key.index-b.key.index)
-      .map(item=>item.file);
-    if(!images.length) return;
-    if(images.length===1) {
-      const singleUrl=URL.createObjectURL(images[0]);
-      state.objectUrls.push(singleUrl);
-      loadImage(singleUrl,null,images[0].name,false,{autoApplyAfterLoad:true});
-      return;
-    }
-      const groupLabel=askCustomGroupName(images);
+  function createCustomGroupFromFiles(images, groupLabel, options={}) {
     const groupId=`custom-${Date.now()}-${state.customGroups.length+1}`;
     const samples=images.map((file,index)=>makeCustomSample(file,index,groupId,groupLabel));
     state.customSamples.push(...samples);
@@ -4939,12 +7145,119 @@
     state.lastAutoMicroscopeGroupKey='';
     state.contourStyleUserSet=false;
     populateGroups();
-    el.groupSelect.value=groupId;
-    initializeGroupPresetAndOpen(samples,groupLabel);
+    if(options.open!==false) {
+      el.groupSelect.value=groupId;
+      initializeGroupPresetAndOpen(samples,groupLabel);
+    }
+    return {groupId,samples,groupLabel};
+  }
+
+  async function fetchServedImageFile(relativePath) {
+    const response=await fetch(relativePath);
+    if(!response.ok) throw new Error(`Failed to fetch ${relativePath} (${response.status})`);
+    const blob=await response.blob();
+    const name=relativePath.split('/').pop()||'image.jpg';
+    return new File([blob],name,{type:blob.type||'image/jpeg'});
+  }
+
+  async function analyzeImportedGroup(groupId) {
+    const group=groupById(groupId);
+    if(!group) return;
+    const samples=group.sampleIds.map(id=>sampleById(id)).filter(Boolean);
+    if(!samples.length) return;
+    await initializeGroupPresetAndOpen(samples,group.label);
+    await renderGroupContours(samples,{force:true});
+  }
+
+  async function loadServedValidationSet(setId) {
+    const config=VALIDATION_SETS[setId];
+    if(!config) {
+      setLog('<strong>Validation set:</strong> choose a known validation set first.');
+      return;
+    }
+    setSpinner(true);
+    if(el.loadBuilderValidationSet) el.loadBuilderValidationSet.disabled=true;
+    try {
+      const imported=[];
+      for(const group of config.groups) {
+        const files=[];
+        for(const relativePath of group.files) {
+          files.push(await fetchServedImageFile(relativePath));
+        }
+        imported.push({...group,...createCustomGroupFromFiles(files,group.label,{open:false})});
+      }
+      for(const group of imported) {
+        await analyzeImportedGroup(group.groupId);
+      }
+      const applyImportedAssignments=()=>{
+        const builderState=state.publicationBuilderState||(state.publicationBuilderState={});
+        builderState.controlReplicateIds=imported.filter(group=>group.condition==='control').map(group=>group.groupId);
+        builderState.treatmentReplicateIds=imported.filter(group=>group.condition==='treatment').map(group=>group.groupId);
+        builderState.controlRepresentativeId=builderState.controlReplicateIds[0]||'';
+        builderState.treatmentRepresentativeId=builderState.treatmentReplicateIds[0]||'';
+      };
+      applyImportedAssignments();
+      if(el.builderControlLabel) el.builderControlLabel.value=config.controlLabel;
+      if(el.builderTreatmentLabel) el.builderTreatmentLabel.value=config.treatmentLabel;
+      if(el.builderCellType) el.builderCellType.value=config.cellType;
+      if(el.builderReplicate) el.builderReplicate.value=`n=${Math.min(imported.filter(group=>group.condition==='control').length,imported.filter(group=>group.condition==='treatment').length)||1}`;
+      setAppModule('builder');
+      applyImportedAssignments();
+      populateBuilderGroupSelects();
+      [...(el.builderControlReplicates?.querySelectorAll('input[data-builder-replicate]')||[])].forEach(input=>{
+        input.checked=imported.some(group=>group.condition==='control'&&group.groupId===input.value);
+      });
+      [...(el.builderTreatmentReplicates?.querySelectorAll('input[data-builder-replicate]')||[])].forEach(input=>{
+        input.checked=imported.some(group=>group.condition==='treatment'&&group.groupId===input.value);
+      });
+      if(el.builderControlGroup) el.builderControlGroup.value=imported.find(group=>group.condition==='control')?.groupId||el.builderControlGroup.value;
+      if(el.builderTreatmentGroup) el.builderTreatmentGroup.value=imported.find(group=>group.condition==='treatment')?.groupId||el.builderTreatmentGroup.value;
+      renderPublicationBuilder();
+      setLog(`<strong>Validation set loaded:</strong> ${config.label}. Imported ${imported.length} groups and analyzed their image series for replicate testing.`);
+    } catch(err) {
+      setLog(`<strong>Validation set load failed.</strong> ${err.message||err}`);
+    } finally {
+      if(el.loadBuilderValidationSet) el.loadBuilderValidationSet.disabled=false;
+      setSpinner(false);
+    }
+  }
+
+  function loadLocalFiles(files) {
+    const picked=Array.from(files||[]);
+    const tiffs=picked.filter(f=>/\.(tif|tiff)$/i.test(f.name));
+    if(tiffs.length) {
+      setLog(`<strong>TIFF is not browser-decodable here.</strong> Use PNG/JPEG copies for review. Converted WHAD/CAMAD PNGs are under <code>validation_ref_sets/browser_ready/whad_camad_png/</code>.`);
+      return;
+    }
+    const allImages=picked
+      .filter(f=>f.type.startsWith('image/')||/\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(f.name))
+      .map((file,index)=>({file,key:customFileSortKey(file,index)}))
+      .sort((a,b)=>(a.key.time-b.key.time)||a.key.name.localeCompare(b.key.name)||a.key.index-b.key.index)
+      .map(item=>item.file);
+    const images=allImages.slice(0,48);
+    if(!images.length) return;
+    const limitNote=allImages.length>48
+      ? ` <strong>Image limit:</strong> ${allImages.length} files were selected; the first 48 sorted images were loaded.`
+      : '';
+    if(images.length===1) {
+      const singleUrl=URL.createObjectURL(images[0]);
+      state.objectUrls.push(singleUrl);
+      loadImage(singleUrl,null,images[0].name,false,{autoApplyAfterLoad:true});
+      if(limitNote) setLog(limitNote);
+      return;
+    }
+    const groupLabel=askCustomGroupName(images);
+    createCustomGroupFromFiles(images,groupLabel);
+    if(limitNote) setLog(`<strong>Group loaded:</strong> ${images.length} images. ${limitNote}`);
   }
 
   // Events
   function bindEvents() {
+    if(el.moduleTabs) el.moduleTabs.addEventListener('click',e=>{
+      const btn=e.target.closest('[data-module]');
+      if(!btn) return;
+      setAppModule(btn.dataset.module);
+    });
     el.modeToggle.addEventListener('click',e=>{
       const btn=e.target.closest('[data-mode]');if(!btn)return;
       setMode(btn.dataset.mode);
@@ -4952,17 +7265,84 @@
     el.groupSelect.addEventListener('change',()=>{
       state.microscopeModeUserSet=false;
       state.lastAutoMicroscopeGroupKey='';
+      if(state.appModule==='qc') {
+        state.sample=null;
+        state.image=null;
+        state.imageOriginal=null;
+        state.crop=null;
+        state.cropManual=false;
+        state.cropEditing=false;
+        state.qcPreviewBaseCanvas=null;
+        state.qcPreviewBaseImage=null;
+        renderImageQcPanel();
+        updateGroupNavButtons();
+        return;
+      }
       if(state.mode==='group') {
         renderGroupView();
         scheduleGroupMicroscopeAutoDetect();
       }
       updateGroupNavButtons();
     });
+    if(el.qcImageList) el.qcImageList.addEventListener('click',e=>{
+      const row=e.target.closest('[data-qc-index]');
+      if(!row) return;
+      loadQcSampleAt(Number(row.dataset.qcIndex));
+    });
+    if(el.qcOrientation) el.qcOrientation.addEventListener('change',()=>applyQcOrientation(el.qcOrientation.value));
+    if(el.qcRotateLeft) el.qcRotateLeft.addEventListener('click',()=>applyQcRotation(-90));
+    if(el.qcRotateRight) el.qcRotateRight.addEventListener('click',()=>applyQcRotation(90));
+    if(el.qcAdjustCrop) el.qcAdjustCrop.addEventListener('click',beginQcCropEdit);
+    if(el.qcSaveCrop) el.qcSaveCrop.addEventListener('click',applyQcCrop);
+    if(el.qcExcludeToggle) el.qcExcludeToggle.addEventListener('change',()=>toggleQcExclude(el.qcExcludeToggle.checked));
+    if(el.qcUndoCrop) el.qcUndoCrop.addEventListener('click',undoQcCrop);
+    if(el.qcRedoCrop) el.qcRedoCrop.addEventListener('click',redoQcCrop);
+    if(el.qcPrevImage) el.qcPrevImage.addEventListener('click',qcPreviousImage);
+    if(el.qcNextImage) el.qcNextImage.addEventListener('click',qcNextImage);
+    if(el.qcCopyCrop) el.qcCopyCrop.addEventListener('click',qcCopyCropToAll);
+    if(el.goToAnalysisFromQc) el.goToAnalysisFromQc.addEventListener('click',continueFromQcToAnalysis);
+    if(el.qcCropOverlay) {
+      el.qcCropOverlay.addEventListener('pointerdown',beginQcOverlayDrag);
+      el.qcCropOverlay.addEventListener('pointermove',updateQcOverlayDrag);
+      el.qcCropOverlay.addEventListener('pointerup',finishQcOverlayDrag);
+      el.qcCropOverlay.addEventListener('pointercancel',finishQcOverlayDrag);
+    }
+    window.addEventListener('resize',renderQcCropOverlay);
     el.deleteGroup.addEventListener('click',deleteSelectedGroup);
     el.groupPrev.addEventListener('click',()=>stepGroupSample(-1));
     el.groupNext.addEventListener('click',()=>stepGroupSample(1));
     el.exportGroupPng.addEventListener('click',exportGroupPngOverlays);
-    el.exportPlots.addEventListener('click',exportGroupPlotsZip);
+    el.exportPlots.addEventListener('click',()=>showExportStylePanel('group'));
+    if(el.refreshBuilderFigure) el.refreshBuilderFigure.addEventListener('click',renderPublicationBuilder);
+    if(el.loadBuilderValidationSet) el.loadBuilderValidationSet.addEventListener('click',()=>loadServedValidationSet(el.builderValidationSet?.value));
+    if(el.exportBuilderFigure) el.exportBuilderFigure.addEventListener('click',()=>showExportStylePanel('builder'));
+    [el.builderControlReplicates,el.builderTreatmentReplicates].filter(Boolean).forEach(host=>{
+      host.addEventListener('change',e=>{
+        const input=e.target.closest('[data-builder-replicate]');
+        if(!input) return;
+        const key=builderReplicateStateKey(input.dataset.builderReplicate);
+        if(!key) return;
+        const builderState=state.publicationBuilderState||(state.publicationBuilderState={});
+        const current=new Set(builderState[key]||[]);
+        if(input.checked) current.add(input.value);
+        else current.delete(input.value);
+        builderState[key]=[...current];
+        syncPublicationBuilderSelections();
+        renderPublicationBuilder();
+      });
+    });
+    [
+      el.builderControlGroup,el.builderTreatmentGroup,el.builderMetricSelect,el.builderControlLabel,
+      el.builderTreatmentLabel,el.builderCellType,el.builderReplicate,el.builderScaleValue,
+      el.builderScaleMode,el.builderPValue,el.builderStars
+    ].filter(Boolean).forEach(control=>{
+      control.addEventListener('change',renderPublicationBuilder);
+      control.addEventListener('input',renderPublicationBuilder);
+    });
+    if(el.exportStyleGrayscale) el.exportStyleGrayscale.addEventListener('click',()=>exportGroupPlotsWithStyle('grayscale'));
+    if(el.exportStyleColor) el.exportStyleColor.addEventListener('click',()=>exportGroupPlotsWithStyle('color'));
+    if(el.cancelExportStyle) el.cancelExportStyle.addEventListener('click',closeExportStylePanel);
+    if(el.exportStylePanel) el.exportStylePanel.addEventListener('click',e=>{ if(e.target===el.exportStylePanel) closeExportStylePanel(); });
     el.showAreaPlot.addEventListener('click',()=>showGroupPlot('areaPct'));
     el.showWidthPlot.addEventListener('click',()=>showGroupPlot('width'));
     el.closePlot.addEventListener('click',closePlotPanel);
@@ -5231,6 +7611,8 @@
   syncLabels();
   setupSidebarPanels();
   bindEvents();
+  syncValidationToolsVisibility();
+  setAppModule(state.appModule);
   setupDelayedTooltips();
   const tutorialKey=tutorialKeyFromUrl();
   if(tutorialKey) {

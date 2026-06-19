@@ -1,0 +1,391 @@
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
+
+const root = path.resolve(__dirname, '..');
+const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
+
+const html = read('prototype_refactor/index.html');
+const js = read('prototype_refactor/app.js');
+const css = read('prototype_refactor/styles.css');
+const specPath = path.join(root, 'docs/superpowers/specs/2026-06-16-publication-figure-builder-v1-design.md');
+
+assert(fs.existsSync(specPath), 'Publication Figure Builder design spec should be saved as markdown');
+assert(
+  html.includes('app.js?v=20260619-qc-continuous-crop'),
+  'index.html should cache-bust app.js for the continuous QC crop workflow'
+);
+assert(
+  html.includes('id="builderValidationTools" hidden'),
+  'Validation controls should start hidden'
+);
+
+[
+  'moduleTabs',
+  'qcModuleTab',
+  'imageQcPanel',
+  'qcImageList',
+  'qcCanvas',
+  'qcCropOverlay',
+  'qcOrientation',
+  'qcRotateLeft',
+  'qcRotateRight',
+  'qcExcludeToggle',
+  'goToAnalysisFromQc',
+  'publicationBuilderPanel',
+  'builderControlGroup',
+  'builderTreatmentGroup',
+  'builderControlReplicates',
+  'builderTreatmentReplicates',
+  'builderValidationSet',
+  'loadBuilderValidationSet',
+  'builderScaleValue',
+  'builderScaleMode',
+  'builderMetricSelect',
+  'exportBuilderFigure'
+].forEach(id => {
+  assert(html.includes(`id="${id}"`), `index.html should expose #${id}`);
+});
+
+[
+  'Image QC',
+  'Publication Figure Builder',
+  'Control vs Treatment',
+  'Scale bar',
+  'Caption draft'
+].forEach(text => {
+  assert(html.includes(text), `index.html should contain "${text}"`);
+});
+
+[
+  'qcSnapshotForSample',
+  'sampleExcludedFromAnalysis',
+  'settingsWithQcSnapshot',
+  'buildLockedQcSnapshot',
+  'analysisInputFromQcSnapshot',
+  'continueFromQcToAnalysis',
+  'applyQcOrientation',
+  'applyQcRotation',
+  'applyQcCrop',
+  'toggleQcExclude',
+  'renderQcCropOverlay',
+  'beginQcOverlayDrag',
+  'updateQcOverlayDrag',
+  'finishQcOverlayDrag',
+  'updateQcOverlayRect',
+  'qcPreviewBaseCanvas',
+  'renderImageQcPanel',
+  'renderQcImageList',
+  'loadQcSampleAt',
+  'qcStatusLabel',
+  'imageQcState',
+  'lockedQcSnapshot',
+  'qcStateForSample',
+  'updateQcState',
+  'resetLockedQcSnapshot',
+  'lastQcCropTemplateByGroup',
+  'preparedQcImages',
+  'cropForQcSample',
+  'prepareQcAnalysisInput',
+  'analysisImageUrl',
+  'releasePreparedQcImage',
+  'publicationBuilderState',
+  'builderConditionRows',
+  'aggregateBuilderConditionRows',
+  'renderBuilderReplicateOptions',
+  'loadServedValidationSet',
+  'renderPublicationBuilder',
+  'builderFigureRows',
+  'drawBuilderFigurePanel',
+  'exportPublicationBuilderZip',
+  'builderCaptionDraft',
+  'drawScaleBar'
+].forEach(symbol => {
+  assert(js.includes(symbol), `app.js should define or use ${symbol}`);
+});
+
+const validationToolsSource = js.match(/function validationToolsEnabled\(locationLike\)\s*\{[\s\S]*?\n  \}/);
+assert(validationToolsSource, 'app.js should expose validationToolsEnabled');
+const validationSandbox = {URLSearchParams};
+vm.runInNewContext(
+  `${validationToolsSource[0]}; this.validationToolsEnabled = validationToolsEnabled;`,
+  validationSandbox
+);
+assert.strictEqual(
+  validationSandbox.validationToolsEnabled({hostname:'localhost',search:''}),
+  true,
+  'Validation tools should show on localhost'
+);
+assert.strictEqual(
+  validationSandbox.validationToolsEnabled({hostname:'127.0.0.1',search:''}),
+  true,
+  'Validation tools should show on loopback'
+);
+assert.strictEqual(
+  validationSandbox.validationToolsEnabled({hostname:'cytomove.example',search:'?validation=1'}),
+  true,
+  'Validation query parameter should opt into QA tools'
+);
+assert.strictEqual(
+  validationSandbox.validationToolsEnabled({hostname:'cytomove.example',search:''}),
+  false,
+  'Validation tools should be hidden in normal hosted use'
+);
+
+const syncValidationToolsSource = js.match(/function syncValidationToolsVisibility\(\)\s*\{[\s\S]*?\n  \}/);
+assert(syncValidationToolsSource, 'app.js should expose syncValidationToolsVisibility');
+function validationToolsHiddenFor(location) {
+  const wrapper = {hidden:false};
+  const sandbox = {
+    URLSearchParams,
+    window:{location},
+    document:{
+      getElementById(id) {
+        return id==='builderValidationTools'?wrapper:null;
+      }
+    }
+  };
+  vm.runInNewContext(
+    `${validationToolsSource[0]}; ${syncValidationToolsSource[0]}; syncValidationToolsVisibility();`,
+    sandbox
+  );
+  return wrapper.hidden;
+}
+assert.strictEqual(
+  validationToolsHiddenFor({hostname:'cytomove.example',search:''}),
+  true,
+  'Validation tools wrapper should remain hidden for normal hosted use'
+);
+assert.strictEqual(
+  validationToolsHiddenFor({hostname:'localhost',search:''}),
+  false,
+  'Validation tools wrapper should be shown on localhost'
+);
+assert.strictEqual(
+  validationToolsHiddenFor({hostname:'cytomove.example',search:'?validation=1'}),
+  false,
+  'Validation tools wrapper should be shown when validation=1 is requested'
+);
+
+const initializationSource = js.slice(js.lastIndexOf('syncLabels();'));
+assert(
+  /bindEvents\(\);\s*syncValidationToolsVisibility\(\);/.test(initializationSource),
+  'Initialization should sync validation tool visibility after DOM references and event bindings are ready'
+);
+
+const cropChoiceSource = js.match(/function cropForQcSample\(qc, template\)\s*\{[\s\S]*?\n  \}/);
+assert(cropChoiceSource, 'app.js should expose cropForQcSample');
+const cropChoiceSandbox = {};
+vm.runInNewContext(`${cropChoiceSource[0]}; this.cropForQcSample = cropForQcSample;`, cropChoiceSandbox);
+const savedCrop = {x:0.1,y:0.2,w:0.5,h:0.6};
+const latestTemplate = {x:0.2,y:0.1,w:0.4,h:0.7};
+assert.deepStrictEqual(
+  {...cropChoiceSandbox.cropForQcSample({cropSaved:true,cropRatio:savedCrop},latestTemplate)},
+  savedCrop,
+  'A saved image should restore its own crop instead of the latest template'
+);
+assert.deepStrictEqual(
+  {...cropChoiceSandbox.cropForQcSample({cropSaved:false,cropRatio:null},latestTemplate)},
+  latestTemplate,
+  'An unsaved image should start from the latest group crop template'
+);
+
+const qcPreviewCropSource = js.match(/function qcPreviewCrop\(qc, crop\)\s*\{[\s\S]*?\n  \}/);
+assert(qcPreviewCropSource, 'app.js should expose qcPreviewCrop');
+const qcWorkflowSandbox = {};
+vm.runInNewContext(
+  `${qcPreviewCropSource[0]}; this.qcPreviewCrop = qcPreviewCrop;`,
+  qcWorkflowSandbox
+);
+assert.deepStrictEqual(
+  {...qcWorkflowSandbox.qcPreviewCrop({cropSaved:true}, {x:20,y:10,w:80,h:60,active:true})},
+  {x:20,y:10,w:80,h:60,active:true},
+  'Saved QC crops should render as cropped previews outside Adjust mode'
+);
+assert.strictEqual(
+  qcWorkflowSandbox.qcPreviewCrop({cropSaved:false}, {x:20,y:10,w:80,h:60,active:true}),
+  null,
+  'Unsaved crop templates should not crop the normal preview'
+);
+
+const qcAutoAdvanceSource = js.match(/function qcCropAutoAdvanceTarget\(currentIndex, sampleCount\)\s*\{[\s\S]*?\n  \}/);
+assert(qcAutoAdvanceSource, 'app.js should expose qcCropAutoAdvanceTarget');
+vm.runInNewContext(
+  `${qcAutoAdvanceSource[0]}; this.qcCropAutoAdvanceTarget = qcCropAutoAdvanceTarget;`,
+  qcWorkflowSandbox
+);
+assert.strictEqual(qcWorkflowSandbox.qcCropAutoAdvanceTarget(0,3),1);
+assert.strictEqual(qcWorkflowSandbox.qcCropAutoAdvanceTarget(2,3),null);
+
+const drawQcCanvasSource = js.match(/function drawQcCanvas\(\)\s*\{[\s\S]*?\n  \}/);
+assert(drawQcCanvasSource, 'app.js should expose drawQcCanvas');
+assert(
+  drawQcCanvasSource[0].includes('qcPreviewCrop(qc,state.crop)'),
+  'QC canvas should select a saved crop for normal preview'
+);
+assert(
+  drawQcCanvasSource[0].includes('drawImage(displayImg,previewCrop.x,previewCrop.y'),
+  'QC canvas should draw only the saved crop bounds'
+);
+
+const applyQcCropSource = js.match(/function applyQcCrop\(\)\s*\{[\s\S]*?\n  \}/);
+assert(applyQcCropSource, 'app.js should expose applyQcCrop');
+assert(
+  !applyQcCropSource[0].includes('samples.forEach'),
+  'Saving a crop should not overwrite every image crop state'
+);
+
+const loadQcSampleSource = js.match(/function loadQcSampleAt\(index, options=\{\}\)\s*\{[\s\S]*?\n  \}/);
+assert(loadQcSampleSource, 'loadQcSampleAt should accept workflow options');
+assert(
+  loadQcSampleSource[0].includes('openAdjust:!!options.openAdjust'),
+  'Save-driven navigation should pass openAdjust into image loading'
+);
+
+const applyQcStateSource = js.match(/function applyQcStateToCurrentImage\(sample=state.sample, options=\{\}\)\s*\{[\s\S]*?\n  \}/);
+assert(applyQcStateSource, 'app.js should expose applyQcStateToCurrentImage');
+assert(
+  applyQcStateSource[0].includes('state.cropEditing=!!options.openAdjust'),
+  'Loaded QC images should open Adjust mode only when requested'
+);
+assert(
+  applyQcCropSource[0].includes('loadQcSampleAt(nextIndex,{openAdjust:true})'),
+  'Saving a non-final crop should auto-open Adjust on the next image'
+);
+assert(
+  applyQcCropSource[0].includes('state.cropEditing=true'),
+  'Crop preparation failure should keep Adjust mode active'
+);
+assert(
+  applyQcCropSource[0].includes('drawQcCanvas()'),
+  'Crop preparation failure should redraw the editable crop'
+);
+
+['top-left','top-right','bottom-left','bottom-right'].forEach(handle => {
+  assert(
+    html.includes(`data-crop-handle="${handle}"`),
+    `Image QC should expose the ${handle} crop handle`
+  );
+});
+
+assert(js.includes('caption/cytomove_'), 'Builder ZIP should include a caption draft file');
+assert(js.includes('scale_bar'), 'Builder CSV should include scale bar metadata');
+assert(js.includes('buildBuilderPptxSlide'), 'Builder export should include a PPTX slide');
+
+const timeMatchSource = js.match(/function customFileTimeMatch\(stem\)\s*\{[\s\S]*?\n  \}/);
+assert(timeMatchSource, 'app.js should expose customFileTimeMatch');
+const timeSandbox = {};
+vm.runInNewContext(`${timeMatchSource[0]}; this.customFileTimeMatch = customFileTimeMatch;`, timeSandbox);
+assert.strictEqual(timeSandbox.customFileTimeMatch('0')?.[1], '0', 'plain numeric stems should map to 0h');
+assert.strictEqual(timeSandbox.customFileTimeMatch('24')?.[1], '24', 'plain numeric stems should map to 24h');
+assert.strictEqual(timeSandbox.customFileTimeMatch('48')?.[1], '48', 'plain numeric stems should map to 48h');
+
+const overlayRectSource = js.match(/function updateQcOverlayRect\(start, dx, dy, mode, bounds, minSize\)\s*\{[\s\S]*?\n  \}/);
+assert(overlayRectSource, 'app.js should expose updateQcOverlayRect');
+const overlaySandbox = {};
+vm.runInNewContext(`${overlayRectSource[0]}; this.updateQcOverlayRect = updateQcOverlayRect;`, overlaySandbox);
+const bounds = {left:0,top:0,right:500,bottom:400};
+assert.deepStrictEqual(
+  {...overlaySandbox.updateQcOverlayRect({left:100,top:80,width:240,height:180},50,30,'move',bounds,24)},
+  {left:150,top:110,width:240,height:180},
+  'Dragging the DOM crop body should move without resizing'
+);
+assert.deepStrictEqual(
+  {...overlaySandbox.updateQcOverlayRect({left:100,top:80,width:240,height:180},-30,-20,'top-left',bounds,24)},
+  {left:70,top:60,width:270,height:200},
+  'Dragging a DOM crop corner should resize from that corner'
+);
+
+const sidebarVisibilitySource = js.match(/function sidebarSectionHiddenForModule\(module, isBuilder, isReview, defaultHidden\)\s*\{[\s\S]*?\n  \}/);
+assert(sidebarVisibilitySource, 'app.js should expose sidebarSectionHiddenForModule');
+const sidebarVisibilitySandbox = {};
+vm.runInNewContext(
+  `${sidebarVisibilitySource[0]}; this.sidebarSectionHiddenForModule = sidebarSectionHiddenForModule;`,
+  sidebarVisibilitySandbox
+);
+assert.strictEqual(
+  sidebarVisibilitySandbox.sidebarSectionHiddenForModule('qc', false, false, false),
+  true,
+  'Image QC should hide Analysis-only sidebar sections'
+);
+assert.strictEqual(
+  sidebarVisibilitySandbox.sidebarSectionHiddenForModule('analysis', false, false, false),
+  false,
+  'Analysis should restore sidebar sections that were initially visible'
+);
+assert.strictEqual(
+  sidebarVisibilitySandbox.sidebarSectionHiddenForModule('analysis', false, false, true),
+  true,
+  'Analysis should preserve sections that were initially hidden'
+);
+
+const replicateStateKeySource = js.match(/function builderReplicateStateKey\(value\)\s*\{[\s\S]*?\n  \}/);
+assert(replicateStateKeySource, 'app.js should expose builderReplicateStateKey');
+const replicateStateKeySandbox = {};
+vm.runInNewContext(
+  `${replicateStateKeySource[0]}; this.builderReplicateStateKey = builderReplicateStateKey;`,
+  replicateStateKeySandbox
+);
+assert.strictEqual(
+  replicateStateKeySandbox.builderReplicateStateKey('controlReplicateIds'),
+  'controlReplicateIds',
+  'Control replicate checkboxes should update control replicate state'
+);
+assert.strictEqual(
+  replicateStateKeySandbox.builderReplicateStateKey('treatmentReplicateIds'),
+  'treatmentReplicateIds',
+  'Treatment replicate checkboxes should update treatment replicate state'
+);
+assert.strictEqual(
+  replicateStateKeySandbox.builderReplicateStateKey('unknown'),
+  '',
+  'Unknown replicate checkbox state keys should be ignored'
+);
+
+const averageSource = js.match(/function average\(values\)\s*\{[\s\S]*?\n  \}/);
+const standardDeviationSource = js.match(/function sampleStandardDeviation\(values\)\s*\{[\s\S]*?\n  \}/);
+const aggregateRowsSource = js.match(/function aggregateBuilderConditionRows\(rows, conditionKey, conditionLabel\)\s*\{[\s\S]*?\n  \}/);
+assert(averageSource, 'app.js should expose average');
+assert(standardDeviationSource, 'app.js should expose sampleStandardDeviation');
+assert(aggregateRowsSource, 'app.js should expose aggregateBuilderConditionRows');
+const aggregateSandbox = {};
+vm.runInNewContext(
+  `${averageSource[0]}; ${standardDeviationSource[0]}; ${aggregateRowsSource[0]}; this.aggregateBuilderConditionRows = aggregateBuilderConditionRows;`,
+  aggregateSandbox
+);
+const aggregateRows = aggregateSandbox.aggregateBuilderConditionRows([
+  {conditionKey:'control',x:24,label:'24h',areaClosurePct:40,widthNormalizedPct:70},
+  {conditionKey:'control',x:24,label:'24h',areaClosurePct:50,widthNormalizedPct:80},
+  {conditionKey:'control',x:24,label:'24h',areaClosurePct:60,widthNormalizedPct:90}
+], 'control', 'Control');
+assert.strictEqual(aggregateRows[0].replicateCount, 3, 'Builder aggregation should retain replicate count');
+assert.strictEqual(aggregateRows[0].areaClosurePct, 50, 'Builder aggregation should calculate the replicate mean');
+assert.strictEqual(aggregateRows[0].areaClosurePctSd, 10, 'Builder aggregation should calculate sample SD for closure');
+assert.strictEqual(aggregateRows[0].widthNormalizedPctSd, 10, 'Builder aggregation should calculate sample SD for normalized width');
+
+const closurePlotSource = js.match(/function drawBuilderClosurePlot\(ctx,rows,x,y,w,h,settings,style='grayscale',includeHeader=true\)\s*\{[\s\S]*?\n  \}/);
+const linePlotSource = js.match(/function drawBuilderLinePlot\(ctx,rows,x,y,w,h,settings,style='grayscale',includeHeader=true\)\s*\{[\s\S]*?\n  \}/);
+assert(closurePlotSource?.[0].includes('areaClosurePctSd'), 'Panel B should draw closure SD error bars');
+assert(linePlotSource?.[0].includes('`${metric}Sd`'), 'Panel C should draw metric SD error bars');
+assert(js.includes('summary_mean'), 'Builder CSV should export aggregate means');
+assert(js.includes('summary_sd'), 'Builder CSV should export aggregate SD values');
+assert(js.includes('summary_n'), 'Builder CSV should export replicate counts');
+assert(js.includes('Bars and points show mean ± SD'), 'Builder caption should define the error bars');
+
+[
+  '.module-tabs',
+  '.image-qc',
+  '.qc-layout',
+  '.qc-preview',
+  '.qc-crop-overlay',
+  '.qc-crop-handle',
+  '.builder-empty[hidden]',
+  '.publication-builder',
+  '.builder-grid',
+  '.builder-preview'
+].forEach(selector => {
+  assert(css.includes(selector), `styles.css should style ${selector}`);
+});
+
+console.log('Publication Figure Builder static contract passed.');
