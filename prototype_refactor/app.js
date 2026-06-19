@@ -396,6 +396,8 @@
     calibrationReport:null,
     groupRenderSeq:0,
     autoMicroscopeDetectSeq:0,
+    autoMicroscopeDetectTimer:null,
+    autoMicroscopeDetectPending:false,
     microscopeModeUserSet:false,
     lastAutoMicroscopeGroupKey:'',
     contourStyleUserSet:false,
@@ -5578,6 +5580,7 @@
     loadGroupSampleAt(idx+delta);
   }
   function deleteSelectedGroup() {
+    cancelGroupMicroscopeAutoDetect();
     const group=selectedGroup();
     if(!group?.sampleIds?.length||!group.custom) return;
     const ok=window.confirm(`Remove "${group.label}" from this session? Original image files on disk will not be deleted.`);
@@ -6100,9 +6103,28 @@
     }
   }
 
+  function cancelGroupMicroscopeAutoDetect() {
+    if(state.autoMicroscopeDetectTimer!==null&&state.autoMicroscopeDetectTimer!==undefined) {
+      window.clearTimeout(state.autoMicroscopeDetectTimer);
+    }
+    state.autoMicroscopeDetectTimer=null;
+    state.autoMicroscopeDetectPending=false;
+    state.autoMicroscopeDetectSeq=(state.autoMicroscopeDetectSeq||0)+1;
+  }
+
   function scheduleGroupMicroscopeAutoDetect() {
+    if(state.autoMicroscopeDetectTimer!==null&&state.autoMicroscopeDetectTimer!==undefined) {
+      window.clearTimeout(state.autoMicroscopeDetectTimer);
+    }
+    state.autoMicroscopeDetectTimer=null;
+    state.autoMicroscopeDetectPending=false;
     if(state.mode!=='group'||state.microscopeModeUserSet) return;
-    window.setTimeout(()=>autoDetectGroupMicroscopeMode({auto:true}),0);
+    state.autoMicroscopeDetectPending=true;
+    state.autoMicroscopeDetectTimer=window.setTimeout(()=>{
+      state.autoMicroscopeDetectTimer=null;
+      state.autoMicroscopeDetectPending=false;
+      autoDetectGroupMicroscopeMode({auto:true});
+    },0);
   }
 
   function tutorialKeyFromUrl() {
@@ -7383,9 +7405,9 @@
   function restoreValidationSessionState(snapshot) {
     if(!snapshot) return;
     cancelAutoApply();
+    cancelGroupMicroscopeAutoDetect();
     state.imageLoadSeq=(state.imageLoadSeq||0)+1;
     state.groupRenderSeq=(state.groupRenderSeq||0)+1;
-    state.autoMicroscopeDetectSeq=(state.autoMicroscopeDetectSeq||0)+1;
     state.cropDragging=false;
     state.rulerDragging=false;
     state.panning=false;
@@ -7430,6 +7452,7 @@
       return;
     }
     const sessionSnapshot=validationSessionSnapshot({...state,panelSettings:currentPanelSettings()},el);
+    cancelGroupMicroscopeAutoDetect();
     state.validationLoadActive=true;
     const controlsSnapshot=setValidationLoadControlsLocked(true);
     setSpinner(true);
@@ -7553,6 +7576,7 @@
       setMode(btn.dataset.mode);
     });
     el.groupSelect.addEventListener('change',()=>{
+      cancelGroupMicroscopeAutoDetect();
       state.microscopeModeUserSet=false;
       state.lastAutoMicroscopeGroupKey='';
       if(state.appModule==='qc') {

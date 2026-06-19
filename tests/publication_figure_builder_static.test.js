@@ -519,14 +519,81 @@ assert(
 );
 assert(restoreValidationSessionSource[0].includes('cancelAutoApply()'),'Validation rollback should cancel pending auto-analysis');
 assert(restoreValidationSessionSource[0].includes('state.groupRenderSeq'),'Validation rollback should cancel pending group rendering');
-assert(restoreValidationSessionSource[0].includes('state.autoMicroscopeDetectSeq'),'Validation rollback should cancel pending microscope detection');
 assert(!restoreValidationSessionSource[0].includes('setMode('),'Validation restore should not call scheduling mode helpers');
 assert(!restoreValidationSessionSource[0].includes('setAppModule('),'Validation restore should not call module scheduling helpers');
 assert(!restoreValidationSessionSource[0].includes('scheduleGroupMicroscopeAutoDetect'),'Validation restore should not schedule microscope detection');
+assert(restoreValidationSessionSource[0].includes('cancelGroupMicroscopeAutoDetect()'),'Validation rollback should cancel the pending microscope timer');
+
+const cancelMicroscopeDetectSource = js.match(/function cancelGroupMicroscopeAutoDetect\(\)\s*\{[\s\S]*?\n  \}/);
+const scheduleMicroscopeDetectSource = js.match(/function scheduleGroupMicroscopeAutoDetect\(\)\s*\{[\s\S]*?\n  \}/);
+assert(cancelMicroscopeDetectSource, 'app.js should expose cancelGroupMicroscopeAutoDetect');
+assert(scheduleMicroscopeDetectSource, 'app.js should expose scheduleGroupMicroscopeAutoDetect');
+const microscopeTimers = new Map();
+const clearedMicroscopeTimers = [];
+let nextMicroscopeTimerId = 1;
+let microscopeDetectCalls = 0;
+const microscopeTimerSandbox = {
+  state:{
+    mode:'group',
+    microscopeModeUserSet:false,
+    autoMicroscopeDetectSeq:3,
+    autoMicroscopeDetectTimer:null,
+    autoMicroscopeDetectPending:false
+  },
+  window:{
+    setTimeout(callback) {
+      const id=nextMicroscopeTimerId++;
+      microscopeTimers.set(id,callback);
+      return id;
+    },
+    clearTimeout(id) {
+      clearedMicroscopeTimers.push(id);
+      microscopeTimers.delete(id);
+    }
+  },
+  autoDetectGroupMicroscopeMode() {
+    microscopeDetectCalls+=1;
+  }
+};
+vm.runInNewContext(
+  `${cancelMicroscopeDetectSource[0]}; ${scheduleMicroscopeDetectSource[0]};
+   this.cancelGroupMicroscopeAutoDetect=cancelGroupMicroscopeAutoDetect;
+   this.scheduleGroupMicroscopeAutoDetect=scheduleGroupMicroscopeAutoDetect;`,
+  microscopeTimerSandbox
+);
+microscopeTimerSandbox.scheduleGroupMicroscopeAutoDetect();
+const firstMicroscopeTimer = microscopeTimerSandbox.state.autoMicroscopeDetectTimer;
+assert(firstMicroscopeTimer,'Microscope scheduling should store its timer id');
+assert.strictEqual(microscopeTimerSandbox.state.autoMicroscopeDetectPending,true);
+microscopeTimerSandbox.scheduleGroupMicroscopeAutoDetect();
+const secondMicroscopeTimer = microscopeTimerSandbox.state.autoMicroscopeDetectTimer;
+assert.notStrictEqual(secondMicroscopeTimer,firstMicroscopeTimer,'Rescheduling should replace the prior timer');
+assert(clearedMicroscopeTimers.includes(firstMicroscopeTimer),'Rescheduling should clear the prior timer');
+const sequenceBeforeCancel = microscopeTimerSandbox.state.autoMicroscopeDetectSeq;
+microscopeTimerSandbox.cancelGroupMicroscopeAutoDetect();
+assert(clearedMicroscopeTimers.includes(secondMicroscopeTimer),'Cancellation should clear the current timer');
+assert.strictEqual(microscopeTimerSandbox.state.autoMicroscopeDetectTimer,null);
+assert.strictEqual(microscopeTimerSandbox.state.autoMicroscopeDetectPending,false);
+assert.strictEqual(microscopeTimerSandbox.state.autoMicroscopeDetectSeq,sequenceBeforeCancel+1);
+assert.strictEqual(microscopeDetectCalls,0,'Cancelled microscope detection should not start');
+microscopeTimerSandbox.scheduleGroupMicroscopeAutoDetect();
+const finalMicroscopeTimer = microscopeTimerSandbox.state.autoMicroscopeDetectTimer;
+microscopeTimers.get(finalMicroscopeTimer)();
+assert.strictEqual(microscopeTimerSandbox.state.autoMicroscopeDetectTimer,null,'Timer callback should clear the stored id before work');
+assert.strictEqual(microscopeTimerSandbox.state.autoMicroscopeDetectPending,false,'Timer callback should clear pending state before work');
+assert.strictEqual(microscopeDetectCalls,1,'A live microscope timer should start detection once');
+microscopeTimerSandbox.scheduleGroupMicroscopeAutoDetect();
+const guardedMicroscopeTimer = microscopeTimerSandbox.state.autoMicroscopeDetectTimer;
+microscopeTimerSandbox.state.microscopeModeUserSet=true;
+microscopeTimerSandbox.scheduleGroupMicroscopeAutoDetect();
+assert(clearedMicroscopeTimers.includes(guardedMicroscopeTimer),'A guarded reschedule should still clear the stale timer');
+assert.strictEqual(microscopeTimerSandbox.state.autoMicroscopeDetectTimer,null);
+assert.strictEqual(microscopeTimerSandbox.state.autoMicroscopeDetectPending,false);
 
 const loadLocalFilesSource = js.match(/function loadLocalFiles\(files\)\s*\{[\s\S]*?\n  \}/);
 assert(loadLocalFilesSource, 'app.js should expose loadLocalFiles');
 assert(loadLocalFilesSource[0].includes('state.validationLoadActive'),'Local file loading should guard against validation transactions');
+assert(loaderBody.includes('cancelGroupMicroscopeAutoDetect()'),'Validation transaction start should cancel pending microscope detection');
 
 assert(js.includes('class ValidationAssetError extends Error'),'Validation fetch failures should use a specific error class');
 const fetchServedImageFileSource = js.match(/async function fetchServedImageFile\(relativePath\)\s*\{[\s\S]*?\n  \}/);
