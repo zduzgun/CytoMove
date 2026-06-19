@@ -400,6 +400,7 @@
     lastAutoMicroscopeGroupKey:'',
     contourStyleUserSet:false,
     tutorial:null,
+    imageLoadSeq:0,
     varMap:null, maskData:null, autoMaskData:null, fieldData:null, sourceData:null, grayData:null, darkGuideThreshold:0,
     brushMode:'off', brushDrawing:false, brushEdited:false, brushAddedPx:0, brushRemovedPx:0,
     correctionSelecting:false, correctionStart:null, correctionRect:null,
@@ -7033,8 +7034,11 @@
     rememberCurrentSampleSettings();
     if(state.mode!=='single'&&!keepMode) setMode('single');
     setSpinner(true); setLog('Loading image...');
+    const loadSeq=(state.imageLoadSeq||0)+1;
+    state.imageLoadSeq=loadSeq;
     const img=new Image(); img.decoding='async';
     img.onload=()=>{
+      if(loadSeq!==state.imageLoadSeq) return;
       state.image=img; state.imageOriginal=img; state.sample=sample; state.rotation=0;
       state.imageIsPreparedQc=!!options.preparedQc;
       el.deskewAngle.value=0; el.deskewAngleVal.value=0;
@@ -7066,7 +7070,11 @@
       if(effectiveRotationDeg()||(Number(el.deskewAngle.value)||0)) applyImageTransform({restoreManual:true,analyze:false,restoreGroupResult:!!options.restoreGroupResult,autoApplyAfterLoad:!!options.autoApplyAfterLoad,logMessage:readyMessage});
       else showReadyPreview();
     };
-    img.onerror=()=>{ setSpinner(false); setLog('<strong>Image load failed.</strong> Run a local HTTP server from the repo root (e.g. <code>python -m http.server</code>) to serve the wound healing archive.'); };
+    img.onerror=()=>{
+      if(loadSeq!==state.imageLoadSeq) return;
+      setSpinner(false);
+      setLog('<strong>Image load failed.</strong> Run a local HTTP server from the repo root (e.g. <code>python -m http.server</code>) to serve the wound healing archive.');
+    };
     img.src=src;
   }
 
@@ -7153,11 +7161,16 @@
   }
 
   async function fetchServedImageFile(relativePath) {
-    const response=await fetch(relativePath);
-    if(!response.ok) throw new Error(`Failed to fetch ${relativePath} (${response.status})`);
-    const blob=await response.blob();
-    const name=relativePath.split('/').pop()||'image.jpg';
-    return new File([blob],name,{type:blob.type||'image/jpeg'});
+    try {
+      const response=await fetch(relativePath);
+      if(!response.ok) throw new Error(`Failed to fetch ${relativePath} (${response.status})`);
+      const blob=await response.blob();
+      const name=relativePath.split('/').pop()||'image.jpg';
+      return new File([blob],name,{type:blob.type||'image/jpeg'});
+    } catch(err) {
+      err.validationKind='asset';
+      throw err;
+    }
   }
 
   async function analyzeImportedGroup(groupId) {
@@ -7165,6 +7178,7 @@
     if(!group) return;
     const samples=group.sampleIds.map(id=>sampleById(id)).filter(Boolean);
     if(!samples.length) return;
+    if(el.groupSelect) el.groupSelect.value=groupId;
     await initializeGroupPresetAndOpen(samples,group.label);
     await renderGroupContours(samples,{force:true});
   }
@@ -7173,11 +7187,78 @@
     return 'Validation images are unavailable in this build. Run the app from the repository root or provide the local validation assets.';
   }
 
-  function cleanupImportedValidationGroups(imported=[]) {
-    const groupIds=new Set(imported.map(item=>item.groupId).filter(Boolean));
+  function validationSessionSnapshot(stateLike, elements={}) {
+    const builderState={};
+    Object.entries(stateLike.publicationBuilderState||{}).forEach(([key,value])=>{
+      builderState[key]=Array.isArray(value)?[...value]:value;
+    });
+    return {
+      appModule:stateLike.appModule,
+      mode:stateLike.mode,
+      groupId:elements.groupSelect?.value||'',
+      sampleSelectId:elements.sampleSelect?.value||'',
+      image:stateLike.image,
+      imageOriginal:stateLike.imageOriginal,
+      imageName:stateLike.imageName,
+      sample:stateLike.sample,
+      result:stateLike.result,
+      rotation:stateLike.rotation,
+      imageIsPreparedQc:stateLike.imageIsPreparedQc,
+      maskData:stateLike.maskData,
+      autoMaskData:stateLike.autoMaskData,
+      fieldData:stateLike.fieldData,
+      sourceData:stateLike.sourceData,
+      grayData:stateLike.grayData,
+      varMap:stateLike.varMap,
+      panelSettings:stateLike.panelSettings?{...stateLike.panelSettings}:null,
+      sampleSettings:Object.fromEntries(Object.entries(stateLike.sampleSettings||{}).map(([id,settings])=>[id,{...settings}])),
+      lockedQcSnapshot:Array.isArray(stateLike.lockedQcSnapshot)?stateLike.lockedQcSnapshot.map(item=>({...item})):stateLike.lockedQcSnapshot,
+      calibrationReport:stateLike.calibrationReport,
+      microscopeModeUserSet:stateLike.microscopeModeUserSet,
+      lastAutoMicroscopeGroupKey:stateLike.lastAutoMicroscopeGroupKey,
+      contourStyleUserSet:stateLike.contourStyleUserSet,
+      publicationBuilderState:builderState,
+      builderControlGroup:elements.builderControlGroup?.value||'',
+      builderTreatmentGroup:elements.builderTreatmentGroup?.value||'',
+      builderControlLabel:elements.builderControlLabel?.value||'',
+      builderTreatmentLabel:elements.builderTreatmentLabel?.value||'',
+      builderCellType:elements.builderCellType?.value||'',
+      builderReplicate:elements.builderReplicate?.value||'',
+      customGroupIds:(stateLike.customGroups||[]).map(group=>group.id),
+      customSampleIds:(stateLike.customSamples||[]).map(sample=>sample.id),
+      objectUrls:[...(stateLike.objectUrls||[])]
+    };
+  }
+
+  function validationAnalysisComplete(samples=[], context={}) {
+    const results=context.groupResults||{};
+    const overrides=context.manualOverrides||{};
+    const excluded=new Set(context.excludedSampleIds||[]);
+    return samples
+      .filter(sample=>sample?.id&&!excluded.has(sample.id))
+      .every(sample=>!!(overrides[sample.id]?.result||results[sample.id]||(context.currentSampleId===sample.id?context.currentResult:null)));
+  }
+
+  function validationLoadErrorMessage(err) {
+    return err?.validationKind==='asset'
+      ? validationAssetErrorMessage()
+      : 'Validation analysis could not be completed in this session.';
+  }
+
+  function cleanupImportedValidationGroups(imported=[], sessionSnapshot=null) {
+    const baselineGroupIds=new Set(sessionSnapshot?.customGroupIds||[]);
+    const baselineSampleIds=new Set(sessionSnapshot?.customSampleIds||[]);
+    const baselineObjectUrls=new Set(sessionSnapshot?.objectUrls||[]);
     const importedSamples=imported.flatMap(item=>Array.isArray(item.samples)?item.samples:[]);
-    const sampleIds=new Set(importedSamples.map(sample=>sample.id).filter(Boolean));
-    const objectUrls=new Set(importedSamples.map(sample=>sample.url).filter(Boolean));
+    const fallbackGroupIds=new Set(imported.map(item=>item.groupId).filter(Boolean));
+    const fallbackSampleIds=new Set(importedSamples.map(sample=>sample.id).filter(Boolean));
+    const groupIds=new Set(state.customGroups
+      .filter(group=>sessionSnapshot?!baselineGroupIds.has(group.id):fallbackGroupIds.has(group.id))
+      .map(group=>group.id));
+    const sampleIds=new Set(state.customSamples
+      .filter(sample=>sessionSnapshot?!baselineSampleIds.has(sample.id):fallbackSampleIds.has(sample.id))
+      .map(sample=>sample.id));
+    const objectUrls=new Set(state.objectUrls.filter(url=>sessionSnapshot?!baselineObjectUrls.has(url):importedSamples.some(sample=>sample.url===url)));
     objectUrls.forEach(url=>URL.revokeObjectURL(url));
     state.objectUrls=state.objectUrls.filter(url=>!objectUrls.has(url));
     state.customGroups=state.customGroups.filter(group=>!groupIds.has(group.id));
@@ -7194,12 +7275,52 @@
     populateGroups();
   }
 
+  function restoreValidationSessionState(snapshot) {
+    if(!snapshot) return;
+    state.imageLoadSeq=(state.imageLoadSeq||0)+1;
+    state.publicationBuilderState=snapshot.publicationBuilderState;
+    state.image=snapshot.image;
+    state.imageOriginal=snapshot.imageOriginal;
+    state.imageName=snapshot.imageName;
+    state.sample=snapshot.sample;
+    state.result=snapshot.result;
+    state.rotation=snapshot.rotation;
+    state.imageIsPreparedQc=snapshot.imageIsPreparedQc;
+    state.maskData=snapshot.maskData;
+    state.autoMaskData=snapshot.autoMaskData;
+    state.fieldData=snapshot.fieldData;
+    state.sourceData=snapshot.sourceData;
+    state.grayData=snapshot.grayData;
+    state.varMap=snapshot.varMap;
+    state.sampleSettings=snapshot.sampleSettings;
+    state.lockedQcSnapshot=snapshot.lockedQcSnapshot;
+    state.calibrationReport=snapshot.calibrationReport;
+    state.microscopeModeUserSet=snapshot.microscopeModeUserSet;
+    state.lastAutoMicroscopeGroupKey=snapshot.lastAutoMicroscopeGroupKey;
+    state.contourStyleUserSet=snapshot.contourStyleUserSet;
+    applyPanelSettings(snapshot.panelSettings);
+    if(el.builderControlLabel) el.builderControlLabel.value=snapshot.builderControlLabel;
+    if(el.builderTreatmentLabel) el.builderTreatmentLabel.value=snapshot.builderTreatmentLabel;
+    if(el.builderCellType) el.builderCellType.value=snapshot.builderCellType;
+    if(el.builderReplicate) el.builderReplicate.value=snapshot.builderReplicate;
+    populateGroups();
+    if(el.groupSelect&&groupById(snapshot.groupId)) el.groupSelect.value=snapshot.groupId;
+    if(el.sampleSelect&&snapshot.sampleSelectId) el.sampleSelect.value=snapshot.sampleSelectId;
+    populateBuilderGroupSelects();
+    if(el.builderControlGroup) el.builderControlGroup.value=snapshot.builderControlGroup;
+    if(el.builderTreatmentGroup) el.builderTreatmentGroup.value=snapshot.builderTreatmentGroup;
+    if(snapshot.mode==='group'&&groupById(snapshot.groupId)) setMode('group');
+    else setMode('single');
+    setAppModule(snapshot.appModule);
+  }
+
   async function loadServedValidationSet(setId) {
     const config=VALIDATION_SETS[setId];
     if(!config) {
       setLog('<strong>Validation set:</strong> choose a known validation set first.');
       return;
     }
+    const sessionSnapshot=validationSessionSnapshot({...state,panelSettings:currentPanelSettings()},el);
     setSpinner(true);
     if(el.loadBuilderValidationSet) el.loadBuilderValidationSet.disabled=true;
     const imported=[];
@@ -7214,6 +7335,17 @@
       }
       for(const group of imported) {
         await analyzeImportedGroup(group.groupId);
+        if(!validationAnalysisComplete(group.samples,{
+          groupResults:state.groupResults,
+          manualOverrides:state.manualOverrides,
+          currentSampleId:state.sample?.id,
+          currentResult:state.result,
+          excludedSampleIds:group.samples.filter(sample=>sampleExcludedFromAnalysis(sample.id)).map(sample=>sample.id)
+        })) {
+          const analysisError=new Error('Validation analysis incomplete');
+          analysisError.validationKind='analysis';
+          throw analysisError;
+        }
       }
       const applyImportedAssignments=()=>{
         const builderState=state.publicationBuilderState||(state.publicationBuilderState={});
@@ -7241,8 +7373,9 @@
       renderPublicationBuilder();
       setLog(`<strong>Validation set loaded:</strong> ${config.label}. Imported ${imported.length} groups and analyzed their image series for replicate testing.`);
     } catch(err) {
-      cleanupImportedValidationGroups(imported);
-      setLog(`<strong>Validation set unavailable.</strong> ${validationAssetErrorMessage()}`);
+      cleanupImportedValidationGroups(imported,sessionSnapshot);
+      restoreValidationSessionState(sessionSnapshot);
+      setLog(`<strong>Validation set unavailable.</strong> ${validationLoadErrorMessage(err)}`);
     } finally {
       if(el.loadBuilderValidationSet) el.loadBuilderValidationSet.disabled=false;
       setSpinner(false);

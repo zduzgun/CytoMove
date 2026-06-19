@@ -186,7 +186,141 @@ assert(
   'Validation failure should use a user-safe message'
 );
 
-const validationCleanupSource = js.match(/function cleanupImportedValidationGroups\(imported=\[\]\)\s*\{[\s\S]*?\n  \}/);
+const validationSessionSnapshotSource = js.match(/function validationSessionSnapshot\(stateLike, elements=\{\}\)\s*\{[\s\S]*?\n  \}/);
+assert(validationSessionSnapshotSource, 'app.js should expose validationSessionSnapshot');
+const validationSessionSnapshotSandbox = {};
+vm.runInNewContext(
+  `${validationSessionSnapshotSource[0]}; this.validationSessionSnapshot = validationSessionSnapshot;`,
+  validationSessionSnapshotSandbox
+);
+const priorImageReference = {id:'prior-image'};
+const priorSampleReference = {id:'prior-sample'};
+const priorResultReference = {area:42};
+const validationSessionSnapshot = validationSessionSnapshotSandbox.validationSessionSnapshot(
+  {
+    appModule:'analysis',
+    mode:'group',
+    image:priorImageReference,
+    imageOriginal:priorImageReference,
+    imageName:'prior.jpg',
+    sample:priorSampleReference,
+    result:priorResultReference,
+    panelSettings:{presetKey:'fine',varianceRadius:7},
+    sampleSettings:{'prior-sample':{presetKey:'fine'}},
+    lockedQcSnapshot:[{sampleId:'prior-sample'}],
+    calibrationReport:{status:'prior'},
+    microscopeModeUserSet:true,
+    lastAutoMicroscopeGroupKey:'prior-group-key',
+    contourStyleUserSet:true,
+    publicationBuilderState:{controlReplicateIds:['old-control'],treatmentReplicateIds:['old-treatment']},
+    customGroups:[{id:'existing-group'}],
+    customSamples:[{id:'existing-sample'}],
+    objectUrls:['blob:existing']
+  },
+  {
+    groupSelect:{value:'existing-group'},
+    sampleSelect:{value:'existing-sample'},
+    builderControlLabel:{value:'Old control'},
+    builderTreatmentLabel:{value:'Old treatment'},
+    builderCellType:{value:'Old cells'},
+    builderReplicate:{value:'n=2'}
+  }
+);
+assert.strictEqual(validationSessionSnapshot.image,priorImageReference,'Validation snapshot should preserve the active image reference');
+assert.strictEqual(validationSessionSnapshot.sample,priorSampleReference,'Validation snapshot should preserve the active sample reference');
+assert.strictEqual(validationSessionSnapshot.result,priorResultReference,'Validation snapshot should preserve the active result reference');
+assert(validationSessionSnapshot.panelSettings,'Validation snapshot should include active analysis panel settings');
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(validationSessionSnapshot.panelSettings)),
+  {presetKey:'fine',varianceRadius:7},
+  'Validation snapshot should preserve the active analysis panel settings'
+);
+assert(validationSessionSnapshot.sampleSettings,'Validation snapshot should include pre-load sample settings');
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(validationSessionSnapshot.sampleSettings)),
+  {'prior-sample':{presetKey:'fine'}},
+  'Validation snapshot should preserve pre-load sample settings'
+);
+assert(validationSessionSnapshot.lockedQcSnapshot,'Validation snapshot should include the prior locked QC snapshot');
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(validationSessionSnapshot.lockedQcSnapshot)),
+  [{sampleId:'prior-sample'}],
+  'Validation snapshot should preserve the prior locked QC snapshot'
+);
+assert.deepStrictEqual(
+  [...validationSessionSnapshot.customGroupIds],
+  ['existing-group'],
+  'Validation snapshot should record pre-existing groups for atomic rollback'
+);
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(validationSessionSnapshot.publicationBuilderState)),
+  {controlReplicateIds:['old-control'],treatmentReplicateIds:['old-treatment']},
+  'Validation snapshot should preserve builder assignments'
+);
+assert.strictEqual(validationSessionSnapshot.builderControlLabel,'Old control');
+
+const validationAnalysisCompleteSource = js.match(/function validationAnalysisComplete\(samples=\[\], context=\{\}\)\s*\{[\s\S]*?\n  \}/);
+assert(validationAnalysisCompleteSource, 'app.js should expose validationAnalysisComplete');
+const validationAnalysisSandbox = {};
+vm.runInNewContext(
+  `${validationAnalysisCompleteSource[0]}; this.validationAnalysisComplete = validationAnalysisComplete;`,
+  validationAnalysisSandbox
+);
+const validationSamples = [{id:'a'},{id:'b'},{id:'excluded'}];
+assert.strictEqual(
+  validationAnalysisSandbox.validationAnalysisComplete(validationSamples,{
+    groupResults:{a:{area:1},b:{area:2}},
+    manualOverrides:{},
+    excludedSampleIds:['excluded']
+  }),
+  true,
+  'Validation analysis should accept results for every non-excluded sample'
+);
+assert.strictEqual(
+  validationAnalysisSandbox.validationAnalysisComplete(validationSamples,{
+    groupResults:{a:{area:1}},
+    manualOverrides:{},
+    excludedSampleIds:['excluded']
+  }),
+  false,
+  'Validation analysis should reject an incomplete non-excluded sample set'
+);
+assert.strictEqual(
+  validationAnalysisSandbox.validationAnalysisComplete([{id:'manual'}],{
+    groupResults:{},
+    manualOverrides:{manual:{result:{area:3}}},
+    excludedSampleIds:[]
+  }),
+  true,
+  'Validation analysis should accept a manual override result'
+);
+
+const validationLoadErrorMessageSource = js.match(/function validationLoadErrorMessage\(err\)\s*\{[\s\S]*?\n  \}/);
+assert(validationLoadErrorMessageSource, 'app.js should expose validationLoadErrorMessage');
+const validationLoadErrorSandbox = {
+  validationAssetErrorMessage:()=> 'Validation images are unavailable in this build.'
+};
+vm.runInNewContext(
+  `${validationLoadErrorMessageSource[0]}; this.validationLoadErrorMessage = validationLoadErrorMessage;`,
+  validationLoadErrorSandbox
+);
+assert.strictEqual(
+  validationLoadErrorSandbox.validationLoadErrorMessage({validationKind:'asset'}),
+  'Validation images are unavailable in this build.',
+  'Asset failures should use the asset-unavailable message'
+);
+assert.strictEqual(
+  validationLoadErrorSandbox.validationLoadErrorMessage({validationKind:'analysis'}),
+  'Validation analysis could not be completed in this session.',
+  'Analysis failures should use a distinct safe message'
+);
+assert.strictEqual(
+  validationLoadErrorSandbox.validationLoadErrorMessage(new Error('../private/path/image.jpg')),
+  'Validation analysis could not be completed in this session.',
+  'Unknown runtime failures should not expose technical paths'
+);
+
+const validationCleanupSource = js.match(/function cleanupImportedValidationGroups\(imported=\[\], sessionSnapshot=null\)\s*\{[\s\S]*?\n  \}/);
 assert(validationCleanupSource, 'app.js should expose cleanupImportedValidationGroups');
 const revokedValidationUrls = [];
 let validationGroupsRefreshCount = 0;
@@ -213,7 +347,11 @@ const validationCleanupSandbox = {
   populateGroups:()=>{ validationGroupsRefreshCount+=1; }
 };
 vm.runInNewContext(
-  `${validationCleanupSource[0]}; cleanupImportedValidationGroups([{groupId:'remove-group',samples:[{id:'remove-sample',url:'blob:remove'}]}]);`,
+  `${validationCleanupSource[0]}; cleanupImportedValidationGroups([],{
+    customGroupIds:['keep-group'],
+    customSampleIds:['keep-sample'],
+    objectUrls:['blob:keep']
+  });`,
   validationCleanupSandbox
 );
 assert.deepStrictEqual(
@@ -256,12 +394,20 @@ assert(
   'Validation loader should complete its asset preflight before creating any custom group'
 );
 assert(
-  loaderBody.includes('cleanupImportedValidationGroups(imported)'),
+  loaderBody.includes('cleanupImportedValidationGroups(imported,sessionSnapshot)'),
   'Validation loader should clean partial imports on failure'
 );
 assert(
-  loaderBody.includes('validationAssetErrorMessage()'),
-  'Validation loader should report the safe asset message'
+  loaderBody.includes('restoreValidationSessionState(sessionSnapshot)'),
+  'Validation loader should restore its prior session state on failure'
+);
+assert(
+  loaderBody.includes('validationAnalysisComplete('),
+  'Validation loader should verify imported analysis completeness before success'
+);
+assert(
+  loaderBody.includes('validationLoadErrorMessage(err)'),
+  'Validation loader should select a safe message by failure type'
 );
 assert(
   !loaderBody.includes('${err.message||err}'),
@@ -270,6 +416,26 @@ assert(
 assert(
   /finally\s*\{[\s\S]*loadBuilderValidationSet\.disabled=false[\s\S]*setSpinner\(false\)/.test(loaderBody),
   'Validation loader should always restore its button and spinner'
+);
+
+const analyzeImportedGroupSource = js.match(/async function analyzeImportedGroup\(groupId\)\s*\{[\s\S]*?\n  \}/);
+assert(analyzeImportedGroupSource, 'app.js should expose analyzeImportedGroup');
+assert(
+  analyzeImportedGroupSource[0].includes('el.groupSelect.value=groupId'),
+  'Validation analysis should select each imported group before rendering its canvases'
+);
+
+const restoreValidationSessionSource = js.match(/function restoreValidationSessionState\(snapshot\)\s*\{[\s\S]*?\n  \}/);
+assert(restoreValidationSessionSource, 'app.js should expose restoreValidationSessionState');
+assert(
+  restoreValidationSessionSource[0].includes('state.imageLoadSeq=(state.imageLoadSeq||0)+1'),
+  'Validation rollback should invalidate pending validation image callbacks'
+);
+const loadImageSource = js.match(/function loadImage\(src,sample=null,name='',keepMode=false,options=\{\}\)\s*\{[\s\S]*?\n  \}/);
+assert(loadImageSource, 'app.js should expose loadImage');
+assert(
+  loadImageSource[0].includes('if(loadSeq!==state.imageLoadSeq) return'),
+  'Image loading should ignore callbacks invalidated by validation rollback'
 );
 
 const cropChoiceSource = js.match(/function cropForQcSample\(qc, template\)\s*\{[\s\S]*?\n  \}/);
