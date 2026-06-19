@@ -3706,18 +3706,24 @@
     state.lockedQcSnapshot=null;
   }
 
-  function qcStateForSample(sampleId) {
-    const store=state.imageQcState||(state.imageQcState={});
-    return store[sampleId]||(store[sampleId]={
+  function createQcStateDefaults() {
+    return {
       orientation:'vertical',
       cropRatio:null,
       cropSaved:false,
       rotation:0,
+      fineRotation:0,
+      autoCropFov:false,
       excluded:false,
       editedAt:null,
       needsCrop:false,
       borderCheckPerformed:false
-    });
+    };
+  }
+
+  function qcStateForSample(sampleId) {
+    const store=state.imageQcState||(state.imageQcState={});
+    return store[sampleId]||(store[sampleId]=createQcStateDefaults());
   }
 
   function cropForQcSample(qc, template) {
@@ -5134,6 +5140,11 @@
     if(el.qcOrientation) el.qcOrientation.value=qc.orientation||'vertical';
     if(el.scratchOrientation) el.scratchOrientation.value=qc.orientation||'vertical';
     state.rotation=Number(qc.rotation)||0;
+    const fineRotation=Number(qc.fineRotation)||0;
+    if(el.qcFineRotation) el.qcFineRotation.value=String(fineRotation);
+    if(el.qcFineRotationVal) el.qcFineRotationVal.value=String(fineRotation);
+    if(el.deskewAngle) el.deskewAngle.value=String(fineRotation);
+    if(el.deskewAngleVal) el.deskewAngleVal.value=String(fineRotation);
     const cropRatio=options.preparedInput?null:cropForQcSample(qc,currentGroupCropTemplate());
     state.crop=cropRatio?cropFromRatio(state.imageOriginal,cropRatio):null;
     state.cropManual=!!cropRatio;
@@ -5474,21 +5485,27 @@
     renderImageQcPanel();
   }
 
+  function lockedQcSnapshotEntry(sample, groupId, qc, prepared=false) {
+    return {
+      sampleId:sample.id,
+      groupId,
+      orientation:qc.orientation||'vertical',
+      cropRatio:qc.cropRatio?{...qc.cropRatio}:null,
+      cropSaved:!!qc.cropSaved,
+      prepared:!!prepared,
+      rotation:Number(qc.rotation)||0,
+      fineRotation:Number(qc.fineRotation)||0,
+      autoCropFov:!!qc.autoCropFov,
+      excluded:!!qc.excluded,
+      editedAt:qc.editedAt||null
+    };
+  }
+
   function buildLockedQcSnapshot(samples=selectedGroupSamples()) {
     const group=selectedGroup();
     return samples.map(sample=>{
       const qc=qcStateForSample(sample.id);
-      return {
-        sampleId:sample.id,
-        groupId:group.id,
-        orientation:qc.orientation||'vertical',
-        cropRatio:qc.cropRatio?{...qc.cropRatio}:null,
-        cropSaved:!!qc.cropSaved,
-        prepared:!!preparedQcImage(sample.id),
-        rotation:Number(qc.rotation)||0,
-        excluded:!!qc.excluded,
-        editedAt:qc.editedAt||null
-      };
+      return lockedQcSnapshotEntry(sample,group.id,qc,!!preparedQcImage(sample.id));
     });
   }
 
@@ -5519,7 +5536,9 @@
       scratchOrientation:orientation,
       manualRotation,
       orientationRotation,
-      rotation:(manualRotation+orientationRotation)%360
+      rotation:(manualRotation+orientationRotation)%360,
+      fineRotation:Number(qc.fineRotation)||0,
+      autoCropFov:!!qc.autoCropFov
     };
   }
 

@@ -681,6 +681,83 @@ assert(
   applyQcStateSource[0].includes('state.cropEditing=!!options.openAdjust'),
   'Loaded QC images should open Adjust mode only when requested'
 );
+
+const qcStateDefaultsSource = js.match(/function createQcStateDefaults\(\)\s*\{[\s\S]*?\n  \}/);
+assert(qcStateDefaultsSource, 'app.js should expose createQcStateDefaults');
+const qcStateDefaultsSandbox = {};
+vm.runInNewContext(
+  `${qcStateDefaultsSource[0]}; this.createQcStateDefaults = createQcStateDefaults;`,
+  qcStateDefaultsSandbox
+);
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(qcStateDefaultsSandbox.createQcStateDefaults())),
+  {
+    orientation:'vertical',
+    cropRatio:null,
+    cropSaved:false,
+    rotation:0,
+    fineRotation:0,
+    autoCropFov:false,
+    excluded:false,
+    editedAt:null,
+    needsCrop:false,
+    borderCheckPerformed:false
+  },
+  'New QC image state should include persistent fine-rotation and auto-crop metadata'
+);
+
+const lockedQcEntrySource = js.match(/function lockedQcSnapshotEntry\(sample, groupId, qc, prepared=false\)\s*\{[\s\S]*?\n  \}/);
+assert(lockedQcEntrySource, 'app.js should expose lockedQcSnapshotEntry');
+const lockedQcEntrySandbox = {};
+vm.runInNewContext(
+  `${lockedQcEntrySource[0]}; this.lockedQcSnapshotEntry = lockedQcSnapshotEntry;`,
+  lockedQcEntrySandbox
+);
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(lockedQcEntrySandbox.lockedQcSnapshotEntry(
+    {id:'sample-1'},
+    'group-1',
+    {
+      orientation:'horizontal',
+      cropRatio:{x:0.1,y:0.2,w:0.7,h:0.6},
+      cropSaved:true,
+      rotation:90,
+      fineRotation:'2.5',
+      autoCropFov:1,
+      excluded:false,
+      editedAt:123
+    },
+    true
+  ))),
+  {
+    sampleId:'sample-1',
+    groupId:'group-1',
+    orientation:'horizontal',
+    cropRatio:{x:0.1,y:0.2,w:0.7,h:0.6},
+    cropSaved:true,
+    prepared:true,
+    rotation:90,
+    fineRotation:2.5,
+    autoCropFov:true,
+    excluded:false,
+    editedAt:123
+  },
+  'Locked QC snapshots should normalize and preserve geometry metadata'
+);
+assert(
+  applyQcStateSource[0].includes('el.deskewAngle')&&
+  applyQcStateSource[0].includes('el.deskewAngleVal')&&
+  applyQcStateSource[0].includes('el.qcFineRotation')&&
+  applyQcStateSource[0].includes('el.qcFineRotationVal'),
+  'Applying QC state should safely restore current and future fine-rotation controls'
+);
+const qcSettingsSource = js.match(/function settingsWithQcSnapshot\(settings, sample\)\s*\{[\s\S]*?\n  \}/);
+assert(qcSettingsSource, 'app.js should expose settingsWithQcSnapshot');
+assert(
+  qcSettingsSource[0].includes('fineRotation:Number(qc.fineRotation)||0')&&
+  qcSettingsSource[0].includes('autoCropFov:!!qc.autoCropFov'),
+  'QC-derived settings should preserve locked fine-rotation and auto-crop metadata'
+);
 assert(
   applyQcCropSource[0].includes('loadQcSampleAt(nextIndex,{openAdjust:true})'),
   'Saving a non-final crop should auto-open Adjust on the next image'
