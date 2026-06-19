@@ -382,6 +382,7 @@
     lockedQcSnapshot:null,
     lastQcCropTemplateByGroup:{},
     preparedQcImages:new Map(),
+    qcCropOperationIds:new Map(),
     imageIsPreparedQc:false,
     publicationBuilderState:{},
     objectUrls:[],
@@ -450,15 +451,19 @@
     qcOrientation:      document.getElementById('qcOrientation'),
     qcRotateLeft:       document.getElementById('qcRotateLeft'),
     qcRotateRight:      document.getElementById('qcRotateRight'),
+    qcFineRotation:     document.getElementById('qcFineRotation'),
+    qcFineRotationVal:  document.getElementById('qcFineRotationVal'),
+    qcAngleRulerToggle: document.getElementById('qcAngleRulerToggle'),
+    qcAutoCropFov:      document.getElementById('qcAutoCropFov'),
     qcAdjustCrop:       document.getElementById('qcAdjustCrop'),
     qcSaveCrop:         document.getElementById('qcSaveCrop'),
+    qcResetCrop:        document.getElementById('qcResetCrop'),
     qcUndoCrop:         document.getElementById('qcUndoCrop'),
     qcRedoCrop:         document.getElementById('qcRedoCrop'),
     qcExcludeToggle:    document.getElementById('qcExcludeToggle'),
     goToAnalysisFromQc: document.getElementById('goToAnalysisFromQc'),
     qcPrevImage:        document.getElementById('qcPrevImage'),
     qcNextImage:        document.getElementById('qcNextImage'),
-    qcCopyCrop:         document.getElementById('qcCopyCrop'),
     modeToggle:         document.getElementById('modeToggle'),
     groupSelect:        document.getElementById('groupSelect'),
     groupSelectRow:     document.getElementById('groupSelectRow'),
@@ -3701,9 +3706,11 @@
       orientation:'vertical',
       cropRatio:null,
       cropSaved:false,
+      cropReset:false,
       rotation:0,
       fineRotation:0,
       autoCropFov:false,
+      fovCutoff:null,
       excluded:false,
       editedAt:null,
       needsCrop:false,
@@ -3717,6 +3724,8 @@
   }
 
   function cropForQcSample(qc, template) {
+    if(qc?.cropReset) return null;
+    if(qc?.autoCropFov) return qc.cropRatio||null;
     if(qc?.cropSaved&&qc.cropRatio) return qc.cropRatio;
     return template||qc?.cropRatio||null;
   }
@@ -4894,12 +4903,20 @@
     const displayImg=originalImg;
     const qc=sample?qcStateForSample(sample.id):null;
     const previewCrop=!state.cropEditing?qcPreviewCrop(qc,state.crop):null;
+    const sourceX=previewCrop?.x||0;
+    const sourceY=previewCrop?.y||0;
     const sourceW=previewCrop?.w||displayImg.naturalWidth;
     const sourceH=previewCrop?.h||displayImg.naturalHeight;
+    const previewRotation=state.cropEditing
+      ? 0
+      : (Number(qc?.rotation)||0)+(qc?.orientation==='horizontal'?90:0)+(Number(qc?.fineRotation)||0);
+    const radians=previewRotation*Math.PI/180;
+    const rotatedW=Math.abs(sourceW*Math.cos(radians))+Math.abs(sourceH*Math.sin(radians));
+    const rotatedH=Math.abs(sourceW*Math.sin(radians))+Math.abs(sourceH*Math.cos(radians));
     const maxW=1100, maxH=760;
-    const scale=Math.min(1,maxW/sourceW,maxH/sourceH);
-    const w=Math.max(1,Math.round(sourceW*scale));
-    const h=Math.max(1,Math.round(sourceH*scale));
+    const scale=Math.min(1,maxW/rotatedW,maxH/rotatedH);
+    const w=Math.max(1,Math.round(rotatedW*scale));
+    const h=Math.max(1,Math.round(rotatedH*scale));
 
     if(el.qcCanvas.width!==w) el.qcCanvas.width=w;
     if(el.qcCanvas.height!==h) el.qcCanvas.height=h;
@@ -4907,26 +4924,15 @@
     const ctx=el.qcCanvas.getContext('2d');
     ctx.clearRect(0,0,w,h);
 
-    if(previewCrop) {
-      ctx.drawImage(displayImg,previewCrop.x,previewCrop.y,previewCrop.w,previewCrop.h,0,0,w,h);
-      state.qcPreviewBaseCanvas=null;
-      state.qcPreviewBaseImage=null;
-    } else {
-      if(
-        state.qcPreviewBaseImage!==displayImg
-        || !state.qcPreviewBaseCanvas
-        || state.qcPreviewBaseCanvas.width!==w
-        || state.qcPreviewBaseCanvas.height!==h
-      ) {
-        const base=document.createElement('canvas');
-        base.width=w;
-        base.height=h;
-        base.getContext('2d').drawImage(displayImg,0,0,w,h);
-        state.qcPreviewBaseCanvas=base;
-        state.qcPreviewBaseImage=displayImg;
-      }
-      ctx.drawImage(state.qcPreviewBaseCanvas,0,0);
-    }
+    ctx.save();
+    ctx.translate(w/2,h/2);
+    ctx.rotate(radians);
+    ctx.drawImage(
+      displayImg,
+      sourceX,sourceY,sourceW,sourceH,
+      -sourceW*scale/2,-sourceH*scale/2,sourceW*scale,sourceH*scale
+    );
+    ctx.restore();
 
     if(state.cropEditing) {
       const crop=state.crop||currentCrop();
@@ -4944,10 +4950,54 @@
         ctx.restore();
       }
     }
+    if(state.rulerVisible&&!state.cropEditing) drawAngleRuler(ctx,w,h);
 
     el.qcCanvas.hidden=false;
     el.qcEmpty.hidden=true;
+    el.qcCanvas.classList.toggle('ruler-active',state.rulerVisible&&!state.cropEditing);
     renderQcCropOverlay();
+  }
+
+  function qcCanvasPoint(event) {
+    const rect=el.qcCanvas.getBoundingClientRect();
+    return {
+      x:(event.clientX-rect.left)*el.qcCanvas.width/rect.width,
+      y:(event.clientY-rect.top)*el.qcCanvas.height/rect.height
+    };
+  }
+
+  function beginQcRulerDrag(event) {
+    if(state.cropEditing||!state.rulerVisible||event.button!==0) return;
+    const point=qcCanvasPoint(event);
+    if(!rulerHitTest(point,el.qcCanvas.width,el.qcCanvas.height)) return;
+    state.rulerDragging=true;
+    state.rulerDragStart={
+      x:point.x,
+      y:point.y,
+      offsetX:state.rulerOffsetX||0,
+      offsetY:state.rulerOffsetY||0
+    };
+    el.qcCanvas.classList.add('grabbing');
+    el.qcCanvas.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+  }
+
+  function updateQcRulerDrag(event) {
+    if(!state.rulerDragging||!state.rulerDragStart) return;
+    const point=qcCanvasPoint(event);
+    const start=state.rulerDragStart;
+    state.rulerOffsetX=start.offsetX+(point.x-start.x);
+    state.rulerOffsetY=start.offsetY+(point.y-start.y);
+    drawQcCanvas();
+  }
+
+  function finishQcRulerDrag(event) {
+    if(!state.rulerDragging) return;
+    updateQcRulerDrag(event);
+    state.rulerDragging=false;
+    state.rulerDragStart=null;
+    if(el.qcCanvas.hasPointerCapture?.(event.pointerId)) el.qcCanvas.releasePointerCapture(event.pointerId);
+    el.qcCanvas.classList.remove('grabbing');
   }
 
   function scheduleQcCanvasDraw() {
@@ -5178,13 +5228,16 @@
     }
     if(el.qcOrientation&&qc) el.qcOrientation.value=qc.orientation||'vertical';
     if(el.qcExcludeToggle) el.qcExcludeToggle.checked=!!qc?.excluded;
+    if(el.qcAngleRulerToggle) {
+      el.qcAngleRulerToggle.textContent=state.rulerVisible?'Hide angle ruler':'Show angle ruler';
+      el.qcAngleRulerToggle.classList.toggle('primary',state.rulerVisible);
+    }
     if(el.qcAdjustCrop) el.qcAdjustCrop.disabled=!sample;
     if(el.qcSaveCrop) el.qcSaveCrop.disabled=!state.cropEditing;
+    if(el.qcResetCrop) el.qcResetCrop.disabled=!sample||(!qc?.cropRatio&&!qc?.autoCropFov&&!preparedQcImage(sample.id));
     // Navigation buttons
     if(el.qcPrevImage) el.qcPrevImage.disabled=!samples.length||samples.length<=1;
     if(el.qcNextImage) el.qcNextImage.disabled=!samples.length||samples.length<=1;
-    // Copy crop button - only enabled if current sample has a crop
-    if(el.qcCopyCrop) el.qcCopyCrop.disabled=!sample||!qc?.cropRatio;
     if(el.goToAnalysisFromQc) el.goToAnalysisFromQc.disabled=!samples.length;
     updateQcUndoRedoButtons();
     drawQcCanvas();
@@ -5220,24 +5273,6 @@
     loadQcSampleAt(nextIndex);
   }
 
-  function qcCopyCropToAll() {
-    if(!state.sample||!state.crop) return;
-
-    const samples=selectedGroupSamples();
-    const currentCropRatio=normalizedCropRatio(state.crop,state.imageOriginal||state.image);
-    if(!currentCropRatio) return;
-
-    let copiedCount=0;
-    samples.forEach(sample=>{
-      if(sample.id!==state.sample.id){
-        updateQcState(sample.id,{cropRatio:{...currentCropRatio}});
-        copiedCount++;
-      }
-    });
-
-    setLog(`<strong>Crop copied to ${copiedCount} other image(s).</strong> The same crop ratio will be applied to all images in analysis.`);
-  }
-
   function beginQcCropEdit() {
     if(!state.sample||!state.imageOriginal) return;
     state.crop=state.crop||currentCrop();
@@ -5270,6 +5305,113 @@
     const qc=qcStateForSample(state.sample.id);
     updateQcState(state.sample.id,{rotation:(Number(qc.rotation||0)+delta+360)%360});
     renderImageQcPanel();
+  }
+
+  function normalizeQcFineRotation(value) {
+    return Math.max(-20,Math.min(20,Number(value)||0));
+  }
+
+  function normalizeQcFovCutoff(value) {
+    return Math.max(0,Math.min(180,Number(value)||0));
+  }
+
+  function applyQcFineRotation(value) {
+    if(!state.sample) return;
+    const next=normalizeQcFineRotation(value);
+    updateQcState(state.sample.id,{fineRotation:next});
+    applyQcGeometryControls(qcStateForSample(state.sample.id),el,state.appModule);
+    drawQcCanvas();
+  }
+
+  function toggleQcAngleRuler() {
+    state.rulerVisible=!state.rulerVisible;
+    state.rulerDragging=false;
+    state.rulerDragStart=null;
+    renderImageQcPanel();
+  }
+
+  function qcAutoCropPatch(crop, image, fovCutoff) {
+    const active=!!crop?.active;
+    const cropRatio=active&&image?.naturalWidth&&image?.naturalHeight
+      ? {
+          x:crop.x/image.naturalWidth,
+          y:crop.y/image.naturalHeight,
+          w:crop.w/image.naturalWidth,
+          h:crop.h/image.naturalHeight
+        }
+      : null;
+    return {
+      autoCropFov:true,
+      fovCutoff,
+      cropRatio,
+      cropSaved:active,
+      cropReset:false,
+      needsCrop:false
+    };
+  }
+
+  function resetQcCropPatch() {
+    return {cropRatio:null,cropSaved:false,cropReset:true,autoCropFov:false,fovCutoff:null,needsCrop:false};
+  }
+
+  async function toggleQcAutoCrop(checked) {
+    if(!state.sample||!state.imageOriginal) return;
+    if(!checked) {
+      resetQcCrop();
+      return;
+    }
+    const sample=state.sample;
+    const rawImage=state.imageOriginal;
+    const fovCutoff=normalizeQcFovCutoff(el.fovCutoff?.value);
+    const crop=autoCropForImage(rawImage,true,fovCutoff);
+    const patch=qcAutoCropPatch(crop,rawImage,fovCutoff);
+    const operationId=beginQcCropOperation(sample.id);
+    try {
+      if(crop.active) await prepareQcAnalysisInput(sample,rawImage,crop,operationId);
+      else releasePreparedQcImage(sample.id);
+      if(!isCurrentQcCropOperation(sample.id,operationId)) return;
+      if(state.sample?.id!==sample.id) {
+        releasePreparedQcImage(sample.id);
+        return;
+      }
+      updateQcState(sample.id,patch);
+      state.crop=crop.active?{...crop}:null;
+      state.cropManual=!!crop.active;
+      state.cropEditing=false;
+      state.qcOverlayDrag=null;
+      renderImageQcPanel();
+      setLog(crop.active
+        ? '<strong>FOV crop prepared.</strong> The cropped image is ready for Analysis.'
+        : '<strong>Full FOV retained.</strong> No dark microscope border required cropping.');
+    } catch(error) {
+      if(!isCurrentQcCropOperation(sample.id,operationId)) return;
+      releasePreparedQcImage(sample.id);
+      if(state.sample?.id===sample.id) {
+        updateQcState(sample.id,resetQcCropPatch());
+        state.crop=null;
+        state.cropManual=false;
+        if(el.qcAutoCropFov) el.qcAutoCropFov.checked=false;
+        drawQcCanvas();
+      }
+      setLog(`<strong>Auto crop failed.</strong> ${escHtml(error?.message||String(error))}`);
+    }
+  }
+
+  function resetQcCrop() {
+    if(!state.sample) return;
+    invalidateQcCropOperation(state.sample.id);
+    releasePreparedQcImage(state.sample.id);
+    clearQcCropCache(state.sample.id);
+    invalidateCropCache(state.sample.id);
+    updateQcState(state.sample.id,resetQcCropPatch());
+    state.crop=null;
+    state.cropManual=false;
+    state.cropEditing=false;
+    state.cropDragging=false;
+    state.qcOverlayDrag=null;
+    drawQcCanvas();
+    renderImageQcPanel();
+    setLog('<strong>Crop reset.</strong> The raw image is restored for this QC item.');
   }
 
   // QC Crop cache management
@@ -5308,6 +5450,8 @@
   function clearQcCropCache(sampleId = null) {
     if(sampleId) {
       state.qcCropCache.delete(sampleId);
+      state.qcCropHistory=state.qcCropHistory.filter(entry=>entry.sampleId!==sampleId);
+      state.qcCropHistoryIndex=state.qcCropHistory.length-1;
     } else {
       state.qcCropCache.clear();
       state.qcCropHistory = [];
@@ -5321,13 +5465,27 @@
     state.preparedQcImages.delete(sampleId);
   }
 
+  function beginQcCropOperation(sampleId) {
+    const operationId=(state.qcCropOperationIds.get(sampleId)||0)+1;
+    state.qcCropOperationIds.set(sampleId,operationId);
+    return operationId;
+  }
+
+  function invalidateQcCropOperation(sampleId) {
+    beginQcCropOperation(sampleId);
+  }
+
+  function isCurrentQcCropOperation(sampleId, operationId) {
+    return operationId===null||state.qcCropOperationIds.get(sampleId)===operationId;
+  }
+
   function canvasPngBlob(canvas) {
     return new Promise((resolve,reject)=>{
       canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Could not create prepared crop image.')),'image/png');
     });
   }
 
-  async function prepareQcAnalysisInput(sample, rawImage, crop) {
+  async function prepareQcAnalysisInput(sample, rawImage, crop, operationId=null) {
     if(!sample||!rawImage||!crop) return null;
     const safeCrop=clampCrop({...crop},rawImage);
     const canvas=document.createElement('canvas');
@@ -5339,6 +5497,7 @@
       0,0,safeCrop.w,safeCrop.h
     );
     const blob=await canvasPngBlob(canvas);
+    if(!isCurrentQcCropOperation(sample.id,operationId)) return null;
     releasePreparedQcImage(sample.id);
     const url=URL.createObjectURL(blob);
     const prepared={
@@ -5452,10 +5611,18 @@
     const samples=selectedGroupSamples();
     const currentIndex=samples.findIndex(item=>item.id===sample.id);
     const group=selectedGroup();
+    const operationId=beginQcCropOperation(sample.id);
     if(el.qcSaveCrop) el.qcSaveCrop.disabled=true;
     setLog('<strong>Preparing crop:</strong> creating the temporary Analysis image...');
-    return prepareQcAnalysisInput(sample,rawImage,savedCrop).then(()=>{
-      updateQcState(sample.id,{cropRatio:{...cropRatio},cropSaved:true});
+    return prepareQcAnalysisInput(sample,rawImage,savedCrop,operationId).then(prepared=>{
+      if(!prepared||!isCurrentQcCropOperation(sample.id,operationId)) return;
+      updateQcState(sample.id,{
+        cropRatio:{...cropRatio},
+        cropSaved:true,
+        cropReset:false,
+        autoCropFov:false,
+        fovCutoff:null
+      });
       if(group?.id) state.lastQcCropTemplateByGroup[group.id]={...cropRatio};
       state.crop={...savedCrop};
       state.cropEditing=false;
@@ -5466,6 +5633,7 @@
       renderImageQcPanel();
       if(nextIndex!==null) loadQcSampleAt(nextIndex,{openAdjust:true});
     }).catch(error=>{
+      if(!isCurrentQcCropOperation(sample.id,operationId)) return;
       state.cropEditing=true;
       state.cropDragging=false;
       state.qcOverlayDrag=null;
@@ -5492,6 +5660,7 @@
       rotation:Number(qc.rotation)||0,
       fineRotation:Number(qc.fineRotation)||0,
       autoCropFov:!!qc.autoCropFov,
+      fovCutoff:qc.fovCutoff!==null&&Number.isFinite(Number(qc.fovCutoff))?Number(qc.fovCutoff):null,
       excluded:!!qc.excluded,
       editedAt:qc.editedAt||null
     };
@@ -5532,7 +5701,8 @@
       rotation:(manualRotation+orientationRotation)%360,
       fineRotation,
       deskew:fineRotation,
-      autoCropFov:!!qc.autoCropFov
+      autoCropFov:!!qc.autoCropFov,
+      fovCutoff:qc.fovCutoff!==null&&Number.isFinite(Number(qc.fovCutoff))?Number(qc.fovCutoff):settings.fovCutoff
     };
   }
 
@@ -7628,15 +7798,24 @@
     if(el.qcOrientation) el.qcOrientation.addEventListener('change',()=>applyQcOrientation(el.qcOrientation.value));
     if(el.qcRotateLeft) el.qcRotateLeft.addEventListener('click',()=>applyQcRotation(-90));
     if(el.qcRotateRight) el.qcRotateRight.addEventListener('click',()=>applyQcRotation(90));
+    bindNumberPair(el.qcFineRotation,el.qcFineRotationVal,()=>applyQcFineRotation(el.qcFineRotation.value));
+    if(el.qcAngleRulerToggle) el.qcAngleRulerToggle.addEventListener('click',toggleQcAngleRuler);
+    if(el.qcAutoCropFov) el.qcAutoCropFov.addEventListener('change',()=>toggleQcAutoCrop(el.qcAutoCropFov.checked));
     if(el.qcAdjustCrop) el.qcAdjustCrop.addEventListener('click',beginQcCropEdit);
     if(el.qcSaveCrop) el.qcSaveCrop.addEventListener('click',applyQcCrop);
+    if(el.qcResetCrop) el.qcResetCrop.addEventListener('click',resetQcCrop);
     if(el.qcExcludeToggle) el.qcExcludeToggle.addEventListener('change',()=>toggleQcExclude(el.qcExcludeToggle.checked));
     if(el.qcUndoCrop) el.qcUndoCrop.addEventListener('click',undoQcCrop);
     if(el.qcRedoCrop) el.qcRedoCrop.addEventListener('click',redoQcCrop);
     if(el.qcPrevImage) el.qcPrevImage.addEventListener('click',qcPreviousImage);
     if(el.qcNextImage) el.qcNextImage.addEventListener('click',qcNextImage);
-    if(el.qcCopyCrop) el.qcCopyCrop.addEventListener('click',qcCopyCropToAll);
     if(el.goToAnalysisFromQc) el.goToAnalysisFromQc.addEventListener('click',continueFromQcToAnalysis);
+    if(el.qcCanvas) {
+      el.qcCanvas.addEventListener('pointerdown',beginQcRulerDrag);
+      el.qcCanvas.addEventListener('pointermove',updateQcRulerDrag);
+      el.qcCanvas.addEventListener('pointerup',finishQcRulerDrag);
+      el.qcCanvas.addEventListener('pointercancel',finishQcRulerDrag);
+    }
     if(el.qcCropOverlay) {
       el.qcCropOverlay.addEventListener('pointerdown',beginQcOverlayDrag);
       el.qcCropOverlay.addEventListener('pointermove',updateQcOverlayDrag);

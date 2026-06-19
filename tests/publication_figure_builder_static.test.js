@@ -622,6 +622,16 @@ assert.deepStrictEqual(
   latestTemplate,
   'An unsaved image should start from the latest group crop template'
 );
+assert.strictEqual(
+  cropChoiceSandbox.cropForQcSample({autoCropFov:true,cropSaved:false,cropRatio:null},latestTemplate),
+  null,
+  'A completed full-field auto-crop check should not inherit a manual crop template'
+);
+assert.strictEqual(
+  cropChoiceSandbox.cropForQcSample({cropReset:true,cropSaved:false,cropRatio:null},latestTemplate),
+  null,
+  'A reset crop should show the raw image without deleting the group crop template'
+);
 
 const qcPreviewCropSource = js.match(/function qcPreviewCrop\(qc, crop\)\s*\{[\s\S]*?\n  \}/);
 assert(qcPreviewCropSource, 'app.js should expose qcPreviewCrop');
@@ -657,8 +667,8 @@ assert(
   'QC canvas should select a saved crop for normal preview'
 );
 assert(
-  drawQcCanvasSource[0].includes('drawImage(displayImg,previewCrop.x,previewCrop.y'),
-  'QC canvas should draw only the saved crop bounds'
+  drawQcCanvasSource[0].includes('sourceX,sourceY,sourceW,sourceH'),
+  'QC canvas should draw only the selected saved-crop source bounds'
 );
 
 const applyQcCropSource = js.match(/function applyQcCrop\(\)\s*\{[\s\S]*?\n  \}/);
@@ -695,9 +705,11 @@ assert.deepStrictEqual(
     orientation:'vertical',
     cropRatio:null,
     cropSaved:false,
+    cropReset:false,
     rotation:0,
     fineRotation:0,
     autoCropFov:false,
+    fovCutoff:null,
     excluded:false,
     editedAt:null,
     needsCrop:false,
@@ -724,6 +736,7 @@ assert.deepStrictEqual(
       rotation:90,
       fineRotation:'2.5',
       autoCropFov:1,
+      fovCutoff:36,
       excluded:false,
       editedAt:123
     },
@@ -739,6 +752,7 @@ assert.deepStrictEqual(
     rotation:90,
     fineRotation:2.5,
     autoCropFov:true,
+    fovCutoff:36,
     excluded:false,
     editedAt:123
   },
@@ -759,13 +773,14 @@ vm.runInNewContext(
 );
 assert.deepStrictEqual(
   JSON.parse(JSON.stringify(normalizeLockedQcSettingsSandbox.normalizeLockedQcSettings(
-    {autoCrop:true,cropRatio:{x:0,y:0,w:1,h:1},deskew:9,scratchOrientation:'vertical'},
+    {autoCrop:true,cropRatio:{x:0,y:0,w:1,h:1},deskew:9,scratchOrientation:'vertical',fovCutoff:18},
     {
       orientation:'horizontal',
       cropRatio:{x:0.1,y:0.2,w:0.7,h:0.6},
       rotation:90,
       fineRotation:'2.5',
-      autoCropFov:true
+      autoCropFov:true,
+      fovCutoff:36
     },
     false,
     90
@@ -780,7 +795,8 @@ assert.deepStrictEqual(
     orientationRotation:90,
     rotation:180,
     fineRotation:2.5,
-    autoCropFov:true
+    autoCropFov:true,
+    fovCutoff:36
   },
   'Locked QC settings should map fine rotation to deskew, preserve audit metadata, and disable Analysis auto-crop'
 );
@@ -843,6 +859,182 @@ assert.strictEqual(
   legacyAnalysisControls.autoCropFov.checked,
   true,
   'QC context may restore auto-crop into the legacy control until the dedicated QC control exists'
+);
+
+[
+  'qcFineRotation',
+  'qcFineRotationVal',
+  'qcAngleRulerToggle',
+  'qcAutoCropFov',
+  'qcResetCrop'
+].forEach(id => {
+  assert(html.includes(`id="${id}"`), `Image QC should expose #${id}`);
+});
+assert(!html.includes('id="qcCopyCrop"'), 'Image QC should not expose duplicate copy-to-all crop control');
+assert(!js.includes('qcCopyCropToAll'), 'app.js should remove the duplicate copy-to-all crop handler');
+assert(!js.includes('qcCopyCrop:'), 'app.js should remove the duplicate copy-to-all DOM reference');
+
+const normalizeQcFineRotationSource = js.match(/function normalizeQcFineRotation\(value\)\s*\{[\s\S]*?\n  \}/);
+assert(normalizeQcFineRotationSource, 'app.js should expose normalizeQcFineRotation');
+const normalizeQcFineRotationSandbox = {};
+vm.runInNewContext(
+  `${normalizeQcFineRotationSource[0]}; this.normalizeQcFineRotation = normalizeQcFineRotation;`,
+  normalizeQcFineRotationSandbox
+);
+assert.strictEqual(normalizeQcFineRotationSandbox.normalizeQcFineRotation('2.5'),2.5);
+assert.strictEqual(normalizeQcFineRotationSandbox.normalizeQcFineRotation(50),20);
+assert.strictEqual(normalizeQcFineRotationSandbox.normalizeQcFineRotation(-50),-20);
+assert.strictEqual(normalizeQcFineRotationSandbox.normalizeQcFineRotation('bad'),0);
+
+const normalizeQcFovCutoffSource = js.match(/function normalizeQcFovCutoff\(value\)\s*\{[\s\S]*?\n  \}/);
+assert(normalizeQcFovCutoffSource, 'app.js should expose normalizeQcFovCutoff');
+const normalizeQcFovCutoffSandbox = {};
+vm.runInNewContext(
+  `${normalizeQcFovCutoffSource[0]}; this.normalizeQcFovCutoff = normalizeQcFovCutoff;`,
+  normalizeQcFovCutoffSandbox
+);
+assert.strictEqual(normalizeQcFovCutoffSandbox.normalizeQcFovCutoff('36'),36);
+assert.strictEqual(normalizeQcFovCutoffSandbox.normalizeQcFovCutoff(250),180);
+assert.strictEqual(normalizeQcFovCutoffSandbox.normalizeQcFovCutoff(-10),0);
+assert.strictEqual(normalizeQcFovCutoffSandbox.normalizeQcFovCutoff('bad'),0);
+
+const qcAutoCropPatchSource = js.match(/function qcAutoCropPatch\(crop, image, fovCutoff\)\s*\{[\s\S]*?\n  \}/);
+assert(qcAutoCropPatchSource, 'app.js should expose qcAutoCropPatch');
+const qcAutoCropPatchSandbox = {};
+vm.runInNewContext(
+  `${qcAutoCropPatchSource[0]}; this.qcAutoCropPatch = qcAutoCropPatch;`,
+  qcAutoCropPatchSandbox
+);
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(qcAutoCropPatchSandbox.qcAutoCropPatch(
+    {x:10,y:20,w:80,h:60,active:true},
+    {naturalWidth:100,naturalHeight:100},
+    36
+  ))),
+  {
+    autoCropFov:true,
+    fovCutoff:36,
+    cropRatio:{x:0.1,y:0.2,w:0.8,h:0.6},
+    cropSaved:true,
+    cropReset:false,
+    needsCrop:false
+  },
+  'Auto FOV crop should persist its cutoff and normalized saved crop'
+);
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(qcAutoCropPatchSandbox.qcAutoCropPatch(
+    {x:0,y:0,w:100,h:100,active:false},
+    {naturalWidth:100,naturalHeight:100},
+    18
+  ))),
+  {
+    autoCropFov:true,
+    fovCutoff:18,
+    cropRatio:null,
+    cropSaved:false,
+    cropReset:false,
+    needsCrop:false
+  },
+  'A full-field auto crop should keep the preference without inventing crop metadata'
+);
+
+const resetQcCropPatchSource = js.match(/function resetQcCropPatch\(\)\s*\{[\s\S]*?\n  \}/);
+assert(resetQcCropPatchSource, 'app.js should expose resetQcCropPatch');
+const resetQcCropPatchSandbox = {};
+vm.runInNewContext(
+  `${resetQcCropPatchSource[0]}; this.resetQcCropPatch = resetQcCropPatch;`,
+  resetQcCropPatchSandbox
+);
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(resetQcCropPatchSandbox.resetQcCropPatch())),
+  {cropRatio:null,cropSaved:false,cropReset:true,autoCropFov:false,fovCutoff:null,needsCrop:false},
+  'Reset crop should clear every QC crop marker'
+);
+
+const applyQcFineRotationSource = js.match(/function applyQcFineRotation\(value\)\s*\{[\s\S]*?\n  \}/);
+assert(applyQcFineRotationSource, 'app.js should expose applyQcFineRotation');
+assert(
+  applyQcFineRotationSource[0].includes('updateQcState(state.sample.id,{fineRotation:next})'),
+  'Fine rotation should update image-level QC state'
+);
+assert(
+  applyQcFineRotationSource[0].includes('drawQcCanvas()'),
+  'Fine rotation should redraw the QC preview'
+);
+assert(
+  !applyQcFineRotationSource[0].includes('scheduleAutoApply') &&
+  !applyQcFineRotationSource[0].includes('runSegmentation'),
+  'Fine rotation in QC should never auto-run Analysis'
+);
+
+const toggleQcAutoCropSource = js.match(/async function toggleQcAutoCrop\(checked\)\s*\{[\s\S]*?\n  \}/);
+assert(toggleQcAutoCropSource, 'app.js should expose toggleQcAutoCrop');
+assert(
+  toggleQcAutoCropSource[0].includes('normalizeQcFovCutoff(el.fovCutoff?.value)'),
+  'QC auto crop should safely normalize the Analysis-owned FOV cutoff internally'
+);
+assert(
+  toggleQcAutoCropSource[0].includes('prepareQcAnalysisInput'),
+  'QC auto crop should prepare the cropped Analysis input'
+);
+assert(
+  toggleQcAutoCropSource[0].includes('releasePreparedQcImage(sample.id)'),
+  'QC auto crop should release stale prepared input when the user changes samples mid-operation'
+);
+assert(
+  toggleQcAutoCropSource[0].includes('beginQcCropOperation(sample.id)') &&
+  toggleQcAutoCropSource[0].includes('isCurrentQcCropOperation(sample.id,operationId)'),
+  'QC auto crop should ignore stale async preparation results for the same sample'
+);
+
+const resetQcCropSource = js.match(/function resetQcCrop\(\)\s*\{[\s\S]*?\n  \}/);
+assert(resetQcCropSource, 'app.js should expose resetQcCrop');
+[
+  'invalidateQcCropOperation(state.sample.id)',
+  'releasePreparedQcImage(state.sample.id)',
+  'clearQcCropCache(state.sample.id)',
+  'invalidateCropCache(state.sample.id)',
+  'drawQcCanvas()'
+].forEach(fragment => {
+  assert(resetQcCropSource[0].includes(fragment), `Reset crop should perform ${fragment}`);
+});
+assert(
+  !resetQcCropSource[0].includes('delete state.lastQcCropTemplateByGroup'),
+  'Reset crop should preserve the latest group template for continuous crop workflow'
+);
+
+const clearQcCropCacheSource = js.match(/function clearQcCropCache\(sampleId = null\)\s*\{[\s\S]*?\n  \}/);
+assert(clearQcCropCacheSource, 'app.js should expose clearQcCropCache');
+assert(
+  clearQcCropCacheSource[0].includes('entry.sampleId!==sampleId'),
+  'Clearing a sample crop cache should also remove that sample from crop history'
+);
+
+const prepareQcAnalysisInputSource = js.match(/async function prepareQcAnalysisInput\(sample, rawImage, crop, operationId=null\)\s*\{[\s\S]*?\n  \}/);
+assert(prepareQcAnalysisInputSource, 'app.js should expose race-safe prepareQcAnalysisInput');
+assert(
+  prepareQcAnalysisInputSource[0].includes('isCurrentQcCropOperation(sample.id,operationId)'),
+  'Prepared QC input should be stored only while its crop operation is current'
+);
+
+const lockedQcSnapshotEntrySource = js.match(/function lockedQcSnapshotEntry\(sample, groupId, qc, prepared=false\)\s*\{[\s\S]*?\n  \}/);
+assert(lockedQcSnapshotEntrySource, 'app.js should expose lockedQcSnapshotEntry');
+assert(
+  lockedQcSnapshotEntrySource[0].includes('fovCutoff:'),
+  'Locked QC metadata should retain the cutoff used for auto crop'
+);
+
+assert(
+  drawQcCanvasSource[0].includes('drawAngleRuler(ctx,w,h)'),
+  'QC canvas should render the reusable angle ruler'
+);
+assert(
+  js.includes('function qcCanvasPoint(event)'),
+  'QC canvas should expose pointer coordinates for ruler dragging'
+);
+assert(
+  js.includes("el.qcCanvas.addEventListener('pointerdown'"),
+  'QC canvas should support direct ruler interaction'
 );
 
 const leaveCropEditSource = js.match(/function leaveCropEdit\(apply=true\)\s*\{[\s\S]*?\n  \}/);

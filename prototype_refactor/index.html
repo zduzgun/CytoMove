@@ -493,17 +493,31 @@
                 <button class="btn" id="qcRotateLeft" type="button">Rotate left</button>
                 <button class="btn" id="qcRotateRight" type="button">Rotate right</button>
               </div>
-              <button class="btn" id="qcAdjustCrop" type="button">Adjust crop</button>
-              <button class="btn" id="qcSaveCrop" type="button" disabled>Save crop</button>
-              <div class="qc-tool-row">
+              <div class="control qc-fine-rotation">
+                <label for="qcFineRotation">Fine rotation (deg)</label>
+                <div class="range-row">
+                  <input id="qcFineRotation" type="range" min="-20" max="20" value="0" step="0.5">
+                  <input class="value-input" id="qcFineRotationVal" type="number" min="-20" max="20" value="0" step="0.5">
+                </div>
+              </div>
+              <button class="btn" id="qcAngleRulerToggle" type="button">Show angle ruler</button>
+              <label class="check-row qc-auto-crop" for="qcAutoCropFov">
+                <input id="qcAutoCropFov" type="checkbox">
+                Auto crop FOV
+              </label>
+              <div class="qc-tool-row qc-crop-actions">
+                <button class="btn" id="qcAdjustCrop" type="button">Adjust crop</button>
+                <button class="btn" id="qcSaveCrop" type="button" disabled>Save crop</button>
+              </div>
+              <button class="btn" id="qcResetCrop" type="button">Reset crop</button>
+              <div class="qc-tool-row qc-history-actions">
                 <button class="btn" id="qcUndoCrop" type="button" disabled title="Undo last crop">↶ Undo</button>
                 <button class="btn" id="qcRedoCrop" type="button" disabled title="Redo crop">↷ Redo</button>
               </div>
-              <div class="qc-tool-row">
+              <div class="qc-tool-row qc-navigation">
                 <button class="btn" id="qcPrevImage" type="button" title="Previous image">← Previous</button>
                 <button class="btn" id="qcNextImage" type="button" title="Next image">Next →</button>
               </div>
-              <button class="btn" id="qcCopyCrop" type="button" title="Copy crop to all images">Copy crop to all images</button>
               <label class="check-row" for="qcExcludeToggle">
                 <input id="qcExcludeToggle" type="checkbox">
                 Exclude from analysis
