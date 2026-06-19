@@ -745,18 +745,116 @@ assert.deepStrictEqual(
   'Locked QC snapshots should normalize and preserve geometry metadata'
 );
 assert(
-  applyQcStateSource[0].includes('el.deskewAngle')&&
-  applyQcStateSource[0].includes('el.deskewAngleVal')&&
-  applyQcStateSource[0].includes('el.qcFineRotation')&&
-  applyQcStateSource[0].includes('el.qcFineRotationVal'),
-  'Applying QC state should safely restore current and future fine-rotation controls'
+  applyQcStateSource[0].includes('applyQcGeometryControls(qc,el,state.appModule)'),
+  'Applying QC state should restore geometry through the compatible control adapter'
 );
 const qcSettingsSource = js.match(/function settingsWithQcSnapshot\(settings, sample\)\s*\{[\s\S]*?\n  \}/);
 assert(qcSettingsSource, 'app.js should expose settingsWithQcSnapshot');
+const normalizeLockedQcSettingsSource = js.match(/function normalizeLockedQcSettings\(settings, qc, prepared=false, orientationRotation=0\)\s*\{[\s\S]*?\n  \}/);
+assert(normalizeLockedQcSettingsSource, 'app.js should expose normalizeLockedQcSettings');
+const normalizeLockedQcSettingsSandbox = {};
+vm.runInNewContext(
+  `${normalizeLockedQcSettingsSource[0]}; this.normalizeLockedQcSettings = normalizeLockedQcSettings;`,
+  normalizeLockedQcSettingsSandbox
+);
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(normalizeLockedQcSettingsSandbox.normalizeLockedQcSettings(
+    {autoCrop:true,cropRatio:{x:0,y:0,w:1,h:1},deskew:9,scratchOrientation:'vertical'},
+    {
+      orientation:'horizontal',
+      cropRatio:{x:0.1,y:0.2,w:0.7,h:0.6},
+      rotation:90,
+      fineRotation:'2.5',
+      autoCropFov:true
+    },
+    false,
+    90
+  ))),
+  {
+    autoCrop:false,
+    cropRatio:{x:0.1,y:0.2,w:0.7,h:0.6},
+    deskew:2.5,
+    scratchOrientation:'horizontal',
+    preparedQcInput:false,
+    manualRotation:90,
+    orientationRotation:90,
+    rotation:180,
+    fineRotation:2.5,
+    autoCropFov:true
+  },
+  'Locked QC settings should map fine rotation to deskew, preserve audit metadata, and disable Analysis auto-crop'
+);
+assert.strictEqual(
+  normalizeLockedQcSettingsSandbox.normalizeLockedQcSettings(
+    {autoCrop:true,cropRatio:{x:0,y:0,w:1,h:1}},
+    {cropRatio:{x:0.1,y:0.2,w:0.7,h:0.6}},
+    true,
+    0
+  ).cropRatio,
+  null,
+  'Prepared QC images should not be cropped a second time'
+);
+
+const applyQcGeometryControlsSource = js.match(/function applyQcGeometryControls\(qc, controls, appModule\)\s*\{[\s\S]*?\n  \}/);
+assert(applyQcGeometryControlsSource, 'app.js should expose applyQcGeometryControls');
+const applyQcGeometryControlsSandbox = {};
+vm.runInNewContext(
+  `${applyQcGeometryControlsSource[0]}; this.applyQcGeometryControls = applyQcGeometryControls;`,
+  applyQcGeometryControlsSandbox
+);
+assert.doesNotThrow(
+  ()=>applyQcGeometryControlsSandbox.applyQcGeometryControls({}, {}, 'analysis'),
+  'Geometry restoration should tolerate controls that do not exist yet'
+);
+const futureQcControls = {qcFineRotation:{value:''},qcFineRotationVal:{value:''},qcAutoCropFov:{checked:false}};
+applyQcGeometryControlsSandbox.applyQcGeometryControls(
+  {fineRotation:'-1.25',autoCropFov:true},
+  futureQcControls,
+  'analysis'
+);
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(futureQcControls)),
+  {qcFineRotation:{value:'-1.25'},qcFineRotationVal:{value:'-1.25'},qcAutoCropFov:{checked:true}},
+  'Future QC controls should restore geometry metadata without requiring legacy controls'
+);
+const legacyAnalysisControls = {
+  deskewAngle:{value:''},
+  deskewAngleVal:{value:''},
+  autoCropFov:{checked:false}
+};
+applyQcGeometryControlsSandbox.applyQcGeometryControls(
+  {fineRotation:3,autoCropFov:true},
+  legacyAnalysisControls,
+  'analysis'
+);
+assert.strictEqual(legacyAnalysisControls.deskewAngle.value,'3');
+assert.strictEqual(legacyAnalysisControls.deskewAngleVal.value,'3');
+assert.strictEqual(
+  legacyAnalysisControls.autoCropFov.checked,
+  false,
+  'Analysis should not restore QC auto-crop into the legacy Analysis control'
+);
+applyQcGeometryControlsSandbox.applyQcGeometryControls(
+  {fineRotation:3,autoCropFov:true},
+  legacyAnalysisControls,
+  'qc'
+);
+assert.strictEqual(
+  legacyAnalysisControls.autoCropFov.checked,
+  true,
+  'QC context may restore auto-crop into the legacy control until the dedicated QC control exists'
+);
+
+const leaveCropEditSource = js.match(/function leaveCropEdit\(apply=true\)\s*\{[\s\S]*?\n  \}/);
+assert(leaveCropEditSource, 'app.js should expose leaveCropEdit');
+const resetCropAndZoomSource = js.match(/function resetCropAndZoom\(\)\s*\{[\s\S]*?\n  \}/);
+assert(resetCropAndZoomSource, 'app.js should expose resetCropAndZoom');
 assert(
-  qcSettingsSource[0].includes('fineRotation:Number(qc.fineRotation)||0')&&
-  qcSettingsSource[0].includes('autoCropFov:!!qc.autoCropFov'),
-  'QC-derived settings should preserve locked fine-rotation and auto-crop metadata'
+  !leaveCropEditSource[0].includes('updateQcState')&&
+  !leaveCropEditSource[0].includes('resetLockedQcSnapshot')&&
+  !resetCropAndZoomSource[0].includes('updateQcState')&&
+  !resetCropAndZoomSource[0].includes('resetLockedQcSnapshot'),
+  'Legacy Analysis crop helpers should never mutate QC working state or reset its locked snapshot'
 );
 assert(
   applyQcCropSource[0].includes('loadQcSampleAt(nextIndex,{openAdjust:true})'),

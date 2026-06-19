@@ -945,11 +945,6 @@
     state.cropManual=!!apply;
     el.applyCrop.disabled=true;
     el.canvas.classList.remove('grabbing');
-    // Sync QC state when crop changes in analysis mode
-    if(apply&&state.sample&&state.lockedQcSnapshot) {
-      updateQcState(state.sample.id,{cropRatio:normalizedCropRatio(state.crop,state.imageOriginal||state.image)});
-      invalidateCropCache(state.sample.id); // Clear cache for this sample
-    }
     if(apply) {
       drawLoadedImagePreview('<strong>Crop applied.</strong> Auto-applying in 1 second...');
       scheduleAutoApply('<strong>Crop applied.</strong> Auto-applying in 1 second...');
@@ -957,11 +952,6 @@
   }
 
   function resetCropAndZoom() {
-    // Sync QC state when crop is reset in analysis mode
-    if(state.sample&&state.lockedQcSnapshot) {
-      updateQcState(state.sample.id,{cropRatio:null});
-      invalidateCropCache(state.sample.id); // Clear cache for this sample
-    }
     state.crop=null; state.cropManual=false; state.cropEditing=false; state.cropDragging=false; state.cropDragMode='move';
     state.zoom=1; state.panX=0; state.panY=0;
     el.canvas.style.transform='';
@@ -5133,6 +5123,16 @@
     }
   }
 
+  function applyQcGeometryControls(qc, controls, appModule) {
+    const fineRotation=Number(qc?.fineRotation)||0;
+    if(controls.qcFineRotation) controls.qcFineRotation.value=String(fineRotation);
+    if(controls.qcFineRotationVal) controls.qcFineRotationVal.value=String(fineRotation);
+    if(controls.deskewAngle) controls.deskewAngle.value=String(fineRotation);
+    if(controls.deskewAngleVal) controls.deskewAngleVal.value=String(fineRotation);
+    if(controls.qcAutoCropFov) controls.qcAutoCropFov.checked=!!qc?.autoCropFov;
+    if(appModule==='qc'&&controls.autoCropFov) controls.autoCropFov.checked=!!qc?.autoCropFov;
+  }
+
   function applyQcStateToCurrentImage(sample=state.sample, options={}) {
     if(!sample||!state.imageOriginal) return;
     const qc=qcStateForSample(sample.id);
@@ -5140,11 +5140,7 @@
     if(el.qcOrientation) el.qcOrientation.value=qc.orientation||'vertical';
     if(el.scratchOrientation) el.scratchOrientation.value=qc.orientation||'vertical';
     state.rotation=Number(qc.rotation)||0;
-    const fineRotation=Number(qc.fineRotation)||0;
-    if(el.qcFineRotation) el.qcFineRotation.value=String(fineRotation);
-    if(el.qcFineRotationVal) el.qcFineRotationVal.value=String(fineRotation);
-    if(el.deskewAngle) el.deskewAngle.value=String(fineRotation);
-    if(el.deskewAngleVal) el.deskewAngleVal.value=String(fineRotation);
+    applyQcGeometryControls(qc,el,state.appModule);
     const cropRatio=options.preparedInput?null:cropForQcSample(qc,currentGroupCropTemplate());
     state.crop=cropRatio?cropFromRatio(state.imageOriginal,cropRatio):null;
     state.cropManual=!!cropRatio;
@@ -5521,25 +5517,32 @@
     return !!qcSnapshotForSample(sampleId)?.excluded;
   }
 
+  function normalizeLockedQcSettings(settings, qc, prepared=false, orientationRotation=0) {
+    const orientation=qc.orientation||settings.scratchOrientation||'vertical';
+    const manualRotation=Number(qc.rotation)||0;
+    const fineRotation=Number(qc.fineRotation)||0;
+    return {
+      ...settings,
+      cropRatio:prepared?null:(qc.cropRatio||null),
+      autoCrop:false,
+      preparedQcInput:!!prepared,
+      scratchOrientation:orientation,
+      manualRotation,
+      orientationRotation,
+      rotation:(manualRotation+orientationRotation)%360,
+      fineRotation,
+      deskew:fineRotation,
+      autoCropFov:!!qc.autoCropFov
+    };
+  }
+
   function settingsWithQcSnapshot(settings, sample) {
     const qc=sample?qcSnapshotForSample(sample.id):null;
     if(!qc) return settings;
     const prepared=!!preparedQcImage(sample.id);
     const orientation=qc.orientation||settings.scratchOrientation||'vertical';
     const orientationRotation=orientationRotationDeg(orientation);
-    const manualRotation=Number(qc.rotation)||0;
-    return {
-      ...settings,
-      cropRatio:prepared?null:(qc.cropRatio||settings.cropRatio||null),
-      autoCrop:prepared?false:settings.autoCrop,
-      preparedQcInput:prepared,
-      scratchOrientation:orientation,
-      manualRotation,
-      orientationRotation,
-      rotation:(manualRotation+orientationRotation)%360,
-      fineRotation:Number(qc.fineRotation)||0,
-      autoCropFov:!!qc.autoCropFov
-    };
+    return normalizeLockedQcSettings(settings,qc,prepared,orientationRotation);
   }
 
   function continueFromQcToAnalysis() {
