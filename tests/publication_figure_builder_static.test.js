@@ -58,6 +58,55 @@ assert(
   assert(html.includes(text), `index.html should contain "${text}"`);
 });
 
+const removedAnalysisGeometryIds = [
+  'scratchOrientation',
+  'deskewAngle',
+  'angleRulerToggle',
+  'autoCropFov',
+  'applyCropRatioGroup',
+  'adjustCrop',
+  'applyCrop',
+  'resetCrop'
+];
+removedAnalysisGeometryIds.forEach(id => {
+  assert(
+    !html.includes(`id="${id}"`),
+    `Analysis should not expose duplicate geometry control #${id}`
+  );
+  assert(
+    !new RegExp(`\\b${id}:\\s*document\\.getElementById\\('${id}'\\)`).test(js),
+    `app.js should not query removed Analysis geometry control #${id}`
+  );
+});
+[
+  'bindNumberPair(el.deskewAngle',
+  'el.angleRulerToggle.addEventListener',
+  'bindPendingControl(el.scratchOrientation',
+  'bindPendingControl(el.autoCropFov',
+  'bindPendingControl(el.applyCropRatioGroup',
+  'el.adjustCrop.addEventListener',
+  'el.applyCrop.addEventListener',
+  'el.resetCrop.addEventListener'
+].forEach(eventPath => {
+  assert(
+    !js.includes(eventPath),
+    `app.js should not bind removed Analysis geometry path ${eventPath}`
+  );
+});
+[
+  'fovCutoff',
+  'microscopeMode',
+  'qcOrientation',
+  'qcFineRotation',
+  'qcAngleRulerToggle',
+  'qcAutoCropFov',
+  'qcAdjustCrop',
+  'qcSaveCrop',
+  'qcResetCrop'
+].forEach(id => {
+  assert(html.includes(`id="${id}"`), `#${id} should remain available under its owning panel`);
+});
+
 [
   'qcSnapshotForSample',
   'sampleExcludedFromAnalysis',
@@ -841,8 +890,10 @@ assert.deepStrictEqual(
   'Locked QC snapshots should normalize and preserve geometry metadata'
 );
 assert(
-  applyQcStateSource[0].includes('applyQcGeometryControls(qc,el,state.appModule)'),
-  'Applying QC state should restore geometry through the compatible control adapter'
+  applyQcStateSource[0].includes("state.analysisGeometry.orientation=qc.orientation||'vertical'") &&
+  applyQcStateSource[0].includes('state.analysisGeometry.fineRotation=Number(qc.fineRotation)||0') &&
+  applyQcStateSource[0].includes('applyQcGeometryControls(qc,el)'),
+  'Applying QC state should restore Analysis geometry state while updating only QC controls'
 );
 const qcSettingsSource = js.match(/function settingsWithQcSnapshot\(settings, sample\)\s*\{[\s\S]*?\n  \}/);
 assert(qcSettingsSource, 'app.js should expose settingsWithQcSnapshot');
@@ -893,7 +944,7 @@ assert.strictEqual(
   'Prepared QC images should not be cropped a second time'
 );
 
-const applyQcGeometryControlsSource = js.match(/function applyQcGeometryControls\(qc, controls, appModule\)\s*\{[\s\S]*?\n  \}/);
+const applyQcGeometryControlsSource = js.match(/function applyQcGeometryControls\(qc, controls\)\s*\{[\s\S]*?\n  \}/);
 assert(applyQcGeometryControlsSource, 'app.js should expose applyQcGeometryControls');
 const applyQcGeometryControlsSandbox = {};
 vm.runInNewContext(
@@ -901,7 +952,7 @@ vm.runInNewContext(
   applyQcGeometryControlsSandbox
 );
 assert.doesNotThrow(
-  ()=>applyQcGeometryControlsSandbox.applyQcGeometryControls({}, {}, 'analysis'),
+  ()=>applyQcGeometryControlsSandbox.applyQcGeometryControls({}, {}),
   'Geometry restoration should tolerate controls that do not exist yet'
 );
 const futureQcControls = {qcFineRotation:{value:''},qcFineRotationVal:{value:''},qcAutoCropFov:{checked:false}};
@@ -922,25 +973,23 @@ const legacyAnalysisControls = {
 };
 applyQcGeometryControlsSandbox.applyQcGeometryControls(
   {fineRotation:3,autoCropFov:true},
-  legacyAnalysisControls,
-  'analysis'
+  legacyAnalysisControls
 );
-assert.strictEqual(legacyAnalysisControls.deskewAngle.value,'3');
-assert.strictEqual(legacyAnalysisControls.deskewAngleVal.value,'3');
+assert.strictEqual(legacyAnalysisControls.deskewAngle.value,'');
+assert.strictEqual(legacyAnalysisControls.deskewAngleVal.value,'');
 assert.strictEqual(
   legacyAnalysisControls.autoCropFov.checked,
   false,
-  'Analysis should not restore QC auto-crop into the legacy Analysis control'
+  'Removed Analysis geometry controls should never be restored or mutated'
 );
 applyQcGeometryControlsSandbox.applyQcGeometryControls(
   {fineRotation:3,autoCropFov:true},
-  legacyAnalysisControls,
-  'qc'
+  legacyAnalysisControls
 );
 assert.strictEqual(
   legacyAnalysisControls.autoCropFov.checked,
-  true,
-  'QC context may restore auto-crop into the legacy control until the dedicated QC control exists'
+  false,
+  'QC state should restore only dedicated QC controls'
 );
 
 [
@@ -1221,16 +1270,12 @@ assert(
   'QC canvas should support direct ruler interaction'
 );
 
-const leaveCropEditSource = js.match(/function leaveCropEdit\(apply=true\)\s*\{[\s\S]*?\n  \}/);
-assert(leaveCropEditSource, 'app.js should expose leaveCropEdit');
 const resetCropAndZoomSource = js.match(/function resetCropAndZoom\(\)\s*\{[\s\S]*?\n  \}/);
 assert(resetCropAndZoomSource, 'app.js should expose resetCropAndZoom');
 assert(
-  !leaveCropEditSource[0].includes('updateQcState')&&
-  !leaveCropEditSource[0].includes('resetLockedQcSnapshot')&&
   !resetCropAndZoomSource[0].includes('updateQcState')&&
   !resetCropAndZoomSource[0].includes('resetLockedQcSnapshot'),
-  'Legacy Analysis crop helpers should never mutate QC working state or reset its locked snapshot'
+  'Analysis reset helpers should never mutate QC working state or reset its locked snapshot'
 );
 assert(
   applyQcCropSource[0].includes('loadQcSampleAt(nextIndex,{openAdjust:true})'),

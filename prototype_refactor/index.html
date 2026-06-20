@@ -190,39 +190,6 @@
               </div>
               <input id="fovMode" type="hidden" value="cutoff">
             </div>
-            <div class="control">
-              <label id="scratchOrientationLabel" class="orientation-label" for="scratchOrientation">Scratch orientation</label>
-              <select id="scratchOrientation">
-                <option value="vertical">Vertical scratch</option>
-                <option value="horizontal">Horizontal scratch</option>
-              </select>
-              <div id="orientationHint" class="inline-warning" hidden></div>
-            </div>
-            <div class="control">
-              <label for="deskewAngle">Fine rotation (deg)</label>
-              <div class="range-row">
-                <input id="deskewAngle" type="range" min="-20" max="20" value="0" step="0.5">
-                <input class="value-input" id="deskewAngleVal" type="number" min="-20" max="20" value="0" step="0.5">
-              </div>
-            </div>
-            <button class="btn" id="angleRulerToggle" type="button" style="width:100%;margin-bottom:10px;">Show angle ruler</button>
-            <div class="control">
-              <label class="check-row" for="autoCropFov">
-                <input id="autoCropFov" type="checkbox">
-                Auto crop FOV
-              </label>
-              <div class="check-hint">Cuts the non-black microscope field before analysis; rectangular crops are allowed.</div>
-              <label class="check-row" for="applyCropRatioGroup" style="margin-top:8px;">
-                <input id="applyCropRatioGroup" type="checkbox">
-                Apply current crop ratio to group
-              </label>
-              <div class="check-hint">Uses the same relative rectangle for each image in group review.</div>
-              <div class="action-row">
-                <button class="btn" id="adjustCrop" type="button" disabled>Adjust crop</button>
-                <button class="btn primary" id="applyCrop" type="button" disabled>Apply crop</button>
-              </div>
-              <button class="btn" id="resetCrop" type="button" disabled style="width:100%;margin-top:7px;">Reset crop</button>
-            </div>
           </div>
 
           <div class="section">
@@ -406,16 +373,6 @@
             </button>
             <button class="icon-btn" id="zoomReset" title="Reset zoom" type="button">
               <svg viewBox="0 0 16 16" fill="none"><path d="M3 8a5 5 0 1 1 1.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3 12V8h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-            <button class="icon-btn" id="deskewMinus" title="Deskew -0.5 degrees" type="button" disabled>
-              <svg viewBox="0 0 16 16" fill="none"><path d="M11.5 4.5A5 5 0 1 0 12 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M11.5 2v2.8H8.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-            <div class="angle-chip" id="deskewBadge">0 deg</div>
-            <button class="icon-btn" id="deskewPlus" title="Deskew +0.5 degrees" type="button" disabled>
-              <svg viewBox="0 0 16 16" fill="none"><path d="M4.5 4.5A5 5 0 1 1 4 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M4.5 2v2.8h2.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-            <button class="icon-btn" id="rotateImage" title="Rotate image 90 degrees" type="button" disabled>
-              <svg viewBox="0 0 16 16" fill="none"><path d="M12.5 5.5A5 5 0 1 0 13 10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M12.5 2.5v3h-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
             <label class="icon-btn file-picker-label" id="openFile" title="Open local image" style="cursor:pointer;">
               <svg viewBox="0 0 16 16" fill="none"><path d="M2 11V13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M8 2v8M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>

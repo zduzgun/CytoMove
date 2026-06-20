@@ -116,16 +116,6 @@
       completeBody:'You analyzed a challenging image, used manual correction modes, drew an edit rectangle on the mask, tested undo/reset, and returned to the automatic result.',
       steps:[
         {
-          key:'fix-orientation',
-          selector:'#scratchOrientation',
-          label:'Horizontal scratch',
-          title:'Rotate this horizontal scratch for analysis',
-          body:'This M8F example contains a horizontal scratch. Choose Horizontal scratch so Cytomove rotates it into the vertical analysis view.',
-          action:'set-value',
-          value:'horizontal',
-          event:'change'
-        },
-        {
           key:'preset-rough',
           selector:'button[data-preset="rough"]',
           label:'Brightfield normal cells',
@@ -411,6 +401,7 @@
     correctionSelecting:false, correctionStart:null, correctionRect:null,
     brushHistory:[],
     crop:null, cropManual:false, cropEditing:false, cropDragging:false, cropDragStart:null, cropDragMode:'move',
+    analysisGeometry:{orientation:'vertical',fineRotation:0},
     rulerOffsetX:0, rulerOffsetY:0, rulerDragging:false, rulerDragStart:null,
     zoom:1, panX:0, panY:0, panning:false, panStart:null,
     autoApplyTimer:null
@@ -489,18 +480,8 @@
     fovCutoffVal:       document.getElementById('fovCutoffVal'),
     microscopeMode:     document.getElementById('microscopeMode'),
     fovMode:            document.getElementById('fovMode'),
-    scratchOrientation: document.getElementById('scratchOrientation'),
-    scratchOrientationLabel: document.getElementById('scratchOrientationLabel'),
-    orientationHint:    document.getElementById('orientationHint'),
     orientationPanelWarning: document.getElementById('orientationPanelWarning'),
     orientationTopWarning: document.getElementById('orientationTopWarning'),
-    deskewAngle:        document.getElementById('deskewAngle'),
-    deskewAngleVal:     document.getElementById('deskewAngleVal'),
-    autoCropFov:        document.getElementById('autoCropFov'),
-    applyCropRatioGroup:document.getElementById('applyCropRatioGroup'),
-    adjustCrop:         document.getElementById('adjustCrop'),
-    applyCrop:          document.getElementById('applyCrop'),
-    resetCrop:          document.getElementById('resetCrop'),
     contourThickness:   document.getElementById('contourThickness'),
     contourThicknessVal:document.getElementById('contourThicknessVal'),
     contourColor:       document.getElementById('contourColor'),
@@ -510,7 +491,6 @@
     brushSizeVal:       document.getElementById('brushSizeVal'),
     undoBrush:          document.getElementById('undoBrush'),
     resetBrush:         document.getElementById('resetBrush'),
-    angleRulerToggle:   document.getElementById('angleRulerToggle'),
     viewToggle:         document.getElementById('viewToggle'),
     metricsPanel:       document.getElementById('metricsPanel'),
     exportPng:          document.getElementById('exportPng'),
@@ -542,10 +522,6 @@
     zoomIn:             document.getElementById('zoomIn'),
     zoomOut:            document.getElementById('zoomOut'),
     zoomReset:          document.getElementById('zoomReset'),
-    deskewMinus:        document.getElementById('deskewMinus'),
-    deskewPlus:         document.getElementById('deskewPlus'),
-    deskewBadge:        document.getElementById('deskewBadge'),
-    rotateImage:        document.getElementById('rotateImage'),
     openFile:           document.getElementById('openFile'),
     fileInput:          document.getElementById('fileInput')
   };
@@ -570,10 +546,6 @@
     showAreaPlot:'Show the wound area time-course plot without downloading.',
     showWidthPlot:'Show the mean wound width time-course plot without downloading.',
     autoDetectModeGroup:'Sample group images and choose the microscope mode automatically.',
-    angleRulerToggle:'Show or hide the draggable angle guide overlay.',
-    adjustCrop:'Draw or edit the analysis crop region.',
-    applyCrop:'Apply the current crop to the analysis.',
-    resetCrop:'Return to the full image or automatic FOV crop.',
     undoBrush:'Undo the last manual mask correction.',
     resetBrush:'Remove manual correction and return to the automatic mask.',
     exportPng:'Save the current contour overlay as a PNG image.',
@@ -582,9 +554,6 @@
     zoomIn:'Zoom into the image canvas.',
     zoomOut:'Zoom out of the image canvas.',
     zoomReset:'Reset zoom and pan.',
-    deskewMinus:'Rotate the image slightly counterclockwise.',
-    deskewPlus:'Rotate the image slightly clockwise.',
-    rotateImage:'Rotate the image by 90 degrees.',
     openFile:'Open one image or multiple images from your computer.',
     groupPrev:'Load the previous image in the current group.',
     groupNext:'Load the next image in the current group.'
@@ -819,7 +788,7 @@
     return {x,y,w:cropW,h:cropH,active:cropW<W||cropH<H,fieldPixels:count,fovThreshold:th,bounds:{minX,minY,maxX,maxY,rowFloor,colFloor}};
   }
 
-  function autoCropForImage(img, autoCrop=el.autoCropFov.checked, fovCutoff=Number(el.fovCutoff.value)) {
+  function autoCropForImage(img, autoCrop=false, fovCutoff=Number(el.fovCutoff.value)) {
     if(!autoCrop) return {x:0,y:0,w:img.naturalWidth,h:img.naturalHeight,active:false};
     const probe=document.createElement('canvas');
     probe.width=img.naturalWidth; probe.height=img.naturalHeight;
@@ -835,9 +804,7 @@
       return {x:0,y:0,w:state.image.naturalWidth,h:state.image.naturalHeight,active:false};
     }
     if(state.cropManual&&state.crop) return state.crop;
-    if(!el.autoCropFov.checked) return {x:0,y:0,w:state.image.naturalWidth,h:state.image.naturalHeight,active:false};
-    if(!state.crop) state.crop=autoCropForImage(state.image);
-    return state.crop;
+    return {x:0,y:0,w:state.image.naturalWidth,h:state.image.naturalHeight,active:false};
   }
 
   function clampCrop(crop, img=state.imageOriginal||state.image) {
@@ -932,37 +899,11 @@
     setLog('<strong>Crop edit mode.</strong> Rectangular crop is allowed. Drag the rectangle or handles, then Apply crop.');
   }
 
-  function enterCropEdit() {
-    if(!state.image) return;
-    state.crop=currentCrop();
-    state.cropEditing=true;
-    state.zoom=1; state.panX=0; state.panY=0;
-    el.canvas.style.transform='';
-    el.zoomBadge.classList.remove('visible');
-    el.applyCrop.disabled=false;
-    el.canvas.classList.add('grabbing');
-    drawCropEditor();
-  }
-
-  function leaveCropEdit(apply=true) {
-    state.cropEditing=false;
-    state.cropDragging=false;
-    state.cropDragMode='move';
-    state.cropManual=!!apply;
-    el.applyCrop.disabled=true;
-    el.canvas.classList.remove('grabbing');
-    if(apply) {
-      drawLoadedImagePreview('<strong>Crop applied.</strong> Auto-applying in 1 second...');
-      scheduleAutoApply('<strong>Crop applied.</strong> Auto-applying in 1 second...');
-    }
-  }
-
   function resetCropAndZoom() {
     state.crop=null; state.cropManual=false; state.cropEditing=false; state.cropDragging=false; state.cropDragMode='move';
     state.zoom=1; state.panX=0; state.panY=0;
     el.canvas.style.transform='';
     el.zoomBadge.classList.remove('visible');
-    el.applyCrop.disabled=true;
   }
 
   function transformImage(src, rotationDeg, deskewDeg) {
@@ -983,7 +924,7 @@
     return c.toDataURL('image/png');
   }
 
-  function orientationRotationDeg(orientation=el.scratchOrientation.value) {
+  function orientationRotationDeg(orientation=state.analysisGeometry.orientation) {
     return orientation==='horizontal'?90:0;
   }
 
@@ -994,7 +935,7 @@
   function applyImageTransform(options={}) {
     if(!state.imageOriginal) return;
     const transformed=new Image();
-    const angle=Number(el.deskewAngle.value)||0;
+    const angle=Number(state.analysisGeometry.fineRotation)||0;
     transformed.onload=()=>{
       state.image=transformed;
       resetCropAndZoom();
@@ -1003,18 +944,6 @@
       else previewLoadedImageAndMaybeAutoApply(options.logMessage,!!options.autoApplyAfterLoad,options.autoApplyMessage);
     };
     transformed.src=transformImage(state.imageOriginal,effectiveRotationDeg(),angle);
-  }
-
-  function rotateCurrentImage() {
-    if(!state.imageOriginal) return;
-    state.rotation=(state.rotation+90)%360;
-    applyImageTransform();
-  }
-
-  function deskewCurrentImage() {
-    if(!state.imageOriginal) return;
-    const message='<strong>Fine rotation changed.</strong> Auto-applying in 1 second...';
-    applyImageTransform({autoApplyAfterLoad:true,logMessage:message,autoApplyMessage:message});
   }
 
   function clearAnalysisState() {
@@ -1211,10 +1140,6 @@
 
   function showOrientationHint(message='') {
     if(!message) {
-      if(el.orientationHint) {
-        el.orientationHint.hidden=true;
-        el.orientationHint.textContent='';
-      }
       if(el.orientationTopWarning) {
         el.orientationTopWarning.hidden=true;
         el.orientationTopWarning.textContent='';
@@ -1223,12 +1148,7 @@
         el.orientationPanelWarning.hidden=true;
         el.orientationPanelWarning.textContent='';
       }
-      if(el.scratchOrientationLabel) el.scratchOrientationLabel.classList.remove('orientation-alert');
       return;
-    }
-    if(el.orientationHint) {
-      el.orientationHint.textContent=message;
-      el.orientationHint.hidden=false;
     }
     if(el.orientationTopWarning) {
       el.orientationTopWarning.textContent=message;
@@ -1238,7 +1158,6 @@
       el.orientationPanelWarning.textContent=message;
       el.orientationPanelWarning.hidden=false;
     }
-    if(el.scratchOrientationLabel) el.scratchOrientationLabel.classList.add('orientation-alert');
   }
 
   function renderOrientationSeriesWarning(message='') {
@@ -1267,13 +1186,13 @@
       const horizontal=votes.filter(v=>v.orientation==='horizontal').length;
       const vertical=votes.filter(v=>v.orientation==='vertical').length;
       const detectedOrientation=horizontal>vertical&&horizontal>0?'horizontal':vertical>horizontal&&vertical>0?'vertical':'unknown';
-      const selectedOrientation=el.scratchOrientation.value||'vertical';
+      const selectedOrientation=state.analysisGeometry.orientation||'vertical';
       if(detectedOrientation==='horizontal'&&selectedOrientation!=='horizontal') {
-        const msg='Horizontal scratch pattern detected. Use Scratch orientation -> Horizontal scratch to rotate images into vertical analysis view.';
+        const msg='Horizontal scratch pattern detected. Set the orientation in Image QC before starting Analysis.';
         showOrientationHint(msg);
         renderOrientationSeriesWarning(msg);
       } else if(detectedOrientation==='vertical'&&selectedOrientation==='horizontal') {
-        const msg='Vertical scratch pattern detected. Use Scratch orientation -> Vertical scratch for this image.';
+        const msg='Vertical scratch pattern detected. Review the orientation in Image QC before starting Analysis.';
         showOrientationHint(msg);
         renderOrientationSeriesWarning(msg);
       } else {
@@ -1880,7 +1799,7 @@
       const holeResult=fillSmallHoles(islandFilter.mask,W,H,holeFillLimit);
       const mask=holeResult.mask;
       for(let p=0;p<len;p++) if(!field[p]) mask[p]=0;
-      const scratchOri=el.scratchOrientation.value||'vertical';
+      const scratchOri=state.analysisGeometry.orientation||'vertical';
       const continuity=enforceWoundContinuity(mask,W,H,scratchOri,fovMode);
       const slitClose=closePhaseContrastSlits(continuity.mask,W,H,fovMode);
       const smooth=smoothPhaseContrastMask(slitClose.mask,W,H,fovMode);
@@ -1908,10 +1827,10 @@
       const boundaryCount=boundary.length;
       drawCanvas(src,state.maskData,field,varMap,W,H,maxV,boundary);
       const ms=Math.round(performance.now()-t0);
-      const fineRotationDeg=Number(el.deskewAngle.value)||0;
+      const fineRotationDeg=Number(state.analysisGeometry.fineRotation)||0;
       const areaPerValidRow=width.validRows?area/width.validRows:0;
       const areaWidthFillRatio=width.mean&&width.validRows?area/(width.mean*width.validRows):0;
-      const partialResult={sourceW:img.naturalWidth,sourceH:img.naturalHeight,analysisW:W,analysisH:H,area,areaPct,wMean:width.mean,wMedian:width.median,wSd:width.sd,widthCv:width.cv,wMin:width.min,wMax:width.max,validRows:width.validRows,validRowFraction:width.validRowFraction,areaPerValidRow,areaWidthFillRatio,minValidWidth:width.minValidWidth,threshold:finalTh,thresholdMode:thMode,thresholdLevel:thLevel,thresholdOffset:thOff,otsuThreshold:otsuTh,baseThreshold:baseTh,fallbackThreshold:fallbackTh,thresholdFallbackUsed:otsuTh<3,maxV,fieldArea,gtComparable,areaErr,areaErrS,boundaryCount,totalComponents:islandFilter.totalComponents,keptComponents:islandFilter.keptComponents,largestArea:islandFilter.largestArea,groupPriorApplied:priorResult.applied,groupPriorArea:priorResult.priorArea,groupPriorRadius:priorResult.radius,phaseSlitFilledPx:slitClose.filled,phaseSlitCount:slitClose.slits,phaseSmoothChangedPx:smooth.changed,phaseSmoothRadius:smooth.radius,bridgeFilledPx:bridge.filled,bridgeGapCount:bridge.gaps,edgeExtendedPx:edgeExtend.filled,edgeExtendedCount:edgeExtend.edges,finalHoleFilledCount:finalHoleResult.filledHoleCount,finalHoleFilledArea:finalHoleResult.filledHoleArea,finalComponents:finalComponents.totalComponents,continuityKeptComponents:continuity.kept,continuityTotalComponents:continuity.total,internalIslandCount:finalHoleResult.holeCount,internalIslandArea:finalHoleResult.holeArea,largestInternalIslandArea:finalHoleResult.largestHoleArea,filledSmallIslandCount:holeResult.filledHoleCount+finalHoleResult.filledHoleCount,filledSmallIslandArea:holeResult.filledHoleArea+finalHoleResult.filledHoleArea,holeFillMaxArea:holeResult.maxHoleArea,tinyIslandMode:el.tinyIslandMode.value,crop,runtimeMs:ms,fieldMaskMode:fovMode,scratchOrientation:el.scratchOrientation.value,manualRotationDeg:state.rotation,orientationRotationDeg:orientationRotationDeg(),effectiveRotationDeg:effectiveRotationDeg(),fineRotationDeg,varianceRadius:radius,minComponentPx:minC,fovCutoff:fov,autoCropFov:el.autoCropFov.checked,cropManual:state.cropManual,manualCorrectionStatus:'none',manualAddedPx:0,manualRemovedPx:0,manualNetDeltaPx:0,manualCorrectionFractionPercent:0};
+      const partialResult={sourceW:img.naturalWidth,sourceH:img.naturalHeight,analysisW:W,analysisH:H,area,areaPct,wMean:width.mean,wMedian:width.median,wSd:width.sd,widthCv:width.cv,wMin:width.min,wMax:width.max,validRows:width.validRows,validRowFraction:width.validRowFraction,areaPerValidRow,areaWidthFillRatio,minValidWidth:width.minValidWidth,threshold:finalTh,thresholdMode:thMode,thresholdLevel:thLevel,thresholdOffset:thOff,otsuThreshold:otsuTh,baseThreshold:baseTh,fallbackThreshold:fallbackTh,thresholdFallbackUsed:otsuTh<3,maxV,fieldArea,gtComparable,areaErr,areaErrS,boundaryCount,totalComponents:islandFilter.totalComponents,keptComponents:islandFilter.keptComponents,largestArea:islandFilter.largestArea,groupPriorApplied:priorResult.applied,groupPriorArea:priorResult.priorArea,groupPriorRadius:priorResult.radius,phaseSlitFilledPx:slitClose.filled,phaseSlitCount:slitClose.slits,phaseSmoothChangedPx:smooth.changed,phaseSmoothRadius:smooth.radius,bridgeFilledPx:bridge.filled,bridgeGapCount:bridge.gaps,edgeExtendedPx:edgeExtend.filled,edgeExtendedCount:edgeExtend.edges,finalHoleFilledCount:finalHoleResult.filledHoleCount,finalHoleFilledArea:finalHoleResult.filledHoleArea,finalComponents:finalComponents.totalComponents,continuityKeptComponents:continuity.kept,continuityTotalComponents:continuity.total,internalIslandCount:finalHoleResult.holeCount,internalIslandArea:finalHoleResult.holeArea,largestInternalIslandArea:finalHoleResult.largestHoleArea,filledSmallIslandCount:holeResult.filledHoleCount+finalHoleResult.filledHoleCount,filledSmallIslandArea:holeResult.filledHoleArea+finalHoleResult.filledHoleArea,holeFillMaxArea:holeResult.maxHoleArea,tinyIslandMode:el.tinyIslandMode.value,crop,runtimeMs:ms,fieldMaskMode:fovMode,scratchOrientation:scratchOri,manualRotationDeg:state.rotation,orientationRotationDeg:orientationRotationDeg(),effectiveRotationDeg:effectiveRotationDeg(),fineRotationDeg,varianceRadius:radius,minComponentPx:minC,fovCutoff:fov,autoCropFov:false,cropManual:state.cropManual,manualCorrectionStatus:'none',manualAddedPx:0,manualRemovedPx:0,manualNetDeltaPx:0,manualCorrectionFractionPercent:0};
       const qc=buildQc(partialResult,crop,W,H);
       state.result={...partialResult,segmentationQualityScore:qc.score,warnings:qc.warnings,recommendedPrimaryMetric:qc.recommendedPrimaryMetric};
       renderMetrics();
@@ -1929,8 +1848,8 @@
       const thDisplay=thMode==='wide'?`offset ${fmt(thOff,1)}`:`level ${thLevel}, offset ${fmt(thOff,1)}`;
       setLog(`<strong>Threshold ${finalTh}</strong> (${thNote}, ${thDisplay}) &middot; radius ${radius}${cropNote}${priorNote}${slitNote}${smoothNote}${bridgeNote}${edgeNote}${finalHoleNote} &middot; microscope ${microscopeModeLabel(fovMode)} (${fmt(fieldArea)} px) &middot; wound comps ${islandFilter.keptComponents}/${islandFilter.totalComponents} &middot; internal islands ${internalIslandTotal} (${finalHoleResult.holeCount}/${holeResult.filledHoleCount+finalHoleResult.filledHoleCount}) &middot; mask ${fmt(area)} px &middot; width ${fmt(width.mean,1)} px &middot; contour ${fmt(boundaryCount)} px${warningNote}${gtNote}`, `${ms} ms`);
       el.rerun.disabled=false; el.exportPng.disabled=false; el.exportGroupPng.disabled=state.mode!=='group'; el.exportPlots.disabled=state.mode!=='group'; el.showAreaPlot.disabled=state.mode!=='group'; el.showWidthPlot.disabled=state.mode!=='group'; el.exportCsv.disabled=false; el.exportExcel.disabled=false;
-      const deskew=Number(el.deskewAngle.value)||0;
-      const orientation=el.scratchOrientation.value==='horizontal'?'horizontal scratch -> 90deg':'vertical scratch';
+      const deskew=Number(state.analysisGeometry.fineRotation)||0;
+      const orientation=state.analysisGeometry.orientation==='horizontal'?'horizontal scratch -> 90deg':'vertical scratch';
       el.canvasMeta.textContent=`${W}x${H} px ${orientation}${state.rotation?` + manual rotate ${state.rotation}deg`:''}${deskew?` fine rotation ${deskew}deg`:''}${crop.active?` cropped from ${img.naturalWidth}x${img.naturalHeight}`:''}  variance radius ${radius}  Otsu ${finalTh}`;
       const restored=options.restoreManual&&applyManualOverrideToCurrentSample();
       if(!restored) syncDisplayedResultToGroup();
@@ -5178,14 +5097,11 @@
     }
   }
 
-  function applyQcGeometryControls(qc, controls, appModule) {
+  function applyQcGeometryControls(qc, controls) {
     const fineRotation=Number(qc?.fineRotation)||0;
     if(controls.qcFineRotation) controls.qcFineRotation.value=String(fineRotation);
     if(controls.qcFineRotationVal) controls.qcFineRotationVal.value=String(fineRotation);
-    if(controls.deskewAngle) controls.deskewAngle.value=String(fineRotation);
-    if(controls.deskewAngleVal) controls.deskewAngleVal.value=String(fineRotation);
     if(controls.qcAutoCropFov) controls.qcAutoCropFov.checked=!!qc?.autoCropFov;
-    if(appModule==='qc'&&controls.autoCropFov) controls.autoCropFov.checked=!!qc?.autoCropFov;
   }
 
   function applyQcStateToCurrentImage(sample=state.sample, options={}) {
@@ -5193,9 +5109,10 @@
     const qc=qcStateForSample(sample.id);
     if(!qc) return;
     if(el.qcOrientation) el.qcOrientation.value=qc.orientation||'vertical';
-    if(el.scratchOrientation) el.scratchOrientation.value=qc.orientation||'vertical';
     state.rotation=Number(qc.rotation)||0;
-    applyQcGeometryControls(qc,el,state.appModule);
+    state.analysisGeometry.orientation=qc.orientation||'vertical';
+    state.analysisGeometry.fineRotation=Number(qc.fineRotation)||0;
+    applyQcGeometryControls(qc,el);
     const cropRatio=options.preparedInput?null:cropForQcSample(qc,currentGroupCropTemplate());
     state.crop=cropRatio?cropFromRatio(state.imageOriginal,cropRatio):null;
     state.cropManual=!!cropRatio;
@@ -5359,7 +5276,7 @@
     if(!state.sample) return;
     const next=normalizeQcFineRotation(value);
     updateQcState(state.sample.id,{fineRotation:next});
-    applyQcGeometryControls(qcStateForSample(state.sample.id),el,state.appModule);
+    applyQcGeometryControls(qcStateForSample(state.sample.id),el);
     drawQcCanvas();
   }
 
@@ -5808,8 +5725,6 @@
     el.canvasMeta.textContent='Drop an image or use the open button';
     el.metricsPanel.innerHTML='';
     el.rerun.disabled=true; el.exportPng.disabled=true; el.exportGroupPng.disabled=true; el.exportPlots.disabled=true; el.showAreaPlot.disabled=true; el.showWidthPlot.disabled=true; el.exportCsv.disabled=true; el.exportExcel.disabled=true;
-    el.adjustCrop.disabled=true; el.resetCrop.disabled=true; el.applyCrop.disabled=true; el.rotateImage.disabled=true;
-    el.deskewMinus.disabled=true; el.deskewPlus.disabled=true; if(el.resetRotation) el.resetRotation.disabled=true;
     state.objectUrls.forEach(u=>URL.revokeObjectURL(u)); state.objectUrls=[];
     updateGroupNavButtons();
   }
@@ -5896,13 +5811,12 @@
   }
 
   function currentGroupSettingsSummary() {
-    const cropMode=state.cropManual&&state.crop?'manual crop':el.autoCropFov.checked?'auto FOV crop':'full image';
-    const groupCrop=el.applyCropRatioGroup.checked&&state.cropManual&&state.crop?'same crop ratio':'per-image crop';
-    const orientation=el.scratchOrientation.value==='horizontal'?'horizontal scratch':'vertical scratch';
+    const cropMode=state.cropManual&&state.crop?'QC crop':'full image';
+    const orientation=state.analysisGeometry.orientation==='horizontal'?'horizontal scratch':'vertical scratch';
     const rotation=effectiveRotationDeg()?`${effectiveRotationDeg()}deg effective rotation`:'no rotation';
-    const deskew=Number(el.deskewAngle.value)||0;
+    const deskew=Number(state.analysisGeometry.fineRotation)||0;
     const thresholdText=thresholdMode()==='wide'?`T-offset ${el.thresholdOffset.value}`:`T-level ${el.thresholdOffset.value}`;
-    return `R${el.varianceRadius.value}, ${thresholdText}, min ${el.minComponent.value}, islands ${el.tinyIslandMode.value}, microscope ${microscopeModeLabel(el.fovMode.value)}, FOV ${el.fovCutoff.value}, ${orientation}, ${cropMode}, ${groupCrop}, ${rotation}, fine rotation ${deskew}deg`;
+    return `R${el.varianceRadius.value}, ${thresholdText}, min ${el.minComponent.value}, islands ${el.tinyIslandMode.value}, microscope ${microscopeModeLabel(el.fovMode.value)}, FOV ${el.fovCutoff.value}, ${orientation}, ${cropMode}, ${rotation}, fine rotation ${deskew}deg`;
   }
 
   function parseTimeHours(time) {
@@ -6074,13 +5988,13 @@
       tinyIslandMode:el.tinyIslandMode.value,
       fovCutoff:Number(el.fovCutoff.value),
       fovMode:el.fovMode.value,
-      autoCrop:el.autoCropFov.checked,
-      cropRatio:el.applyCropRatioGroup.checked&&state.cropManual&&state.crop?normalizedCropRatio(state.crop):null,
-      scratchOrientation:el.scratchOrientation.value,
+      autoCrop:false,
+      cropRatio:null,
+      scratchOrientation:state.analysisGeometry.orientation,
       rotation:effectiveRotationDeg()||0,
       manualRotation:state.rotation||0,
       orientationRotation:orientationRotationDeg(),
-      deskew:Number(el.deskewAngle.value)||0
+      deskew:Number(state.analysisGeometry.fineRotation)||0
     };
   }
 
@@ -6096,11 +6010,11 @@
       tinyIslandMode:el.tinyIslandMode.value,
       fovCutoff:Number(el.fovCutoff.value),
       fovMode:el.fovMode.value,
-      autoCropFov:!!el.autoCropFov.checked,
-      applyCropRatioGroup:!!el.applyCropRatioGroup.checked,
-      scratchOrientation:el.scratchOrientation.value,
+      autoCropFov:false,
+      applyCropRatioGroup:false,
+      scratchOrientation:state.analysisGeometry.orientation,
       manualRotation:state.rotation||0,
-      deskew:Number(el.deskewAngle.value)||0
+      deskew:Number(state.analysisGeometry.fineRotation)||0
     };
   }
 
@@ -6142,7 +6056,7 @@
       fovCutoff:result.fovCutoff,
       fovMode:result.fieldMaskMode||'cutoff',
       autoCropFov:!!result.autoCropFov,
-      applyCropRatioGroup:!!el.applyCropRatioGroup.checked,
+      applyCropRatioGroup:false,
       scratchOrientation:result.scratchOrientation||'vertical',
       manualRotation:result.manualRotationDeg||0,
       deskew:result.fineRotationDeg||0
@@ -6190,12 +6104,9 @@
     if(settings.tinyIslandMode) el.tinyIslandMode.value=settings.tinyIslandMode;
     if(Number.isFinite(Number(settings.fovCutoff))) el.fovCutoff.value=settings.fovCutoff;
     if(settings.fovMode) setMicroscopeMode(settings.fovMode,false);
-    el.autoCropFov.checked=!!settings.autoCropFov;
-    el.applyCropRatioGroup.checked=!!settings.applyCropRatioGroup;
-    if(settings.scratchOrientation) el.scratchOrientation.value=settings.scratchOrientation;
+    state.analysisGeometry.orientation=settings.scratchOrientation||'vertical';
+    state.analysisGeometry.fineRotation=Number(settings.deskew)||0;
     state.rotation=Number(settings.manualRotation)||0;
-    el.deskewAngle.value=Number(settings.deskew)||0;
-    el.deskewAngleVal.value=el.deskewAngle.value;
     document.querySelectorAll('.preset-btn').forEach(btn=>btn.classList.toggle('active',!!settings.presetKey&&btn.dataset.preset===settings.presetKey));
     syncLabels();
   }
@@ -6459,16 +6370,6 @@
   }
 
   const DEFAULT_TUTORIAL_STEPS = [
-    {
-      key:'fix-orientation',
-      selector:'#scratchOrientation',
-      label:'Make vertical',
-      title:'Fix the horizontal scratch warning',
-      body:'These images contain a horizontal scratch. Choose Horizontal scratch so Cytomove rotates the series into the vertical analysis view.',
-      action:'set-value',
-      value:'horizontal',
-      event:'change'
-    },
     {
       key:'preset-rough',
       selector:'button[data-preset="rough"]',
@@ -7173,8 +7074,6 @@
     el.microscopeMode.querySelectorAll('[data-fov-mode]').forEach(btn=>{
       btn.classList.toggle('active',btn.dataset.fovMode===el.fovMode.value);
     });
-    el.deskewAngleVal.value=el.deskewAngle.value;
-    el.deskewBadge.textContent=`${Number(el.deskewAngle.value).toFixed(1).replace('.0','')} deg`;
     el.contourThicknessVal.value=el.contourThickness.value;
     el.brushSizeVal.value=el.brushSize.value;
     el.brushMode.querySelectorAll('[data-brush-mode]').forEach(btn=>{
@@ -7182,18 +7081,7 @@
     });
     el.resetBrush.disabled=!state.brushEdited;
     el.undoBrush.disabled=state.brushHistory.length===0;
-    el.angleRulerToggle.textContent=state.rulerVisible?'Hide angle ruler':'Show angle ruler';
-    el.angleRulerToggle.classList.toggle('primary',state.rulerVisible);
     el.canvas.style.cursor=brushActive()?'crosshair':state.rulerVisible&&!state.cropEditing?'grab':'';
-  }
-
-  function nudgeDeskew(delta) {
-    const min=Number(el.deskewAngle.min), max=Number(el.deskewAngle.max);
-    const next=Math.max(min,Math.min(max,(Number(el.deskewAngle.value)||0)+delta));
-    el.deskewAngle.value=String(next);
-    el.deskewAngleVal.value=String(next);
-    syncLabels();
-    deskewCurrentImage();
   }
 
   function bindNumberPair(rangeInput, numberInput, onApply) {
@@ -7292,16 +7180,10 @@
         byId('thresholdOffset'),
         byId('minComponent'),
         byId('tinyIslandMode'),
-        document.getElementById('microscopeMode')?.closest('.control'),
-        byId('scratchOrientation')
-      ]);
-      const advanced=createSubpanel('Advanced geometry','segmentation-advanced',false,[
         byId('fovCutoff'),
-        byId('deskewAngle'),
-        document.getElementById('angleRulerToggle'),
-        byId('autoCropFov')
+        document.getElementById('microscopeMode')?.closest('.control'),
       ]);
-      segContent.append(basic,advanced);
+      segContent.append(basic);
     }
 
     const view=Array.from(document.querySelectorAll('.sidebar .section')).find(section=>section.querySelector(':scope > .section-title')?.textContent.toLowerCase().includes('view'));
@@ -7330,7 +7212,7 @@
       if(loadSeq!==state.imageLoadSeq) return;
       state.image=img; state.imageOriginal=img; state.sample=sample; state.rotation=0;
       state.imageIsPreparedQc=!!options.preparedQc;
-      el.deskewAngle.value=0; el.deskewAngleVal.value=0;
+      state.analysisGeometry={orientation:'vertical',fineRotation:0};
       state.rulerOffsetX=0; state.rulerOffsetY=0; state.rulerDragging=false; state.rulerDragStart=null;
       state.imageName=name||sample?.path||'local image';
       resetCropAndZoom();
@@ -7346,8 +7228,6 @@
       el.canvas.style.transform='';
       el.canvas.hidden=false; el.emptyState.hidden=true;
       el.canvasTitle.textContent=state.imageName.split('/').pop()||state.imageName;
-      el.adjustCrop.disabled=false; el.resetCrop.disabled=false; el.applyCrop.disabled=true;
-      el.rotateImage.disabled=false; el.deskewMinus.disabled=false; el.deskewPlus.disabled=false;
       updateGroupNavButtons();
       const readyMessage='<strong>Image ready.</strong> Adjust settings on the first image, then click Apply. Use Apply to group when the settings look right.';
       const showReadyPreview=()=> {
@@ -7356,7 +7236,7 @@
         if(sample) warnIfHorizontalScratchDetected([sample]);
         if(options.fromQc||state.appModule==='qc') renderImageQcPanel();
       };
-      if(effectiveRotationDeg()||(Number(el.deskewAngle.value)||0)) applyImageTransform({restoreManual:true,analyze:false,restoreGroupResult:!!options.restoreGroupResult,autoApplyAfterLoad:!!options.autoApplyAfterLoad,logMessage:readyMessage});
+      if(effectiveRotationDeg()||(Number(state.analysisGeometry.fineRotation)||0)) applyImageTransform({restoreManual:true,analyze:false,restoreGroupResult:!!options.restoreGroupResult,autoApplyAfterLoad:!!options.autoApplyAfterLoad,logMessage:readyMessage});
       else showReadyPreview();
     };
     img.onerror=()=>{
@@ -7947,10 +7827,7 @@
       cancelAutoApply();
       if(state.mode==='group') renderGroupView({force:true});
       else setMode('group',{force:true});
-      const ratioNote=el.applyCropRatioGroup.checked&&state.cropManual&&state.crop
-        ? 'Current manual crop is copied as a relative rectangle across the group.'
-        : 'Each image uses its own full image or auto FOV crop.';
-      setLog(`<strong>Group settings applied:</strong> ${escHtml(currentGroupSettingsSummary())}. ${ratioNote}`);
+      setLog(`<strong>Group settings applied:</strong> ${escHtml(currentGroupSettingsSummary())}. Image geometry remains owned by each locked QC snapshot.`);
       warnIfHorizontalScratchDetected(selectedGroupSamples());
     });
     el.autoDetectModeGroup.addEventListener('click',()=>{
@@ -7971,11 +7848,6 @@
     };
     let _debounceTimer;
     const debouncedPending=(message)=>{clearTimeout(_debounceTimer);_debounceTimer=setTimeout(()=>markAnalysisPending(message),180);};
-    const resetAutoCrop=()=>{
-      state.crop=null;state.cropManual=false;
-      if(state.cropEditing) drawCropEditor();
-      else markAnalysisPending('<strong>Crop reset.</strong> Auto-applying in 1 second...');
-    };
     const bindPendingControl=(control,handler)=>{
       if(!control) return;
       control.addEventListener('input',handler);
@@ -8020,27 +7892,6 @@
         markAnalysisPending('<strong>Microscope mode changed.</strong> Auto-applying in 1 second...');
       });
     });
-    bindNumberPair(el.deskewAngle,el.deskewAngleVal,deskewCurrentImage);
-    el.angleRulerToggle.addEventListener('click',()=>{
-      state.rulerVisible=!state.rulerVisible;
-      syncLabels();
-      redrawCurrentCanvas();
-    });
-    const scratchOrientationChanged=()=>{
-      showOrientationHint('');
-      renderOrientationSeriesWarning('');
-      if(state.imageOriginal&&!state.cropEditing) {
-        const message='<strong>Scratch orientation changed.</strong> Auto-applying in 1 second...';
-        applyImageTransform({autoApplyAfterLoad:true,logMessage:message,autoApplyMessage:message});
-      }
-      warnIfHorizontalScratchDetected(selectedGroupSamples());
-    };
-    bindPendingControl(el.scratchOrientation,scratchOrientationChanged);
-    bindPendingControl(el.autoCropFov,resetAutoCrop);
-    bindPendingControl(el.applyCropRatioGroup,()=>markAnalysisPending('<strong>Group crop setting changed.</strong> Auto-applying in 1 second...'));
-    el.adjustCrop.addEventListener('click',enterCropEdit);
-    el.applyCrop.addEventListener('click',()=>leaveCropEdit(true));
-    el.resetCrop.addEventListener('click',resetAutoCrop);
     bindNumberPair(el.contourThickness,el.contourThicknessVal,()=>{
       redrawCurrentCanvas();
     });
@@ -8070,14 +7921,11 @@
         el.minComponent.value=p.minComponent; el.fovCutoff.value=p.fovCutoff;
         if(p.tinyIslandMode) el.tinyIslandMode.value=p.tinyIslandMode;
         if(p.fovMode) setMicroscopeMode(p.fovMode,true);
-        const orientationChanged=p.scratchOrientation&&el.scratchOrientation.value!==p.scratchOrientation;
-        if(p.scratchOrientation) el.scratchOrientation.value=p.scratchOrientation;
         syncLabels();
         document.querySelectorAll('.preset-btn').forEach(b=>b.classList.toggle('active',b===btn));
         if(state.image) {
           const message='<strong>Preset selected.</strong> Auto-applying in 1 second...';
-          if(orientationChanged&&state.imageOriginal&&!state.cropEditing) applyImageTransform({analyze:false,autoApplyAfterLoad:true,logMessage:message});
-          else markAnalysisPending(message);
+          markAnalysisPending(message);
         }
       });
     });
@@ -8089,9 +7937,6 @@
     el.zoomIn.addEventListener('click',()=>changeZoom(1.35));
     el.zoomOut.addEventListener('click',()=>changeZoom(1/1.35));
     el.zoomReset.addEventListener('click',()=>{state.zoom=1;state.panX=0;state.panY=0;el.canvas.style.transform='';el.zoomBadge.classList.remove('visible');});
-    el.deskewMinus.addEventListener('click',()=>nudgeDeskew(-0.5));
-    el.deskewPlus.addEventListener('click',()=>nudgeDeskew(0.5));
-    el.rotateImage.addEventListener('click',rotateCurrentImage);
 
     el.dropZone.addEventListener('wheel',e=>{
       if(!state.image)return;
