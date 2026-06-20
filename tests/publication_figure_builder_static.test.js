@@ -177,6 +177,11 @@ assert(
 const continueFromQcSource = js.match(/async function continueFromQcToAnalysis\(\)\s*\{[\s\S]*?\n  \}/);
 assert(continueFromQcSource, 'app.js should expose continueFromQcToAnalysis');
 assert(
+  continueFromQcSource[0].includes('setQcTransitionPending(true)') &&
+  continueFromQcSource[0].includes('setQcTransitionPending(false)'),
+  'Continue to Analysis should acquire and release one central QC transition lock'
+);
+assert(
   continueFromQcSource[0].includes("setMode('group',{scheduleMicroscope:false})") &&
   !continueFromQcSource[0].includes('force:true'),
   'Continue to Analysis should enter group mode without forced analysis or microscope scheduling'
@@ -187,13 +192,12 @@ assert(
   'Continue to Analysis should cancel every pending automatic analysis path'
 );
 assert(
-  /await awaitAllPendingQcRestores\(\)[\s\S]*state\.lockedQcSnapshot=buildLockedQcSnapshot/.test(continueFromQcSource[0]),
-  'Continue to Analysis should await every pending QC restore before locking the snapshot'
+  /await awaitTrackedQcOperations\(\)[\s\S]*state\.lockedQcSnapshot=buildLockedQcSnapshot/.test(continueFromQcSource[0]),
+  'Continue to Analysis should await every tracked QC operation before locking the snapshot'
 );
 assert(
-  continueFromQcSource[0].includes('el.goToAnalysisFromQc.disabled=true') &&
   continueFromQcSource[0].includes('finally'),
-  'Continue to Analysis should disable the transition button while awaiting QC restore'
+  'Continue to Analysis should always release the transition lock'
 );
 assert(
   js.includes("el.goToAnalysisFromQc.addEventListener('click',()=>{ continueFromQcToAnalysis().catch"),
@@ -711,6 +715,58 @@ assert(
   'Save-driven navigation should pass openAdjust into image loading'
 );
 
+const qcMutationBlockedSource = js.match(/function qcMutationBlocked\(\)\s*\{[\s\S]*?\n  \}/);
+assert(qcMutationBlockedSource, 'app.js should expose one central QC transition mutation guard');
+const qcMutationGuardSandbox = {state:{qcTransitionPending:false}};
+vm.runInNewContext(
+  `${qcMutationBlockedSource[0]}; this.qcMutationBlocked = qcMutationBlocked;`,
+  qcMutationGuardSandbox
+);
+assert.strictEqual(qcMutationGuardSandbox.qcMutationBlocked(),false);
+qcMutationGuardSandbox.state.qcTransitionPending=true;
+assert.strictEqual(qcMutationGuardSandbox.qcMutationBlocked(),true);
+
+const guardedQcMutationFunctions = [
+  'loadQcSampleAt',
+  'qcPreviousImage',
+  'qcNextImage',
+  'beginQcCropEdit',
+  'applyQcOrientation',
+  'applyQcRotation',
+  'applyQcFineRotation',
+  'toggleQcAutoCrop',
+  'resetQcCrop',
+  'undoQcCrop',
+  'redoQcCrop',
+  'applyQcCrop',
+  'toggleQcExclude'
+];
+guardedQcMutationFunctions.forEach(name => {
+  const source=js.match(new RegExp(`(?:async )?function ${name}\\([^)]*\\)\\s*\\{[\\s\\S]*?\\n  \\}`));
+  assert(source, `app.js should expose ${name}`);
+  assert(
+    source[0].includes('if(qcMutationBlocked()) return'),
+    `${name} should no-op while the QC transition is pending`
+  );
+});
+
+const syncQcTransitionControlsSource = js.match(/function syncQcTransitionControls\(samples, sample, qc\)\s*\{[\s\S]*?\n  \}/);
+assert(syncQcTransitionControlsSource, 'app.js should centrally render QC transition control disabled state');
+[
+  'qcOrientation','qcRotateLeft','qcRotateRight','qcFineRotation','qcFineRotationVal',
+  'qcAutoCropFov','qcAdjustCrop','qcSaveCrop','qcResetCrop','qcUndoCrop','qcRedoCrop',
+  'qcExcludeToggle','qcPrevImage','qcNextImage','goToAnalysisFromQc'
+].forEach(control => {
+  assert(
+    syncQcTransitionControlsSource[0].includes(`el.${control}`),
+    `QC transition rendering should manage ${control}`
+  );
+});
+assert(
+  syncQcTransitionControlsSource[0].includes('state.qcTransitionPending'),
+  'QC transition control rendering should derive disabled state from the central lock'
+);
+
 const applyQcStateSource = js.match(/function applyQcStateToCurrentImage\(sample=state.sample, options=\{\}\)\s*\{[\s\S]*?\n  \}/);
 assert(applyQcStateSource, 'app.js should expose applyQcStateToCurrentImage');
 assert(
@@ -1098,32 +1154,35 @@ assert(
   'QC crop restore should prepare the raw-image ROI once instead of cropping an already cropped preview'
 );
 assert(
-  restoreQcCropHistorySource[0].includes('trackPendingQcRestore(sample.id,restorePromise)'),
-  'QC crop restore should expose its active per-sample promise to Continue'
+  restoreQcCropHistorySource[0].includes('trackQcOperation(restorePromise)'),
+  'QC crop restore should join the central tracked operation set'
 );
-const awaitPendingQcRestoreSource = js.match(/async function awaitPendingQcRestore\(sampleId\)\s*\{[\s\S]*?\n  \}/);
-assert(awaitPendingQcRestoreSource, 'app.js should await the latest pending restore for one sample');
+const awaitTrackedQcOperationsSource = js.match(/async function awaitTrackedQcOperations\(\)\s*\{[\s\S]*?\n  \}/);
+assert(awaitTrackedQcOperationsSource, 'app.js should await all active asynchronous QC operations');
 assert(
-  awaitPendingQcRestoreSource[0].includes('state.qcRestorePromises.get(sampleId)'),
-  'Pending restore waiting should remain isolated by sample id'
-);
-const awaitAllPendingQcRestoresSource = js.match(/async function awaitAllPendingQcRestores\(\)\s*\{[\s\S]*?\n  \}/);
-assert(awaitAllPendingQcRestoresSource, 'app.js should await pending restores across navigated QC samples');
-assert(
-  awaitAllPendingQcRestoresSource[0].includes('Promise.allSettled(pending)') &&
-  awaitAllPendingQcRestoresSource[0].includes('state.qcRestorePromises.values()'),
-  'All-sample restore waiting should settle every tracked promise without rejecting Continue'
+  awaitTrackedQcOperationsSource[0].includes('Promise.allSettled(pending)') &&
+  awaitTrackedQcOperationsSource[0].includes('state.qcPendingOperations'),
+  'QC operation waiting should settle every tracked operation without rejecting Continue'
 );
 assert(
-  awaitAllPendingQcRestoresSource[0].includes('while(state.qcRestorePromises.size)'),
-  'All-sample restore waiting should include restores added while an earlier batch is settling'
+  awaitTrackedQcOperationsSource[0].includes('while(state.qcPendingOperations.size)'),
+  'QC operation waiting should remain stable if tracked work changes while settling'
 );
-const trackPendingQcRestoreSource = js.match(/function trackPendingQcRestore\(sampleId, restorePromise\)\s*\{[\s\S]*?\n  \}/);
-assert(trackPendingQcRestoreSource, 'app.js should track pending QC restore promises');
+const trackQcOperationSource = js.match(/function trackQcOperation\(operation\)\s*\{[\s\S]*?\n  \}/);
+assert(trackQcOperationSource, 'app.js should track asynchronous QC geometry operations centrally');
 assert(
-  trackPendingQcRestoreSource[0].includes('restorePromise.then(clearPending,clearPending)') &&
-  !trackPendingQcRestoreSource[0].includes('.finally('),
-  'Pending restore cleanup should consume both resolution paths without creating an unhandled rejection'
+  trackQcOperationSource[0].includes('state.qcPendingOperations.add(operation)') &&
+  trackQcOperationSource[0].includes('operation.then(clearPending,clearPending)') &&
+  !trackQcOperationSource[0].includes('.finally('),
+  'QC operation cleanup should consume both settlement paths without unhandled rejection'
+);
+assert(
+  toggleQcAutoCropSource[0].includes('trackQcOperation(operation)'),
+  'Auto Crop should be tracked until all geometry state is committed'
+);
+assert(
+  applyQcCropSource[0].includes('trackQcOperation(operation)'),
+  'Manual crop preparation should be tracked until all geometry state is committed'
 );
 assert(
   applyQcCropSource[0].includes('recordQcCropHistory('),

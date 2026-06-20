@@ -383,8 +383,8 @@
     lastQcCropTemplateByGroup:{},
     preparedQcImages:new Map(),
     qcCropOperationIds:new Map(),
-    qcRestorePromises:new Map(),
-    qcAnalysisTransitionPending:false,
+    qcPendingOperations:new Set(),
+    qcTransitionPending:false,
     imageIsPreparedQc:false,
     publicationBuilderState:{},
     objectUrls:[],
@@ -4968,6 +4968,7 @@
   }
 
   function beginQcRulerDrag(event) {
+    if(qcMutationBlocked()) return;
     if(state.cropEditing||!state.rulerVisible||event.button!==0) return;
     const point=qcCanvasPoint(event);
     if(!rulerHitTest(point,el.qcCanvas.width,el.qcCanvas.height)) return;
@@ -4984,6 +4985,7 @@
   }
 
   function updateQcRulerDrag(event) {
+    if(qcMutationBlocked()) return;
     if(!state.rulerDragging||!state.rulerDragStart) return;
     const point=qcCanvasPoint(event);
     const start=state.rulerDragStart;
@@ -5064,6 +5066,7 @@
   }
 
   function beginQcOverlayDrag(event) {
+    if(qcMutationBlocked()) return;
     if(!state.cropEditing||!state.crop||event.button!==0) return;
     const metrics=qcOverlayMetrics();
     if(!metrics) return;
@@ -5089,6 +5092,7 @@
   }
 
   function updateQcOverlayDrag(event) {
+    if(qcMutationBlocked()) return;
     const drag=state.qcOverlayDrag;
     if(!drag||drag.pointerId!==event.pointerId) return;
     const rect=updateQcOverlayRect(
@@ -5106,7 +5110,7 @@
   function finishQcOverlayDrag(event) {
     const drag=state.qcOverlayDrag;
     if(!drag||drag.pointerId!==event.pointerId) return;
-    updateQcOverlayDrag(event);
+    if(!qcMutationBlocked()) updateQcOverlayDrag(event);
     if(el.qcCropOverlay.hasPointerCapture?.(event.pointerId)) {
       el.qcCropOverlay.releasePointerCapture(event.pointerId);
     }
@@ -5212,7 +5216,7 @@
     if(sample&&state.imageOriginal&&state.sample?.id===sample.id&&!state.cropEditing) applyQcStateToCurrentImage(sample);
 
     // Auto-detect border issues for current image if not already checked
-    if(sample&&state.imageOriginal&&!qc?.borderCheckPerformed&&!qc?.cropRatio) {
+    if(!qcMutationBlocked()&&sample&&state.imageOriginal&&!qc?.borderCheckPerformed&&!qc?.cropRatio) {
       const hasIssues = detectImageBorderIssues(state.imageOriginal);
       updateQcState(sample.id, {
         needsCrop: hasIssues,
@@ -5233,18 +5237,47 @@
       el.qcAngleRulerToggle.textContent=state.rulerVisible?'Hide angle ruler':'Show angle ruler';
       el.qcAngleRulerToggle.classList.toggle('primary',state.rulerVisible);
     }
-    if(el.qcAdjustCrop) el.qcAdjustCrop.disabled=!sample;
-    if(el.qcSaveCrop) el.qcSaveCrop.disabled=!state.cropEditing;
-    if(el.qcResetCrop) el.qcResetCrop.disabled=!sample||(!qc?.cropRatio&&!qc?.autoCropFov&&!preparedQcImage(sample.id));
-    // Navigation buttons
-    if(el.qcPrevImage) el.qcPrevImage.disabled=!samples.length||samples.length<=1;
-    if(el.qcNextImage) el.qcNextImage.disabled=!samples.length||samples.length<=1;
-    if(el.goToAnalysisFromQc) el.goToAnalysisFromQc.disabled=!samples.length||state.qcAnalysisTransitionPending;
-    updateQcUndoRedoButtons();
+    syncQcTransitionControls(samples,sample,qc);
     drawQcCanvas();
   }
 
+  function qcMutationBlocked() {
+    return !!state.qcTransitionPending;
+  }
+
+  function setQcTransitionPending(pending) {
+    state.qcTransitionPending=!!pending;
+    const samples=selectedGroupSamples();
+    const sample=state.sample&&samples.some(item=>item.id===state.sample.id)?state.sample:samples[0]||null;
+    const qc=sample?qcStateForSample(sample.id):null;
+    syncQcTransitionControls(samples,sample,qc);
+  }
+
+  function syncQcTransitionControls(samples, sample, qc) {
+    const pending=state.qcTransitionPending;
+    const noSample=!sample;
+    if(el.qcOrientation) el.qcOrientation.disabled=pending||noSample;
+    if(el.qcRotateLeft) el.qcRotateLeft.disabled=pending||noSample;
+    if(el.qcRotateRight) el.qcRotateRight.disabled=pending||noSample;
+    if(el.qcFineRotation) el.qcFineRotation.disabled=pending||noSample;
+    if(el.qcFineRotationVal) el.qcFineRotationVal.disabled=pending||noSample;
+    if(el.qcAngleRulerToggle) el.qcAngleRulerToggle.disabled=pending||noSample;
+    if(el.qcAutoCropFov) el.qcAutoCropFov.disabled=pending||noSample;
+    if(el.qcAdjustCrop) el.qcAdjustCrop.disabled=pending||noSample;
+    if(el.qcSaveCrop) el.qcSaveCrop.disabled=pending||!state.cropEditing;
+    if(el.qcResetCrop) el.qcResetCrop.disabled=pending||noSample||(!qc?.cropRatio&&!qc?.autoCropFov&&!preparedQcImage(sample.id));
+    const history=qcCropHistoryForSample(sample?.id);
+    if(el.qcUndoCrop) el.qcUndoCrop.disabled=pending||history.index<0;
+    if(el.qcRedoCrop) el.qcRedoCrop.disabled=pending||history.index>=history.history.length-1;
+    if(el.qcExcludeToggle) el.qcExcludeToggle.disabled=pending||noSample;
+    if(el.qcPrevImage) el.qcPrevImage.disabled=pending||!samples.length||samples.length<=1;
+    if(el.qcNextImage) el.qcNextImage.disabled=pending||!samples.length||samples.length<=1;
+    if(el.groupSelect) el.groupSelect.disabled=pending;
+    if(el.goToAnalysisFromQc) el.goToAnalysisFromQc.disabled=pending||!samples.length;
+  }
+
   function loadQcSampleAt(index, options={}) {
+    if(qcMutationBlocked()) return;
     const samples=selectedGroupSamples();
     const sample=samples[index];
     if(!sample) {
@@ -5259,6 +5292,7 @@
   }
 
   function qcPreviousImage() {
+    if(qcMutationBlocked()) return;
     const samples=selectedGroupSamples();
     if(!samples.length) return;
     const currentIndex=state.sample ? samples.findIndex(s=>s.id===state.sample.id) : 0;
@@ -5267,6 +5301,7 @@
   }
 
   function qcNextImage() {
+    if(qcMutationBlocked()) return;
     const samples=selectedGroupSamples();
     if(!samples.length) return;
     const currentIndex=state.sample ? samples.findIndex(s=>s.id===state.sample.id) : -1;
@@ -5275,6 +5310,7 @@
   }
 
   function beginQcCropEdit() {
+    if(qcMutationBlocked()) return;
     if(!state.sample||!state.imageOriginal) return;
     state.crop=state.crop||currentCrop();
     if(!state.crop?.active) {
@@ -5296,12 +5332,14 @@
   }
 
   function applyQcOrientation(value) {
+    if(qcMutationBlocked()) return;
     if(!state.sample) return;
     updateQcState(state.sample.id,{orientation:value==='horizontal'?'horizontal':'vertical'});
     renderImageQcPanel();
   }
 
   function applyQcRotation(delta) {
+    if(qcMutationBlocked()) return;
     if(!state.sample) return;
     const qc=qcStateForSample(state.sample.id);
     updateQcState(state.sample.id,{rotation:(Number(qc.rotation||0)+delta+360)%360});
@@ -5317,6 +5355,7 @@
   }
 
   function applyQcFineRotation(value) {
+    if(qcMutationBlocked()) return;
     if(!state.sample) return;
     const next=normalizeQcFineRotation(value);
     updateQcState(state.sample.id,{fineRotation:next});
@@ -5356,51 +5395,56 @@
   }
 
   async function toggleQcAutoCrop(checked) {
+    if(qcMutationBlocked()) return;
     if(!state.sample||!state.imageOriginal) return;
     if(!checked) {
       resetQcCrop();
       return;
     }
-    const sample=state.sample;
-    const historyBefore=qcCropHistorySnapshot(sample.id);
-    const rawImage=state.imageOriginal;
-    const fovCutoff=normalizeQcFovCutoff(el.fovCutoff?.value);
-    const crop=autoCropForImage(rawImage,true,fovCutoff);
-    const patch=qcAutoCropPatch(crop,rawImage,fovCutoff);
-    const operationId=beginQcCropOperation(sample.id);
-    try {
-      if(crop.active) await prepareQcAnalysisInput(sample,rawImage,crop,operationId);
-      else releasePreparedQcImage(sample.id);
-      if(!isCurrentQcCropOperation(sample.id,operationId)) return;
-      if(state.sample?.id!==sample.id) {
+    const operation=(async()=>{
+      const sample=state.sample;
+      const historyBefore=qcCropHistorySnapshot(sample.id);
+      const rawImage=state.imageOriginal;
+      const fovCutoff=normalizeQcFovCutoff(el.fovCutoff?.value);
+      const crop=autoCropForImage(rawImage,true,fovCutoff);
+      const patch=qcAutoCropPatch(crop,rawImage,fovCutoff);
+      const operationId=beginQcCropOperation(sample.id);
+      try {
+        if(crop.active) await prepareQcAnalysisInput(sample,rawImage,crop,operationId);
+        else releasePreparedQcImage(sample.id);
+        if(!isCurrentQcCropOperation(sample.id,operationId)) return;
+        if(state.sample?.id!==sample.id) {
+          releasePreparedQcImage(sample.id);
+          return;
+        }
+        updateQcState(sample.id,patch);
+        recordQcCropHistory(sample.id,historyBefore);
+        state.crop=crop.active?{...crop}:null;
+        state.cropManual=!!crop.active;
+        state.cropEditing=false;
+        state.qcOverlayDrag=null;
+        renderImageQcPanel();
+        setLog(crop.active
+          ? '<strong>FOV crop prepared.</strong> The cropped image is ready for Analysis.'
+          : '<strong>Full FOV retained.</strong> No dark microscope border required cropping.');
+      } catch(error) {
+        if(!isCurrentQcCropOperation(sample.id,operationId)) return;
         releasePreparedQcImage(sample.id);
-        return;
+        if(state.sample?.id===sample.id) {
+          updateQcState(sample.id,resetQcCropPatch());
+          state.crop=null;
+          state.cropManual=false;
+          if(el.qcAutoCropFov) el.qcAutoCropFov.checked=false;
+          drawQcCanvas();
+        }
+        setLog(`<strong>Auto crop failed.</strong> ${escHtml(error?.message||String(error))}`);
       }
-      updateQcState(sample.id,patch);
-      recordQcCropHistory(sample.id,historyBefore);
-      state.crop=crop.active?{...crop}:null;
-      state.cropManual=!!crop.active;
-      state.cropEditing=false;
-      state.qcOverlayDrag=null;
-      renderImageQcPanel();
-      setLog(crop.active
-        ? '<strong>FOV crop prepared.</strong> The cropped image is ready for Analysis.'
-        : '<strong>Full FOV retained.</strong> No dark microscope border required cropping.');
-    } catch(error) {
-      if(!isCurrentQcCropOperation(sample.id,operationId)) return;
-      releasePreparedQcImage(sample.id);
-      if(state.sample?.id===sample.id) {
-        updateQcState(sample.id,resetQcCropPatch());
-        state.crop=null;
-        state.cropManual=false;
-        if(el.qcAutoCropFov) el.qcAutoCropFov.checked=false;
-        drawQcCanvas();
-      }
-      setLog(`<strong>Auto crop failed.</strong> ${escHtml(error?.message||String(error))}`);
-    }
+    })();
+    return trackQcOperation(operation);
   }
 
   function resetQcCrop() {
+    if(qcMutationBlocked()) return;
     if(!state.sample) return;
     const sampleId=state.sample.id;
     const historyBefore=qcCropHistorySnapshot(sampleId);
@@ -5499,27 +5543,18 @@
     return operationId===null||state.qcCropOperationIds.get(sampleId)===operationId;
   }
 
-  function trackPendingQcRestore(sampleId, restorePromise) {
-    state.qcRestorePromises.set(sampleId,restorePromise);
+  function trackQcOperation(operation) {
+    state.qcPendingOperations.add(operation);
     const clearPending=()=>{
-      if(state.qcRestorePromises.get(sampleId)===restorePromise) state.qcRestorePromises.delete(sampleId);
+      state.qcPendingOperations.delete(operation);
     };
-    restorePromise.then(clearPending,clearPending);
-    return restorePromise;
+    operation.then(clearPending,clearPending);
+    return operation;
   }
 
-  async function awaitPendingQcRestore(sampleId) {
-    while(sampleId) {
-      const pending=state.qcRestorePromises.get(sampleId);
-      if(!pending) return;
-      await pending;
-      if(state.qcRestorePromises.get(sampleId)===pending) return;
-    }
-  }
-
-  async function awaitAllPendingQcRestores() {
-    while(state.qcRestorePromises.size) {
-      const pending=[...state.qcRestorePromises.values()];
+  async function awaitTrackedQcOperations() {
+    while(state.qcPendingOperations.size) {
+      const pending=[...state.qcPendingOperations];
       await Promise.allSettled(pending);
     }
   }
@@ -5567,7 +5602,8 @@
   }
 
   function undoQcCrop() {
-    if(!state.sample||state.qcAnalysisTransitionPending) return;
+    if(qcMutationBlocked()) return;
+    if(!state.sample) return;
     const history=qcCropHistoryForSample(state.sample.id);
     if(history.index < 0) return;
     const historyEntry=history.history[history.index];
@@ -5578,7 +5614,8 @@
   }
 
   function redoQcCrop() {
-    if(!state.sample||state.qcAnalysisTransitionPending) return;
+    if(qcMutationBlocked()) return;
+    if(!state.sample) return;
     const history=qcCropHistoryForSample(state.sample.id);
     if(history.index >= history.history.length - 1) return;
     const historyEntry=history.history[history.index+1];
@@ -5615,18 +5652,18 @@
         setLog(`<strong>Crop history restore failed.</strong> ${escHtml(error?.message||String(error))}`);
       }
     })();
-    trackPendingQcRestore(sample.id,restorePromise);
-    return restorePromise;
+    return trackQcOperation(restorePromise);
   }
 
   function updateQcUndoRedoButtons() {
     if(!el.qcUndoCrop || !el.qcRedoCrop) return;
     const history=qcCropHistoryForSample(state.sample?.id);
-    el.qcUndoCrop.disabled = history.index < 0;
-    el.qcRedoCrop.disabled = history.index >= history.history.length - 1;
+    el.qcUndoCrop.disabled = state.qcTransitionPending||history.index < 0;
+    el.qcRedoCrop.disabled = state.qcTransitionPending||history.index >= history.history.length - 1;
   }
 
   function applyQcCrop() {
+    if(qcMutationBlocked()) return;
     if(!state.sample||!state.crop) return;
     const sample=state.sample;
     const historyBefore=qcCropHistorySnapshot(sample.id);
@@ -5639,7 +5676,7 @@
     const operationId=beginQcCropOperation(sample.id);
     if(el.qcSaveCrop) el.qcSaveCrop.disabled=true;
     setLog('<strong>Preparing crop:</strong> creating the temporary Analysis image...');
-    return prepareQcAnalysisInput(sample,rawImage,savedCrop,operationId).then(prepared=>{
+    const operation=prepareQcAnalysisInput(sample,rawImage,savedCrop,operationId).then(prepared=>{
       if(!prepared||!isCurrentQcCropOperation(sample.id,operationId)) return;
       updateQcState(sample.id,{
         cropRatio:{...cropRatio},
@@ -5667,9 +5704,11 @@
       drawQcCanvas();
       setLog(`<strong>Crop preparation failed.</strong> ${escHtml(error?.message||String(error))}`);
     });
+    return trackQcOperation(operation);
   }
 
   function toggleQcExclude(checked) {
+    if(qcMutationBlocked()) return;
     if(!state.sample) return;
     updateQcState(state.sample.id,{excluded:!!checked});
     renderImageQcPanel();
@@ -5742,11 +5781,11 @@
   }
 
   async function continueFromQcToAnalysis() {
+    if(qcMutationBlocked()) return;
     const samples=selectedGroupSamples();
-    state.qcAnalysisTransitionPending=true;
-    if(el.goToAnalysisFromQc) el.goToAnalysisFromQc.disabled=true;
+    setQcTransitionPending(true);
     try {
-      await awaitAllPendingQcRestores();
+      await awaitTrackedQcOperations();
       cancelAutoApply();
       cancelGroupMicroscopeAutoDetect();
       state.lockedQcSnapshot=buildLockedQcSnapshot(samples);
@@ -5755,8 +5794,7 @@
       const preparedCount=samples.filter(sample=>preparedQcImage(sample.id)).length;
       setLog(`<strong>Image QC locked:</strong> ${analysisInputFromQcSnapshot().length}/${samples.length} image(s) will be used for analysis; ${preparedCount} prepared crop image(s) ready.`);
     } finally {
-      state.qcAnalysisTransitionPending=false;
-      if(el.goToAnalysisFromQc) el.goToAnalysisFromQc.disabled=!selectedGroupSamples().length;
+      setQcTransitionPending(false);
     }
   }
 
@@ -7795,15 +7833,18 @@
   // Events
   function bindEvents() {
     if(el.moduleTabs) el.moduleTabs.addEventListener('click',e=>{
+      if(qcMutationBlocked()) return;
       const btn=e.target.closest('[data-module]');
       if(!btn) return;
       setAppModule(btn.dataset.module);
     });
     el.modeToggle.addEventListener('click',e=>{
+      if(qcMutationBlocked()) return;
       const btn=e.target.closest('[data-mode]');if(!btn)return;
       setMode(btn.dataset.mode);
     });
     el.groupSelect.addEventListener('change',()=>{
+      if(qcMutationBlocked()) return;
       cancelGroupMicroscopeAutoDetect();
       state.microscopeModeUserSet=false;
       state.lastAutoMicroscopeGroupKey='';
@@ -7827,6 +7868,7 @@
       updateGroupNavButtons();
     });
     if(el.qcImageList) el.qcImageList.addEventListener('click',e=>{
+      if(qcMutationBlocked()) return;
       const row=e.target.closest('[data-qc-index]');
       if(!row) return;
       loadQcSampleAt(Number(row.dataset.qcIndex));
@@ -7846,8 +7888,7 @@
     if(el.qcPrevImage) el.qcPrevImage.addEventListener('click',qcPreviousImage);
     if(el.qcNextImage) el.qcNextImage.addEventListener('click',qcNextImage);
     if(el.goToAnalysisFromQc) el.goToAnalysisFromQc.addEventListener('click',()=>{ continueFromQcToAnalysis().catch(error=>{
-      state.qcAnalysisTransitionPending=false;
-      el.goToAnalysisFromQc.disabled=!selectedGroupSamples().length;
+      setQcTransitionPending(false);
       setLog(`<strong>Could not continue to Analysis.</strong> ${escHtml(error?.message||String(error))}`);
     }); });
     if(el.qcCanvas) {
