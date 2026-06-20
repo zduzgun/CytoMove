@@ -5517,6 +5517,13 @@
     }
   }
 
+  async function awaitAllPendingQcRestores() {
+    while(state.qcRestorePromises.size) {
+      const pending=[...state.qcRestorePromises.values()];
+      await Promise.allSettled(pending);
+    }
+  }
+
   function canvasPngBlob(canvas) {
     return new Promise((resolve,reject)=>{
       canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Could not create prepared crop image.')),'image/png');
@@ -5736,11 +5743,10 @@
 
   async function continueFromQcToAnalysis() {
     const samples=selectedGroupSamples();
-    const activeSampleId=state.sample?.id;
     state.qcAnalysisTransitionPending=true;
     if(el.goToAnalysisFromQc) el.goToAnalysisFromQc.disabled=true;
     try {
-      await awaitPendingQcRestore(activeSampleId);
+      await awaitAllPendingQcRestores();
       cancelAutoApply();
       cancelGroupMicroscopeAutoDetect();
       state.lockedQcSnapshot=buildLockedQcSnapshot(samples);

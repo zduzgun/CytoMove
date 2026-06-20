@@ -187,8 +187,8 @@ assert(
   'Continue to Analysis should cancel every pending automatic analysis path'
 );
 assert(
-  /await awaitPendingQcRestore\(activeSampleId\)[\s\S]*state\.lockedQcSnapshot=buildLockedQcSnapshot/.test(continueFromQcSource[0]),
-  'Continue to Analysis should await the active sample restore before locking the QC snapshot'
+  /await awaitAllPendingQcRestores\(\)[\s\S]*state\.lockedQcSnapshot=buildLockedQcSnapshot/.test(continueFromQcSource[0]),
+  'Continue to Analysis should await every pending QC restore before locking the snapshot'
 );
 assert(
   continueFromQcSource[0].includes('el.goToAnalysisFromQc.disabled=true') &&
@@ -1106,6 +1106,17 @@ assert(awaitPendingQcRestoreSource, 'app.js should await the latest pending rest
 assert(
   awaitPendingQcRestoreSource[0].includes('state.qcRestorePromises.get(sampleId)'),
   'Pending restore waiting should remain isolated by sample id'
+);
+const awaitAllPendingQcRestoresSource = js.match(/async function awaitAllPendingQcRestores\(\)\s*\{[\s\S]*?\n  \}/);
+assert(awaitAllPendingQcRestoresSource, 'app.js should await pending restores across navigated QC samples');
+assert(
+  awaitAllPendingQcRestoresSource[0].includes('Promise.allSettled(pending)') &&
+  awaitAllPendingQcRestoresSource[0].includes('state.qcRestorePromises.values()'),
+  'All-sample restore waiting should settle every tracked promise without rejecting Continue'
+);
+assert(
+  awaitAllPendingQcRestoresSource[0].includes('while(state.qcRestorePromises.size)'),
+  'All-sample restore waiting should include restores added while an earlier batch is settling'
 );
 const trackPendingQcRestoreSource = js.match(/function trackPendingQcRestore\(sampleId, restorePromise\)\s*\{[\s\S]*?\n  \}/);
 assert(trackPendingQcRestoreSource, 'app.js should track pending QC restore promises');
