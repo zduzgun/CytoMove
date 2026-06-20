@@ -177,9 +177,14 @@ assert(
 const continueFromQcSource = js.match(/function continueFromQcToAnalysis\(\)\s*\{[\s\S]*?\n  \}/);
 assert(continueFromQcSource, 'app.js should expose continueFromQcToAnalysis');
 assert(
-  continueFromQcSource[0].includes("setMode('group')") &&
+  continueFromQcSource[0].includes("setMode('group',{scheduleMicroscope:false})") &&
   !continueFromQcSource[0].includes('force:true'),
-  'Continue to Analysis should enter group mode without forcing segmentation'
+  'Continue to Analysis should enter group mode without forced analysis or microscope scheduling'
+);
+assert(
+  continueFromQcSource[0].includes('cancelAutoApply()') &&
+  continueFromQcSource[0].includes('cancelGroupMicroscopeAutoDetect()'),
+  'Continue to Analysis should cancel every pending automatic analysis path'
 );
 
 const validationMessageSource = js.match(/function validationAssetErrorMessage\(\)\s*\{[\s\S]*?\n  \}/);
@@ -1014,8 +1019,15 @@ assert(
 const clearQcCropCacheSource = js.match(/function clearQcCropCache\(sampleId = null\)\s*\{[\s\S]*?\n  \}/);
 assert(clearQcCropCacheSource, 'app.js should expose clearQcCropCache');
 assert(
-  clearQcCropCacheSource[0].includes('entry.sampleId!==sampleId'),
-  'Clearing a sample crop cache should also remove that sample from crop history'
+  clearQcCropCacheSource[0].includes('delete state.qcCropHistoryBySample[sampleId]'),
+  'Clearing a sample crop cache should remove only that sample history'
+);
+
+const qcCropHistoryForSampleSource = js.match(/function qcCropHistoryForSample\(sampleId\)\s*\{[\s\S]*?\n  \}/);
+assert(qcCropHistoryForSampleSource, 'app.js should expose per-sample QC crop history');
+assert(
+  qcCropHistoryForSampleSource[0].includes('state.qcCropHistoryBySample[sampleId]'),
+  'QC crop history should be stored by sample id'
 );
 
 const appendQcCropHistorySource = js.match(/function appendQcCropHistory\(history, index, entry, limit=20\)\s*\{[\s\S]*?\n  \}/);
@@ -1042,15 +1054,35 @@ assert(undoQcCropSource, 'app.js should expose undoQcCrop');
 assert(redoQcCropSource, 'app.js should expose redoQcCrop');
 [undoQcCropSource[0],redoQcCropSource[0]].forEach(source => {
   assert(
-    source.includes('let sample') && !source.includes('saveQcCropToCache('),
-    'QC crop history callbacks should safely resolve another sample without recording a new operation'
+    source.includes('state.sample.id') &&
+    source.includes('qcCropHistoryForSample') &&
+    !source.includes('selectedGroupSamples') &&
+    !source.includes('saveQcCropToCache('),
+    'QC crop history callbacks should operate only on the visible active sample'
   );
 });
 const updateQcUndoRedoSource = js.match(/function updateQcUndoRedoButtons\(\)\s*\{[\s\S]*?\n  \}/);
 assert(updateQcUndoRedoSource, 'app.js should expose updateQcUndoRedoButtons');
 assert(
-  updateQcUndoRedoSource[0].includes('state.qcCropHistoryIndex < 0'),
-  'The first recorded QC crop operation should enable Undo'
+  updateQcUndoRedoSource[0].includes('qcCropHistoryForSample(state.sample?.id)'),
+  'QC crop buttons should reflect only the active sample history'
+);
+const restoreQcCropHistorySource = js.match(/async function restoreQcCropHistorySnapshot\(sample, snapshot\)\s*\{[\s\S]*?\n  \}/);
+assert(restoreQcCropHistorySource, 'QC crop history restore should rebuild prepared input asynchronously');
+[
+  'beginQcCropOperation(sample.id)',
+  'cropFromRatio(rawImage,snapshot.cropRatio)',
+  'await prepareQcAnalysisInput(sample,rawImage,crop,operationId)',
+  'isCurrentQcCropOperation(sample.id,operationId)'
+].forEach(fragment => {
+  assert(
+    restoreQcCropHistorySource[0].includes(fragment),
+    `QC crop history restore should perform ${fragment}`
+  );
+});
+assert(
+  !restoreQcCropHistorySource[0].includes('prepareQcAnalysisInput(sample,rawImage,state.crop'),
+  'QC crop restore should prepare the raw-image ROI once instead of cropping an already cropped preview'
 );
 assert(
   applyQcCropSource[0].includes('recordQcCropHistory('),

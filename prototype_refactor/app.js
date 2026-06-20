@@ -392,8 +392,7 @@
     qcOverlayDrag:null,
     cropCache:new Map(), // Cache cropped images for performance
     qcCropCache:new Map(), // QC crop cache - stores cropped images from QC stage
-    qcCropHistory:[], // Undo/redo history for QC crops
-    qcCropHistoryIndex:-1, // Current position in history
+    qcCropHistoryBySample:{}, // Per-sample undo/redo history for QC crops
     calibrationReport:null,
     groupRenderSeq:0,
     autoMicroscopeDetectSeq:0,
@@ -5434,6 +5433,11 @@
     return {history:next,index:next.length-1};
   }
 
+  function qcCropHistoryForSample(sampleId) {
+    if(!sampleId) return {history:[],index:-1};
+    return state.qcCropHistoryBySample[sampleId]||(state.qcCropHistoryBySample[sampleId]={history:[],index:-1});
+  }
+
   function qcCropHistorySnapshot(sampleId) {
     const qc=qcStateForSample(sampleId);
     return {
@@ -5447,14 +5451,15 @@
   }
 
   function recordQcCropHistory(sampleId, before, after=qcCropHistorySnapshot(sampleId)) {
-    const next=appendQcCropHistory(state.qcCropHistory,state.qcCropHistoryIndex,{
+    const current=qcCropHistoryForSample(sampleId);
+    const next=appendQcCropHistory(current.history,current.index,{
       sampleId,
       before,
       after,
       timestamp:Date.now()
     });
-    state.qcCropHistory=next.history;
-    state.qcCropHistoryIndex=next.index;
+    current.history=next.history;
+    current.index=next.index;
     updateQcUndoRedoButtons();
   }
 
@@ -5465,12 +5470,10 @@
   function clearQcCropCache(sampleId = null) {
     if(sampleId) {
       state.qcCropCache.delete(sampleId);
-      state.qcCropHistory=state.qcCropHistory.filter(entry=>entry.sampleId!==sampleId);
-      state.qcCropHistoryIndex=state.qcCropHistory.length-1;
+      delete state.qcCropHistoryBySample[sampleId];
     } else {
       state.qcCropCache.clear();
-      state.qcCropHistory = [];
-      state.qcCropHistoryIndex = -1;
+      state.qcCropHistoryBySample = {};
     }
   }
 
@@ -5537,57 +5540,59 @@
   }
 
   function undoQcCrop() {
-    if(state.qcCropHistoryIndex < 0) return;
-    const historyEntry=state.qcCropHistory[state.qcCropHistoryIndex];
+    if(!state.sample) return;
+    const history=qcCropHistoryForSample(state.sample.id);
+    if(history.index < 0) return;
+    const historyEntry=history.history[history.index];
     if(!historyEntry) return;
-    let sample=state.sample;
-    if(!sample || sample.id !== historyEntry.sampleId) {
-      sample=selectedGroupSamples().find(item=>item.id===historyEntry.sampleId);
-    }
-    if(sample) {
-      restoreQcCropHistorySnapshot(sample,historyEntry.before);
-      state.qcCropHistoryIndex--;
-      updateQcUndoRedoButtons();
-    }
+    restoreQcCropHistorySnapshot(state.sample,historyEntry.before);
+    history.index--;
+    updateQcUndoRedoButtons();
   }
 
   function redoQcCrop() {
-    if(state.qcCropHistoryIndex >= state.qcCropHistory.length - 1) return;
-    const historyEntry=state.qcCropHistory[state.qcCropHistoryIndex+1];
+    if(!state.sample) return;
+    const history=qcCropHistoryForSample(state.sample.id);
+    if(history.index >= history.history.length - 1) return;
+    const historyEntry=history.history[history.index+1];
     if(!historyEntry) return;
-    let sample=state.sample;
-    if(!sample || sample.id !== historyEntry.sampleId) {
-      sample=selectedGroupSamples().find(item=>item.id===historyEntry.sampleId);
-    }
-    if(sample) {
-      restoreQcCropHistorySnapshot(sample,historyEntry.after);
-      state.qcCropHistoryIndex++;
-      updateQcUndoRedoButtons();
-    }
+    restoreQcCropHistorySnapshot(state.sample,historyEntry.after);
+    history.index++;
+    updateQcUndoRedoButtons();
   }
 
-  function restoreQcCropHistorySnapshot(sample, snapshot) {
-    invalidateQcCropOperation(sample.id);
+  async function restoreQcCropHistorySnapshot(sample, snapshot) {
+    const operationId=beginQcCropOperation(sample.id);
     releasePreparedQcImage(sample.id);
     state.qcCropCache.delete(sample.id);
     invalidateCropCache(sample.id);
     updateQcState(sample.id,snapshot);
-    if(state.sample?.id===sample.id) {
-      const image=state.imageOriginal||state.image;
-      state.crop=snapshot.cropRatio&&image?cropFromRatio(image,snapshot.cropRatio):null;
+    const isActive=state.sample?.id===sample.id;
+    const rawImage=isActive?(state.imageOriginal||state.image):null;
+    const crop=snapshot.cropRatio&&rawImage?cropFromRatio(rawImage,snapshot.cropRatio):null;
+    if(isActive) {
+      state.crop=crop;
       state.cropManual=!!state.crop;
       state.cropEditing=false;
       state.cropDragging=false;
       state.qcOverlayDrag=null;
       renderImageQcPanel();
     }
+    try {
+      if(crop) await prepareQcAnalysisInput(sample,rawImage,crop,operationId);
+      if(!isCurrentQcCropOperation(sample.id,operationId)) return;
+      if(state.sample?.id===sample.id) renderImageQcPanel();
+    } catch(error) {
+      if(!isCurrentQcCropOperation(sample.id,operationId)) return;
+      setLog(`<strong>Crop history restore failed.</strong> ${escHtml(error?.message||String(error))}`);
+    }
   }
 
   function updateQcUndoRedoButtons() {
     if(!el.qcUndoCrop || !el.qcRedoCrop) return;
-
-    el.qcUndoCrop.disabled = state.qcCropHistoryIndex < 0;
-    el.qcRedoCrop.disabled = state.qcCropHistoryIndex >= state.qcCropHistory.length - 1;
+    const history=qcCropHistoryForSample(state.sample?.id);
+    el.qcUndoCrop.disabled = history.index < 0;
+    el.qcRedoCrop.disabled = history.index >= history.history.length - 1;
   }
 
   function applyQcCrop() {
@@ -5707,8 +5712,10 @@
 
   function continueFromQcToAnalysis() {
     const samples=selectedGroupSamples();
+    cancelAutoApply();
+    cancelGroupMicroscopeAutoDetect();
     state.lockedQcSnapshot=buildLockedQcSnapshot(samples);
-    if(samples.length) setMode('group');
+    if(samples.length) setMode('group',{scheduleMicroscope:false});
     setAppModule('analysis');
     const preparedCount=samples.filter(sample=>preparedQcImage(sample.id)).length;
     setLog(`<strong>Image QC locked:</strong> ${analysisInputFromQcSnapshot().length}/${samples.length} image(s) will be used for analysis; ${preparedCount} prepared crop image(s) ready.`);
@@ -7064,7 +7071,7 @@
     if(isGroup) {
       renderGroupView(options);
       setLog('<strong>Group review:</strong> images are ready. Click a card to tune one image, then use Apply to group.');
-      scheduleGroupMicroscopeAutoDetect();
+      if(options.scheduleMicroscope!==false) scheduleGroupMicroscopeAutoDetect();
     } else {
       el.exportGroupPng.disabled=true;
       el.exportPlots.disabled=true;
