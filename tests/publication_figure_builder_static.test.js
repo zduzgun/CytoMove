@@ -174,7 +174,7 @@ assert(
   'Initialization should sync validation tool visibility after DOM references and event bindings are ready'
 );
 
-const continueFromQcSource = js.match(/function continueFromQcToAnalysis\(\)\s*\{[\s\S]*?\n  \}/);
+const continueFromQcSource = js.match(/async function continueFromQcToAnalysis\(\)\s*\{[\s\S]*?\n  \}/);
 assert(continueFromQcSource, 'app.js should expose continueFromQcToAnalysis');
 assert(
   continueFromQcSource[0].includes("setMode('group',{scheduleMicroscope:false})") &&
@@ -185,6 +185,19 @@ assert(
   continueFromQcSource[0].includes('cancelAutoApply()') &&
   continueFromQcSource[0].includes('cancelGroupMicroscopeAutoDetect()'),
   'Continue to Analysis should cancel every pending automatic analysis path'
+);
+assert(
+  /await awaitPendingQcRestore\(activeSampleId\)[\s\S]*state\.lockedQcSnapshot=buildLockedQcSnapshot/.test(continueFromQcSource[0]),
+  'Continue to Analysis should await the active sample restore before locking the QC snapshot'
+);
+assert(
+  continueFromQcSource[0].includes('el.goToAnalysisFromQc.disabled=true') &&
+  continueFromQcSource[0].includes('finally'),
+  'Continue to Analysis should disable the transition button while awaiting QC restore'
+);
+assert(
+  js.includes("el.goToAnalysisFromQc.addEventListener('click',()=>{ continueFromQcToAnalysis().catch"),
+  'The async Continue handler should handle rejected transitions safely'
 );
 
 const validationMessageSource = js.match(/function validationAssetErrorMessage\(\)\s*\{[\s\S]*?\n  \}/);
@@ -1083,6 +1096,23 @@ assert(restoreQcCropHistorySource, 'QC crop history restore should rebuild prepa
 assert(
   !restoreQcCropHistorySource[0].includes('prepareQcAnalysisInput(sample,rawImage,state.crop'),
   'QC crop restore should prepare the raw-image ROI once instead of cropping an already cropped preview'
+);
+assert(
+  restoreQcCropHistorySource[0].includes('trackPendingQcRestore(sample.id,restorePromise)'),
+  'QC crop restore should expose its active per-sample promise to Continue'
+);
+const awaitPendingQcRestoreSource = js.match(/async function awaitPendingQcRestore\(sampleId\)\s*\{[\s\S]*?\n  \}/);
+assert(awaitPendingQcRestoreSource, 'app.js should await the latest pending restore for one sample');
+assert(
+  awaitPendingQcRestoreSource[0].includes('state.qcRestorePromises.get(sampleId)'),
+  'Pending restore waiting should remain isolated by sample id'
+);
+const trackPendingQcRestoreSource = js.match(/function trackPendingQcRestore\(sampleId, restorePromise\)\s*\{[\s\S]*?\n  \}/);
+assert(trackPendingQcRestoreSource, 'app.js should track pending QC restore promises');
+assert(
+  trackPendingQcRestoreSource[0].includes('restorePromise.then(clearPending,clearPending)') &&
+  !trackPendingQcRestoreSource[0].includes('.finally('),
+  'Pending restore cleanup should consume both resolution paths without creating an unhandled rejection'
 );
 assert(
   applyQcCropSource[0].includes('recordQcCropHistory('),
