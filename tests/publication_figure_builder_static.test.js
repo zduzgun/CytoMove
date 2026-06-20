@@ -174,6 +174,14 @@ assert(
   'Initialization should sync validation tool visibility after DOM references and event bindings are ready'
 );
 
+const continueFromQcSource = js.match(/function continueFromQcToAnalysis\(\)\s*\{[\s\S]*?\n  \}/);
+assert(continueFromQcSource, 'app.js should expose continueFromQcToAnalysis');
+assert(
+  continueFromQcSource[0].includes("setMode('group')") &&
+  !continueFromQcSource[0].includes('force:true'),
+  'Continue to Analysis should enter group mode without forcing segmentation'
+);
+
 const validationMessageSource = js.match(/function validationAssetErrorMessage\(\)\s*\{[\s\S]*?\n  \}/);
 assert(validationMessageSource, 'app.js should expose validationAssetErrorMessage');
 const validationMessageSandbox = {};
@@ -990,10 +998,10 @@ assert(
 const resetQcCropSource = js.match(/function resetQcCrop\(\)\s*\{[\s\S]*?\n  \}/);
 assert(resetQcCropSource, 'app.js should expose resetQcCrop');
 [
-  'invalidateQcCropOperation(state.sample.id)',
-  'releasePreparedQcImage(state.sample.id)',
-  'clearQcCropCache(state.sample.id)',
-  'invalidateCropCache(state.sample.id)',
+  'invalidateQcCropOperation(sampleId)',
+  'releasePreparedQcImage(sampleId)',
+  'state.qcCropCache.delete(sampleId)',
+  'invalidateCropCache(sampleId)',
   'drawQcCanvas()'
 ].forEach(fragment => {
   assert(resetQcCropSource[0].includes(fragment), `Reset crop should perform ${fragment}`);
@@ -1008,6 +1016,50 @@ assert(clearQcCropCacheSource, 'app.js should expose clearQcCropCache');
 assert(
   clearQcCropCacheSource[0].includes('entry.sampleId!==sampleId'),
   'Clearing a sample crop cache should also remove that sample from crop history'
+);
+
+const appendQcCropHistorySource = js.match(/function appendQcCropHistory\(history, index, entry, limit=20\)\s*\{[\s\S]*?\n  \}/);
+assert(appendQcCropHistorySource, 'app.js should expose appendQcCropHistory');
+const qcCropHistorySandbox = {};
+vm.runInNewContext(
+  `${appendQcCropHistorySource[0]}; this.appendQcCropHistory = appendQcCropHistory;`,
+  qcCropHistorySandbox
+);
+const branchedQcHistory = qcCropHistorySandbox.appendQcCropHistory(
+  [{sampleId:'a'},{sampleId:'b'},{sampleId:'redo'}],
+  1,
+  {sampleId:'new'}
+);
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(branchedQcHistory)),
+  {history:[{sampleId:'a'},{sampleId:'b'},{sampleId:'new'}],index:2},
+  'A new QC crop operation should discard the redo branch'
+);
+
+const undoQcCropSource = js.match(/function undoQcCrop\(\)\s*\{[\s\S]*?\n  \}/);
+const redoQcCropSource = js.match(/function redoQcCrop\(\)\s*\{[\s\S]*?\n  \}/);
+assert(undoQcCropSource, 'app.js should expose undoQcCrop');
+assert(redoQcCropSource, 'app.js should expose redoQcCrop');
+[undoQcCropSource[0],redoQcCropSource[0]].forEach(source => {
+  assert(
+    source.includes('let sample') && !source.includes('saveQcCropToCache('),
+    'QC crop history callbacks should safely resolve another sample without recording a new operation'
+  );
+});
+const updateQcUndoRedoSource = js.match(/function updateQcUndoRedoButtons\(\)\s*\{[\s\S]*?\n  \}/);
+assert(updateQcUndoRedoSource, 'app.js should expose updateQcUndoRedoButtons');
+assert(
+  updateQcUndoRedoSource[0].includes('state.qcCropHistoryIndex < 0'),
+  'The first recorded QC crop operation should enable Undo'
+);
+assert(
+  applyQcCropSource[0].includes('recordQcCropHistory('),
+  'A successful manual QC crop should record an undoable history operation'
+);
+assert(
+  resetQcCropSource[0].includes('recordQcCropHistory(') &&
+  !resetQcCropSource[0].includes('clearQcCropCache(state.sample.id)'),
+  'Reset crop should be undoable without deleting that sample history'
 );
 
 const prepareQcAnalysisInputSource = js.match(/async function prepareQcAnalysisInput\(sample, rawImage, crop, operationId=null\)\s*\{[\s\S]*?\n  \}/);

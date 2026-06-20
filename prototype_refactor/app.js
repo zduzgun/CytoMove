@@ -5361,6 +5361,7 @@
       return;
     }
     const sample=state.sample;
+    const historyBefore=qcCropHistorySnapshot(sample.id);
     const rawImage=state.imageOriginal;
     const fovCutoff=normalizeQcFovCutoff(el.fovCutoff?.value);
     const crop=autoCropForImage(rawImage,true,fovCutoff);
@@ -5375,6 +5376,7 @@
         return;
       }
       updateQcState(sample.id,patch);
+      recordQcCropHistory(sample.id,historyBefore);
       state.crop=crop.active?{...crop}:null;
       state.cropManual=!!crop.active;
       state.cropEditing=false;
@@ -5399,11 +5401,14 @@
 
   function resetQcCrop() {
     if(!state.sample) return;
-    invalidateQcCropOperation(state.sample.id);
-    releasePreparedQcImage(state.sample.id);
-    clearQcCropCache(state.sample.id);
-    invalidateCropCache(state.sample.id);
-    updateQcState(state.sample.id,resetQcCropPatch());
+    const sampleId=state.sample.id;
+    const historyBefore=qcCropHistorySnapshot(sampleId);
+    invalidateQcCropOperation(sampleId);
+    releasePreparedQcImage(sampleId);
+    state.qcCropCache.delete(sampleId);
+    invalidateCropCache(sampleId);
+    updateQcState(sampleId,resetQcCropPatch());
+    recordQcCropHistory(sampleId,historyBefore);
     state.crop=null;
     state.cropManual=false;
     state.cropEditing=false;
@@ -5422,25 +5427,35 @@
       crop: {...crop},
       timestamp: Date.now()
     });
+  }
 
-    // Add to history for undo/redo
-    // Remove any future history if we're not at the end
-    if(state.qcCropHistoryIndex < state.qcCropHistory.length - 1) {
-      state.qcCropHistory = state.qcCropHistory.slice(0, state.qcCropHistoryIndex + 1);
-    }
+  function appendQcCropHistory(history, index, entry, limit=20) {
+    const next=[...history.slice(0,index+1),entry].slice(-limit);
+    return {history:next,index:next.length-1};
+  }
 
-    state.qcCropHistory.push({
-      sampleId: sample.id,
-      crop: {...crop},
-      timestamp: Date.now()
+  function qcCropHistorySnapshot(sampleId) {
+    const qc=qcStateForSample(sampleId);
+    return {
+      cropRatio:qc.cropRatio?{...qc.cropRatio}:null,
+      cropSaved:!!qc.cropSaved,
+      cropReset:!!qc.cropReset,
+      autoCropFov:!!qc.autoCropFov,
+      fovCutoff:qc.fovCutoff??null,
+      needsCrop:!!qc.needsCrop
+    };
+  }
+
+  function recordQcCropHistory(sampleId, before, after=qcCropHistorySnapshot(sampleId)) {
+    const next=appendQcCropHistory(state.qcCropHistory,state.qcCropHistoryIndex,{
+      sampleId,
+      before,
+      after,
+      timestamp:Date.now()
     });
-    state.qcCropHistoryIndex = state.qcCropHistory.length - 1;
-
-    // Limit history to 20 entries
-    if(state.qcCropHistory.length > 20) {
-      state.qcCropHistory.shift();
-      state.qcCropHistoryIndex--;
-    }
+    state.qcCropHistory=next.history;
+    state.qcCropHistoryIndex=next.index;
+    updateQcUndoRedoButtons();
   }
 
   function getQcCropFromCache(sampleId) {
@@ -5522,89 +5537,63 @@
   }
 
   function undoQcCrop() {
-    if(state.qcCropHistoryIndex <= 0) return;
-
-    state.qcCropHistoryIndex--;
-
-    const historyEntry = state.qcCropHistory[state.qcCropHistoryIndex];
+    if(state.qcCropHistoryIndex < 0) return;
+    const historyEntry=state.qcCropHistory[state.qcCropHistoryIndex];
     if(!historyEntry) return;
-
-    // Restore crop from history
-    const sample = state.sample;
+    let sample=state.sample;
     if(!sample || sample.id !== historyEntry.sampleId) {
-      // Find the correct sample
-      const samples = selectedGroupSamples();
-      sample = samples.find(s => s.id === historyEntry.sampleId);
+      sample=selectedGroupSamples().find(item=>item.id===historyEntry.sampleId);
     }
-
     if(sample) {
-      state.crop = {...historyEntry.crop};
-      updateQcState(sample.id, {cropRatio: normalizedCropRatio(state.crop, state.imageOriginal || state.image)});
-
-      // Re-create cached image
-      const canvas = document.createElement('canvas');
-      canvas.width = state.crop.w;
-      canvas.height = state.crop.h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(state.imageOriginal || state.image, state.crop.x, state.crop.y, state.crop.w, state.crop.h, 0, 0, state.crop.w, state.crop.h);
-
-      const croppedImg = new Image();
-      croppedImg.src = canvas.toDataURL('image/png');
-      croppedImg.onload = () => {
-        saveQcCropToCache(sample, croppedImg, state.crop);
-        // Don't add to history since we're undoing
-        state.qcCropHistoryIndex--; // Compensate for saveQcCropToCache increment
-        scheduleQcCanvasDraw();
-        renderImageQcPanel();
-      };
+      restoreQcCropHistorySnapshot(sample,historyEntry.before);
+      state.qcCropHistoryIndex--;
+      updateQcUndoRedoButtons();
     }
   }
 
   function redoQcCrop() {
     if(state.qcCropHistoryIndex >= state.qcCropHistory.length - 1) return;
-
-    state.qcCropHistoryIndex++;
-
-    const historyEntry = state.qcCropHistory[state.qcCropHistoryIndex];
+    const historyEntry=state.qcCropHistory[state.qcCropHistoryIndex+1];
     if(!historyEntry) return;
-
-    const sample = state.sample;
+    let sample=state.sample;
     if(!sample || sample.id !== historyEntry.sampleId) {
-      const samples = selectedGroupSamples();
-      sample = samples.find(s => s.id === historyEntry.sampleId);
+      sample=selectedGroupSamples().find(item=>item.id===historyEntry.sampleId);
     }
-
     if(sample) {
-      state.crop = {...historyEntry.crop};
-      updateQcState(sample.id, {cropRatio: normalizedCropRatio(state.crop, state.imageOriginal || state.image)});
+      restoreQcCropHistorySnapshot(sample,historyEntry.after);
+      state.qcCropHistoryIndex++;
+      updateQcUndoRedoButtons();
+    }
+  }
 
-      const canvas = document.createElement('canvas');
-      canvas.width = state.crop.w;
-      canvas.height = state.crop.h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(state.imageOriginal || state.image, state.crop.x, state.crop.y, state.crop.w, state.crop.h, 0, 0, state.crop.w, state.crop.h);
-
-      const croppedImg = new Image();
-      croppedImg.src = canvas.toDataURL('image/png');
-      croppedImg.onload = () => {
-        saveQcCropToCache(sample, croppedImg, state.crop);
-        state.qcCropHistoryIndex--; // Compensate for saveQcCropToCache increment
-        scheduleQcCanvasDraw();
-        renderImageQcPanel();
-      };
+  function restoreQcCropHistorySnapshot(sample, snapshot) {
+    invalidateQcCropOperation(sample.id);
+    releasePreparedQcImage(sample.id);
+    state.qcCropCache.delete(sample.id);
+    invalidateCropCache(sample.id);
+    updateQcState(sample.id,snapshot);
+    if(state.sample?.id===sample.id) {
+      const image=state.imageOriginal||state.image;
+      state.crop=snapshot.cropRatio&&image?cropFromRatio(image,snapshot.cropRatio):null;
+      state.cropManual=!!state.crop;
+      state.cropEditing=false;
+      state.cropDragging=false;
+      state.qcOverlayDrag=null;
+      renderImageQcPanel();
     }
   }
 
   function updateQcUndoRedoButtons() {
     if(!el.qcUndoCrop || !el.qcRedoCrop) return;
 
-    el.qcUndoCrop.disabled = state.qcCropHistoryIndex <= 0;
+    el.qcUndoCrop.disabled = state.qcCropHistoryIndex < 0;
     el.qcRedoCrop.disabled = state.qcCropHistoryIndex >= state.qcCropHistory.length - 1;
   }
 
   function applyQcCrop() {
     if(!state.sample||!state.crop) return;
     const sample=state.sample;
+    const historyBefore=qcCropHistorySnapshot(sample.id);
     const rawImage=state.imageOriginal||state.image;
     const savedCrop=clampCrop({...state.crop},rawImage);
     const cropRatio=normalizedCropRatio(savedCrop,rawImage);
@@ -5623,6 +5612,7 @@
         autoCropFov:false,
         fovCutoff:null
       });
+      recordQcCropHistory(sample.id,historyBefore);
       if(group?.id) state.lastQcCropTemplateByGroup[group.id]={...cropRatio};
       state.crop={...savedCrop};
       state.cropEditing=false;
@@ -5718,7 +5708,7 @@
   function continueFromQcToAnalysis() {
     const samples=selectedGroupSamples();
     state.lockedQcSnapshot=buildLockedQcSnapshot(samples);
-    if(samples.length) setMode('group',{force:true});
+    if(samples.length) setMode('group');
     setAppModule('analysis');
     const preparedCount=samples.filter(sample=>preparedQcImage(sample.id)).length;
     setLog(`<strong>Image QC locked:</strong> ${analysisInputFromQcSnapshot().length}/${samples.length} image(s) will be used for analysis; ${preparedCount} prepared crop image(s) ready.`);
