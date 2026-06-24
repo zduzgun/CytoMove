@@ -33,8 +33,8 @@ test('full HUVEC tutorial starts from the bundled validation image set', () => {
   assert.doesNotMatch(appJs, /loadValidationSet\(config\.validationSetId\)/);
   assert.doesNotMatch(appJs, /switchModule\('qc'\)/);
   assert.match(appJs, /setAppModule\('qc'\)/);
-  assert.match(appHtml, /styles\.css\?v=20260624-tutorial-loading-builder-analysis/);
-  assert.match(appHtml, /app\.js\?v=20260624-tutorial-loading-builder-analysis/);
+  assert.match(appHtml, /styles\.css\?v=20260624-builder-missing-guard/);
+  assert.match(appHtml, /app\.js\?v=20260624-builder-missing-guard/);
 });
 
 test('full HUVEC validation assets are tracked for the web tutorial', () => {
@@ -268,4 +268,12 @@ test('Analyze missing groups advances the tutorial only after Builder analysis c
   assert.match(appJs, /document\.addEventListener\('cytomove:builder-analysis-complete'/);
   assert.match(appJs, /document\.dispatchEvent\(new CustomEvent\('cytomove:builder-analysis-complete'/);
   assert.match(appJs, /step\.event!=='cytomove:builder-analysis-complete'/);
+});
+
+test('full HUVEC tutorial cannot complete while Builder still has missing group analyses', () => {
+  assert.match(appJs, /function tutorialRequiresBuilderMissingGroupsStep\(\)/);
+  assert.match(appJs, /builderResultCoverage\(builderSettings\(\)\)/);
+  assert.match(appJs, /state\.tutorial\.stepIndex\s*=\s*missingStepIndex/);
+  assert.match(appJs, /state\.tutorial\.complete\s*=\s*false/);
+  assert.match(appJs, /const completed=tutorialCompletionAllowed\(\)&&state\.tutorial\.complete/);
 });

@@ -7735,6 +7735,29 @@ const CALIBRATION = [
     }
   ];
 
+  function tutorialMissingGroupsStepIndex(config=state.tutorial?.config) {
+    return (config?.steps||[]).findIndex(step=>step.key==='builder-missing-groups');
+  }
+
+  function tutorialRequiresBuilderMissingGroupsStep() {
+    if(!state.tutorial||state.tutorial.key!=='huvec-full') return false;
+    if(state.appModule!=='builder') return false;
+    const missingStepIndex=tutorialMissingGroupsStepIndex();
+    if(missingStepIndex<0) return false;
+    const coverage=builderResultCoverage(builderSettings());
+    return !coverage.complete&&coverage.missingSamples.length>0;
+  }
+
+  function tutorialCompletionAllowed() {
+    if(!tutorialRequiresBuilderMissingGroupsStep()) return true;
+    const missingStepIndex=tutorialMissingGroupsStepIndex();
+    state.tutorial.stepIndex = missingStepIndex;
+    state.tutorial.complete = false;
+    state.tutorialAdvancePending=false;
+    state.tutorialAdvancePendingStep=null;
+    return false;
+  }
+
   function setupTutorialCoach(config, samples) {
     document.body.classList.add('tutorial-active');
     let coach=document.getElementById('tutorialCoach');
@@ -7751,9 +7774,9 @@ const CALIBRATION = [
     state.tutorialAdvancePendingStep=null;
     const render=()=>{
       const steps=currentTutorialSteps();
-      const current=steps[state.tutorial.stepIndex];
+      const completed=tutorialCompletionAllowed()&&state.tutorial.complete;
+      const current=steps[state.tutorial.stepIndex]||steps[steps.length-1]||{};
       const progress=`${Math.min(state.tutorial.stepIndex+1,steps.length)} / ${steps.length}`;
-      const completed=state.tutorial.complete;
       coach.innerHTML=completed
         ? `<div class="tutorial-kicker">Guided tutorial complete</div>
            <h2>${escHtml(config.label)} is ready.</h2>
