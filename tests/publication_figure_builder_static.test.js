@@ -13,7 +13,7 @@ const specPath = path.join(root, 'docs/superpowers/specs/2026-06-16-publication-
 
 assert(fs.existsSync(specPath), 'Publication Figure Builder design spec should be saved as markdown');
 assert(
-  html.includes('app.js?v=20260624-huvec-tutorial-qc-start'),
+  html.includes('app.js?v=20260624-builder-validation-loader'),
   'index.html should cache-bust the canonical app.js asset'
 );
 
@@ -79,6 +79,15 @@ assert(
   js.includes('function syncValidationToolsVisibility()') &&
     js.includes('host.hidden=false'),
   'Validation tools visibility sync should keep the example data controls visible'
+);
+assert(
+  js.includes("loadServedValidationSet(el.builderValidationSet?.value,{finalModule:'builder',preAnalyze:true})"),
+  'Builder validation button should load the bundled data directly into Publication Figure Builder'
+);
+assert(
+  js.includes("el.loadBuilderValidationSet.textContent=preAnalyze?'Analyzing validation set...':'Loading validation set...'") &&
+    js.includes('el.loadBuilderValidationSet.textContent=validationButtonLabel'),
+  'Builder validation button should show visible loading/analyzing feedback and then restore its label'
 );
 
 [
@@ -688,6 +697,11 @@ assert(
 assert(
   loaderBody.includes('validationGroupAnalysisComplete('),
   'Validation loader should verify imported analysis completeness before success'
+);
+assert(
+  loaderBody.includes('builderResultCoverage(builderSettings())') &&
+    loaderBody.includes('await analyzeMissingBuilderGroups()'),
+  'Builder validation load should resolve any current-QC coverage gaps before showing the Builder preview'
 );
 assert(loaderBody.includes('state.validationLoadActive=true'),'Validation loader should activate its mutation guard');
 assert(loaderBody.includes('setValidationLoadControlsLocked(true)'),'Validation loader should lock local mutation controls');

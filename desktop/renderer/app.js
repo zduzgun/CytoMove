@@ -8996,12 +8996,18 @@ const CALIBRATION = [
       setLog('<strong>Validation set:</strong> choose a known validation set first.');
       return;
     }
+    const preAnalyze=options.preAnalyze!==false;
+    const finalModule=options.finalModule||'qc';
+    const validationButtonLabel=el.loadBuilderValidationSet?.textContent||'Load validation set';
     const sessionSnapshot=validationSessionSnapshot({...state,panelSettings:currentPanelSettings()},el);
     cancelGroupMicroscopeAutoDetect();
     state.validationLoadActive=true;
     const controlsSnapshot=setValidationLoadControlsLocked(true);
     setSpinner(true);
-    if(el.loadBuilderValidationSet) el.loadBuilderValidationSet.disabled=true;
+    if(el.loadBuilderValidationSet) {
+      el.loadBuilderValidationSet.disabled=true;
+      el.loadBuilderValidationSet.textContent=preAnalyze?'Analyzing validation set...':'Loading validation set...';
+    }
     const imported=[];
     const ownership={groupIds:[],sampleIds:[],objectUrls:[]};
     let validationLoaded=false;
@@ -9023,7 +9029,6 @@ const CALIBRATION = [
         }
         imported.push({...group,...created});
       }
-      const preAnalyze=options.preAnalyze!==false;
       if(preAnalyze) {
         for(const group of imported) {
           await analyzeImportedGroup(group.groupId);
@@ -9060,7 +9065,12 @@ const CALIBRATION = [
       });
       if(el.builderControlGroup) el.builderControlGroup.value=imported.find(group=>group.condition==='control')?.groupId||el.builderControlGroup.value;
       if(el.builderTreatmentGroup) el.builderTreatmentGroup.value=imported.find(group=>group.condition==='treatment')?.groupId||el.builderTreatmentGroup.value;
-      const finalModule=options.finalModule||'qc';
+      if(preAnalyze&&finalModule==='builder') {
+        const builderCoverage=builderResultCoverage(builderSettings());
+        if(!builderCoverage.complete&&builderCoverage.missingSamples.length) {
+          await analyzeMissingBuilderGroups();
+        }
+      }
       if(finalModule==='qc') {
         if(el.groupSelect) el.groupSelect.value=imported[0]?.groupId||el.groupSelect.value;
         setAppModule('qc');
@@ -9085,7 +9095,10 @@ const CALIBRATION = [
         if(el.groupSelect) el.groupSelect.disabled=!groupOptions().length;
         if(el.deleteGroup) el.deleteGroup.disabled=!groupOptions().length;
       }
-      if(el.loadBuilderValidationSet) el.loadBuilderValidationSet.disabled=false;
+      if(el.loadBuilderValidationSet) {
+        el.loadBuilderValidationSet.disabled=false;
+        el.loadBuilderValidationSet.textContent=validationButtonLabel;
+      }
       setSpinner(false);
     }
   }
@@ -9242,7 +9255,7 @@ const CALIBRATION = [
         handle.addEventListener('pointercancel',finishBuilderPanelDrag);
       });
     }
-    if(el.loadBuilderValidationSet) el.loadBuilderValidationSet.addEventListener('click',()=>loadServedValidationSet(el.builderValidationSet?.value));
+    if(el.loadBuilderValidationSet) el.loadBuilderValidationSet.addEventListener('click',()=>loadServedValidationSet(el.builderValidationSet?.value,{finalModule:'builder',preAnalyze:true}));
     if(el.exportBuilderFigure) el.exportBuilderFigure.addEventListener('click',()=>showExportStylePanel('builder'));
     if(el.addBuilderTreatmentArm) el.addBuilderTreatmentArm.addEventListener('click',addBuilderTreatmentArm);
     if(el.builderTreatmentArms) {
