@@ -33,8 +33,8 @@ test('full HUVEC tutorial starts from the bundled validation image set', () => {
   assert.doesNotMatch(appJs, /loadValidationSet\(config\.validationSetId\)/);
   assert.doesNotMatch(appJs, /switchModule\('qc'\)/);
   assert.match(appJs, /setAppModule\('qc'\)/);
-  assert.match(appHtml, /styles\.css\?v=20260624-builder-validation-rescue/);
-  assert.match(appHtml, /app\.js\?v=20260624-builder-validation-rescue/);
+  assert.match(appHtml, /styles\.css\?v=20260624-tutorial-loading-builder-analysis/);
+  assert.match(appHtml, /app\.js\?v=20260624-tutorial-loading-builder-analysis/);
 });
 
 test('full HUVEC validation assets are tracked for the web tutorial', () => {
@@ -69,7 +69,8 @@ test('full HUVEC tutorial teaches crop review before basic analysis tuning', () 
     "selector:'#varianceRadius'",
     "selector:'#rerun'",
     "selector:'#applySettingsGroup'",
-    "selector:'button[data-module=\"builder\"]'"
+    "selector:'button[data-module=\"builder\"]'",
+    "selector:'#analyzeMissingBuilderGroups'"
   ];
   let cursor = -1;
   for (const snippet of expectedOrder) {
@@ -85,7 +86,8 @@ test('full HUVEC tutorial teaches crop review before basic analysis tuning', () 
   assert.match(body, /Apply to group/);
   assert.doesNotMatch(body, /selector:'#groupNext'/);
   assert.doesNotMatch(body, /selector:'#exportBuilderFigure'/);
-  assert.doesNotMatch(body, /selector:'#analyzeMissingBuilderGroups'/);
+  assert.match(body, /Analyze missing groups/);
+  assert.match(body, /cytomove:builder-analysis-complete/);
   assert.match(body, /Continue in Playground/);
   assert.match(body, /kare alan.*merkeze/i);
   assert.doesNotMatch(body, /selector:'#qcCropOverlay'/);
@@ -147,6 +149,25 @@ test('publication quality figure tutorial loads the 3-replicate validation set i
   assert.doesNotMatch(body, /preAnalyzeValidationSet:false/);
   assert.match(body, /3 Control and 3 FDI replicate groups/);
   assert.match(body, /600 DPI PNG\/TIFF/);
+});
+
+test('validation tutorials show a centered loading overlay before the coach starts', () => {
+  assert.match(appJs, /function showTutorialLoadingOverlay\(config\)/);
+  assert.match(appJs, /function hideTutorialLoadingOverlay\(\)/);
+  assert.match(appJs, /showTutorialLoadingOverlay\(config\);/);
+  assert.match(appJs, /hideTutorialLoadingOverlay\(\);/);
+  assert.match(appCss, /\.tutorial-loading-overlay/);
+  assert.match(appCss, /\.tutorial-loading-card/);
+  assert.match(appJs, /Loading the bundled validation images/);
+  const validationLoadBlock = appJs.slice(
+    appJs.indexOf('if(config.validationSetId)'),
+    appJs.indexOf('const existingGroup=state.customGroups')
+  );
+  assert.doesNotMatch(
+    validationLoadBlock,
+    /if\(finalModule!=='builder'\) setupTutorialCoach\(config,\[\]\);/,
+    'validation tutorials should wait until images are loaded before rendering the coach'
+  );
 });
 
 test('M8F guided tutorial remains available internally while hidden from the landing page', () => {
@@ -241,4 +262,10 @@ test('completed tutorials point to a playground button at the bottom of the coac
   assert.match(appJs, /selector:'#tutorialPlaygroundButton'/);
   assert.match(appJs, /Click Playground to close the guide/);
   assert.doesNotMatch(appJs, /Back to tutorial page/);
+});
+
+test('Analyze missing groups advances the tutorial only after Builder analysis completes', () => {
+  assert.match(appJs, /document\.addEventListener\('cytomove:builder-analysis-complete'/);
+  assert.match(appJs, /document\.dispatchEvent\(new CustomEvent\('cytomove:builder-analysis-complete'/);
+  assert.match(appJs, /step\.event!=='cytomove:builder-analysis-complete'/);
 });

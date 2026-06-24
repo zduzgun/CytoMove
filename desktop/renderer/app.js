@@ -135,7 +135,16 @@ const CALIBRATION = [
           selector:'button[data-module="builder"]',
           label:'Publication Figure Builder',
           title:'Build the Control vs FDI figure',
-          body:'Open the Builder after the validation groups are analyzed. The Builder uses stored Analysis contours. Continue in Playground to run Analyze missing groups if needed, adjust the figure, or export the 600 DPI package.'
+          body:'Open the Builder after the first analyzed group. Cytomove will show which remaining validation groups still need stored contours before the publication figure is ready.'
+        },
+        {
+          key:'builder-missing-groups',
+          selector:'#analyzeMissingBuilderGroups',
+          label:'Analyze missing groups',
+          title:'Complete the remaining Builder analyses',
+          body:'Click Analyze missing groups so Cytomove calculates the stored contour overlays for the remaining Control and FDI replicate groups. When this finishes, the tutorial will move to Playground.',
+          event:'cytomove:builder-analysis-complete',
+          mouseHint:'Click Analyze missing groups, then wait for the Builder preview to finish.'
         }
       ]
     },
@@ -5378,6 +5387,7 @@ const CALIBRATION = [
       const remaining=builderResultCoverage(builderSettings());
       if(remaining.complete) {
         setLog(`<strong>Builder ready:</strong> analyzed ${coverage.missingSamples.length} missing image(s) and applied current Image QC changes.`);
+        document.dispatchEvent(new CustomEvent('cytomove:builder-analysis-complete',{detail:{missingAnalyzed:coverage.missingSamples.length}}));
       } else {
         setLog(`<strong>Builder analysis incomplete:</strong> ${remaining.missingSamples.length} image(s) still need analysis.`);
       }
@@ -7582,6 +7592,34 @@ const CALIBRATION = [
     };
   }
 
+  function showTutorialLoadingOverlay(config) {
+    let overlay=document.getElementById('tutorialLoadingOverlay');
+    if(!overlay) {
+      overlay=document.createElement('div');
+      overlay.id='tutorialLoadingOverlay';
+      overlay.className='tutorial-loading-overlay';
+      overlay.setAttribute('role','status');
+      overlay.setAttribute('aria-live','polite');
+      document.body.appendChild(overlay);
+    }
+    overlay.innerHTML=`
+      <div class="tutorial-loading-card">
+        <div class="tutorial-loading-spinner" aria-hidden="true"></div>
+        <div>
+          <strong>Please wait</strong>
+          <span>Loading the bundled validation images for ${escHtml(config?.label||'this tutorial')}. The guide will start automatically when the images are ready.</span>
+        </div>
+      </div>`;
+    overlay.hidden=false;
+    document.body.classList.add('tutorial-loading-active');
+  }
+
+  function hideTutorialLoadingOverlay() {
+    const overlay=document.getElementById('tutorialLoadingOverlay');
+    if(overlay) overlay.hidden=true;
+    document.body.classList.remove('tutorial-loading-active');
+  }
+
   function loadTutorialGroup(key) {
     const config=TUTORIALS[key];
     if(!config) return false;
@@ -7600,8 +7638,12 @@ const CALIBRATION = [
       const preAnalyze=config.preAnalyzeValidationSet!==false;
       setAppModule(finalModule==='builder'?'builder':'qc');
       setMode('group');
-      if(finalModule!=='builder') setupTutorialCoach(config,[]);
+      showTutorialLoadingOverlay(config);
       loadServedValidationSet(config.validationSetId,{tutorial:true,finalModule,preAnalyze}).then(()=>{
+        hideTutorialLoadingOverlay();
+        setupTutorialCoach(config,selectedGroupSamples());
+      }).catch(()=>{
+        hideTutorialLoadingOverlay();
         setupTutorialCoach(config,selectedGroupSamples());
       });
       setLog(`<strong>${escHtml(config.label)} started.</strong> Loading the bundled validation image set.`);
@@ -7804,6 +7846,12 @@ const CALIBRATION = [
         if(step.expectedMode&&e.detail?.mode!==step.expectedMode) return;
         const target=currentTutorialTarget();
         if(!target||target.disabled) return;
+        scheduleTutorialAdvance();
+      },true);
+      document.addEventListener('cytomove:builder-analysis-complete',()=>{
+        if(!state.tutorial||state.tutorial.complete) return;
+        const step=currentTutorialStep();
+        if(!step||step.event!=='cytomove:builder-analysis-complete') return;
         scheduleTutorialAdvance();
       },true);
       state.tutorialListenersBound=true;
