@@ -13,7 +13,7 @@ const specPath = path.join(root, 'docs/superpowers/specs/2026-06-16-publication-
 
 assert(fs.existsSync(specPath), 'Publication Figure Builder design spec should be saved as markdown');
 assert(
-  html.includes('app.js?v=20260624-builder-missing-guard'),
+  html.includes('app.js?v=20260624-single-group-builder'),
   'index.html should cache-bust the canonical app.js asset'
 );
 
@@ -64,6 +64,71 @@ assert.strictEqual(
   representativeSandbox.state.publicationBuilderState.treatmentRepresentativeId,
   'treatment_r2',
   'Update Figure should preserve the newly selected treatment representative'
+);
+const uniqueIdsSource = js.match(/function uniqueIds\(list\)\s*\{[\s\S]*?\n  \}/);
+const syncBuilderSelectionsSource = js.match(/function syncPublicationBuilderSelections\(groups=groupOptions\(\)\)\s*\{[\s\S]*?\n  \}/);
+assert(uniqueIdsSource, 'app.js should expose uniqueIds');
+assert(syncBuilderSelectionsSource, 'app.js should expose syncPublicationBuilderSelections');
+function syncedBuilderStateForGroups(groups, publicationBuilderState={}) {
+  const sandbox = {state:{publicationBuilderState}};
+  vm.runInNewContext(
+    `${uniqueIdsSource[0]}; ${syncBuilderSelectionsSource[0]}; syncPublicationBuilderSelections(${JSON.stringify(groups)});`,
+    sandbox
+  );
+  return sandbox.state.publicationBuilderState;
+}
+const singleGroupBuilderState = syncedBuilderStateForGroups([{id:'local-1',label:'Local group 1'}]);
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(singleGroupBuilderState.controlReplicateIds)),
+  ['local-1'],
+  'A single loaded group should become the Control replicate'
+);
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(singleGroupBuilderState.treatmentReplicateIds)),
+  [],
+  'A single loaded group should not be auto-copied into Treatment replicates'
+);
+assert.strictEqual(
+  singleGroupBuilderState.treatmentRepresentativeId,
+  '',
+  'A single loaded group should leave the Treatment representative blank'
+);
+const singleGroupClearedTreatmentState = syncedBuilderStateForGroups(
+  [{id:'local-1',label:'Local group 1'}],
+  {
+    controlReplicateIds:['local-1'],
+    treatmentReplicateIds:['local-1'],
+    controlRepresentativeId:'local-1',
+    treatmentRepresentativeId:'local-1'
+  }
+);
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(singleGroupClearedTreatmentState.treatmentReplicateIds)),
+  [],
+  'Returning to one available group should clear any self-treatment assignment'
+);
+assert.strictEqual(
+  singleGroupClearedTreatmentState.treatmentRepresentativeId,
+  '',
+  'Returning to one available group should clear the self-treatment representative'
+);
+const twoGroupBuilderState = syncedBuilderStateForGroups([
+  {id:'control-1',label:'Control 1'},
+  {id:'treatment-1',label:'Treatment 1'}
+]);
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(twoGroupBuilderState.treatmentReplicateIds)),
+  ['treatment-1'],
+  'When a second group exists, Builder should default Treatment to the second group'
+);
+assert(
+  js.includes("key==='treatmentReplicateIds'&&groups.length<2") &&
+    js.includes('Add another group to choose Treatment.'),
+  'Treatment replicate controls should stay empty until a second group exists'
+);
+assert(
+  js.includes('el.addBuilderTreatmentArm.disabled=groups.length<2'),
+  'Extra treatment groups should not be addable until at least two groups exist'
 );
 assert(
   html.includes('id="builderValidationTools"') && !html.includes('id="builderValidationTools" hidden'),

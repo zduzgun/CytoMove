@@ -4403,13 +4403,20 @@ const CALIBRATION = [
     const builderState=state.publicationBuilderState||(state.publicationBuilderState={});
     const valid=new Set(groups.map(group=>group.id));
     const defaultControl=groups[0]?.id||'';
-    const defaultTreatment=groups[1]?.id||groups[0]?.id||'';
+    const defaultTreatment=groups[1]?.id||'';
     builderState.controlReplicateIds=uniqueIds((builderState.controlReplicateIds||[]).filter(id=>valid.has(id)));
     builderState.treatmentReplicateIds=uniqueIds((builderState.treatmentReplicateIds||[]).filter(id=>valid.has(id)));
+    if(groups.length<2) {
+      builderState.treatmentReplicateIds=[];
+      builderState.treatmentRepresentativeId='';
+      builderState.additionalTreatmentArms=[];
+    }
     if(!builderState.controlReplicateIds.length&&defaultControl) builderState.controlReplicateIds=[defaultControl];
     if(!builderState.treatmentReplicateIds.length&&defaultTreatment) builderState.treatmentReplicateIds=[defaultTreatment];
     builderState.controlRepresentativeId=valid.has(builderState.controlRepresentativeId)?builderState.controlRepresentativeId:(builderState.controlReplicateIds[0]||defaultControl);
-    builderState.treatmentRepresentativeId=valid.has(builderState.treatmentRepresentativeId)?builderState.treatmentRepresentativeId:(builderState.treatmentReplicateIds[0]||defaultTreatment);
+    builderState.treatmentRepresentativeId=valid.has(builderState.treatmentRepresentativeId)&&builderState.treatmentReplicateIds.includes(builderState.treatmentRepresentativeId)
+      ? builderState.treatmentRepresentativeId
+      : (builderState.treatmentReplicateIds[0]||defaultTreatment||'');
     if(builderState.controlReplicateIds.length&&!builderState.controlReplicateIds.includes(builderState.controlRepresentativeId)) {
       builderState.controlRepresentativeId=builderState.controlReplicateIds[0];
     }
@@ -4426,6 +4433,11 @@ const CALIBRATION = [
     const render=(host,key,label)=>{
       if(!groups.length) {
         host.innerHTML='<div class="builder-replicate-empty">No analyzed groups yet.</div>';
+        return;
+      }
+      if(key==='treatmentReplicateIds'&&groups.length<2) {
+        host.innerHTML='<div class="builder-replicate-empty">Add another group to choose Treatment.</div>';
+        host.dataset.conditionLabel=label;
         return;
       }
       host.innerHTML=groups.map(group=>`
@@ -4479,7 +4491,7 @@ const CALIBRATION = [
 
   function builderTreatmentArms(builderState=state.publicationBuilderState||{}, groups=groupOptions()) {
     const primaryReplicateIds=uniqueIds((builderState.treatmentReplicateIds||[]).filter(id=>groupById(id)));
-    const primaryRepresentativeId=builderState.treatmentRepresentativeId||primaryReplicateIds[0]||groups[1]?.id||groups[0]?.id||'';
+    const primaryRepresentativeId=builderState.treatmentRepresentativeId||primaryReplicateIds[0]||groups[1]?.id||'';
     const primaryLabel=(el.builderTreatmentLabel?.value||'Treatment').trim()||'Treatment';
     const primary=[{
       id:'treatment-1',
@@ -4630,10 +4642,11 @@ const CALIBRATION = [
       if(options.length) select.value=options.some(group=>group.id===fallbackId)?fallbackId:options[0].id;
     };
     fillSelect(el.builderControlGroup,builderState.controlReplicateIds,builderState.controlRepresentativeId||groups[0]?.id);
-    fillSelect(el.builderTreatmentGroup,builderState.treatmentReplicateIds,builderState.treatmentRepresentativeId||(groups[1]?.id||groups[0]?.id));
+    fillSelect(el.builderTreatmentGroup,builderState.treatmentReplicateIds,builderState.treatmentRepresentativeId||(groups[1]?.id||''));
     renderBuilderReplicateOptions();
     renderBuilderTreatmentArms();
     if(el.exportBuilderFigure) el.exportBuilderFigure.disabled=groups.length<2;
+    if(el.addBuilderTreatmentArm) el.addBuilderTreatmentArm.disabled=groups.length<2;
   }
 
   function persistBuilderRepresentativeSelections() {
@@ -4647,7 +4660,7 @@ const CALIBRATION = [
     populateBuilderGroupSelects();
     const builderState=state.publicationBuilderState||(state.publicationBuilderState={});
     const controlId=el.builderControlGroup?.value||builderState.controlRepresentativeId||groupOptions()[0]?.id||'';
-    const treatmentId=el.builderTreatmentGroup?.value||builderState.treatmentRepresentativeId||groupOptions()[1]?.id||controlId;
+    const treatmentId=el.builderTreatmentGroup?.value||builderState.treatmentRepresentativeId||groupOptions()[1]?.id||'';
     builderState.controlRepresentativeId=controlId;
     builderState.treatmentRepresentativeId=treatmentId;
     const controlReplicateIds=selectedBuilderReplicateIds('controlReplicateIds',(builderState.controlReplicateIds||[]).filter(id=>groupById(id)));
