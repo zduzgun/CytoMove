@@ -404,15 +404,15 @@
                   <input class="value-input" id="builderStars" type="text" placeholder="*, **">
                 </div>
               </div>
-              <div id="builderValidationTools" hidden>
+              <div id="builderValidationTools">
                 <div class="control">
-                  <label for="builderValidationSet">Validation set</label>
+                  <label for="builderValidationSet">Example validation data</label>
                   <select id="builderValidationSet">
-                    <option value="">None</option>
-                    <option value="full_thread_control">HUVEC control vs FDI (3 replicates)</option>
+                    <option value="full_thread_control" selected>HUVEC control vs FDI (3 replicates)</option>
                   </select>
                 </div>
                 <button class="btn" id="loadBuilderValidationSet" type="button" style="width:100%;margin-top:7px;">Load validation set</button>
+                <div class="check-hint">Loads the bundled 18-image HUVEC Control vs FDI validation set so users can test the Builder with n=3 replicates.</div>
               </div>
               <div class="action-row">
                 <button class="btn primary" id="refreshBuilderFigure" type="button" disabled>Update Figure</button>

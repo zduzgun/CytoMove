@@ -573,14 +573,12 @@
   const AUTO_APPLY_DELAY_MS = 1000;
 
   function validationToolsEnabled(locationLike) {
-    const host=String(locationLike?.hostname||'').toLowerCase();
-    const search=String(locationLike?.search||'');
-    return locationLike?.protocol==='file:'||host==='localhost'||host==='127.0.0.1'||new URLSearchParams(search).get('validation')==='1';
+    return true;
   }
 
   function syncValidationToolsVisibility() {
     const host=document.getElementById('builderValidationTools');
-    if(host) host.hidden=!validationToolsEnabled(window.location);
+    if(host) host.hidden=false;
   }
 
   const VALIDATION_SETS = {

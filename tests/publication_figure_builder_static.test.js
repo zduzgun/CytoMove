@@ -66,8 +66,19 @@ assert.strictEqual(
   'Update Figure should preserve the newly selected treatment representative'
 );
 assert(
-  html.includes('id="builderValidationTools" hidden'),
-  'Validation controls should start hidden'
+  html.includes('id="builderValidationTools"') && !html.includes('id="builderValidationTools" hidden'),
+  'Publication Figure Builder should expose validation example data controls in the web app'
+);
+assert(
+  html.includes('Example validation data') &&
+    html.includes('HUVEC control vs FDI (3 replicates)') &&
+    html.includes('Load validation set'),
+  'Builder validation controls should clearly offer the bundled 3-replicate HUVEC example set'
+);
+assert(
+  js.includes('function syncValidationToolsVisibility()') &&
+    js.includes('host.hidden=false'),
+  'Validation tools visibility sync should keep the example data controls visible'
 );
 
 [
@@ -230,12 +241,12 @@ assert.strictEqual(
 assert.strictEqual(
   validationSandbox.validationToolsEnabled({hostname:'cytomove.example',search:'?validation=1'}),
   true,
-  'Validation query parameter should opt into QA tools'
+  'Validation query parameter should keep example data visible'
 );
 assert.strictEqual(
   validationSandbox.validationToolsEnabled({hostname:'cytomove.example',search:''}),
-  false,
-  'Validation tools should be hidden in normal hosted use'
+  true,
+  'Validation example data should be visible in normal hosted use'
 );
 
 const syncValidationToolsSource = js.match(/function syncValidationToolsVisibility\(\)\s*\{[\s\S]*?\n  \}/);
@@ -259,8 +270,8 @@ function validationToolsHiddenFor(location) {
 }
 assert.strictEqual(
   validationToolsHiddenFor({hostname:'cytomove.example',search:''}),
-  true,
-  'Validation tools wrapper should remain hidden for normal hosted use'
+  false,
+  'Validation tools wrapper should be shown for normal hosted use'
 );
 assert.strictEqual(
   validationToolsHiddenFor({hostname:'localhost',search:''}),
