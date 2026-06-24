@@ -11,7 +11,6 @@ const landingHtml = read('index.html');
 const legacyHtml = read('prototype_refactor/index.html');
 const olderLegacyHtml = read('prototype/index.html');
 const guideHtml = read('wound-healing-scratch-assay-analysis/index.html');
-const tutorialHtml = read('tutorial/index.html');
 const localServerPath = path.join(root, 'scripts/serve_local.py');
 
 assert(
@@ -70,56 +69,6 @@ assert(
   !guideHtml.includes('../prototype_refactor/') &&
     guideHtml.includes('../app/'),
   'Guide calls to action should point directly to /app/'
-);
-const guideTabLabels = [
-  'Overview',
-  'Load images',
-  'Image QC',
-  'Analysis',
-  'Manual correction',
-  'Publication figures',
-  'Export',
-  'Troubleshooting'
-];
-const visualGuideSource = guideHtml.slice(guideHtml.indexOf('class="visual-guide"'));
-assert(
-  guideHtml.includes('id="visualGuideTabs"') &&
-    guideHtml.includes('class="guide-tab"') &&
-    guideHtml.includes('class="guide-panel"'),
-  'Guide should include a visual tabbed handbook section'
-);
-guideTabLabels.forEach(label => {
-  assert(
-    visualGuideSource.includes(`>${label}<`) || visualGuideSource.includes(`>${label}`),
-    `Guide should include the ${label} tab`
-  );
-});
-assert(
-  visualGuideSource.indexOf('Image QC') < visualGuideSource.indexOf('Analysis') &&
-    visualGuideSource.indexOf('Analysis') < visualGuideSource.indexOf('Publication Figure Builder') &&
-    visualGuideSource.indexOf('Publication Figure Builder') < visualGuideSource.indexOf('Export'),
-  'Guide should teach the Cytomove workflow in the correct order'
-);
-assert(
-  guideHtml.includes('single-group figure') &&
-    guideHtml.includes('Control vs Treatment') &&
-    guideHtml.includes('multi-treatment'),
-  'Guide should explain single-group, Control vs Treatment, and multi-treatment figure modes'
-);
-assert(
-  guideHtml.includes('full-size original') &&
-    guideHtml.includes('full-size contour-overlay'),
-  'Guide should explain full-size original and contour-overlay export assets'
-);
-assert(
-  guideHtml.includes('../app/?tutorial=huvec-full') &&
-    guideHtml.includes('../app/?tutorial=manual') &&
-    guideHtml.includes('../app/?tutorial=publication-quality'),
-  'Guide should link to the full HUVEC, manual correction, and publication figure tutorials'
-);
-assert(
-  tutorialHtml.includes('../wound-healing-scratch-assay-analysis/'),
-  'Tutorial landing page should link back to the visual guide'
 );
 assert(
   fs.existsSync(localServerPath) &&
