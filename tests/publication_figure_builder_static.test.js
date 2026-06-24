@@ -13,7 +13,7 @@ const specPath = path.join(root, 'docs/superpowers/specs/2026-06-16-publication-
 
 assert(fs.existsSync(specPath), 'Publication Figure Builder design spec should be saved as markdown');
 assert(
-  html.includes('app.js?v=20260624-publication-quality-tutorial'),
+  html.includes('app.js?v=20260624-huvec-tutorial-qc-start'),
   'index.html should cache-bust the canonical app.js asset'
 );
 
@@ -644,7 +644,8 @@ assert(
 );
 assert(preflightIndex>=0, 'Validation loader should fetch all validation assets in parallel before importing groups');
 assert(
-  loaderBody.includes("options.finalModule==='qc'") &&
+  loaderBody.includes("const finalModule=options.finalModule||'qc'") &&
+    loaderBody.includes("if(finalModule==='qc')") &&
     loaderBody.includes("setAppModule('qc')") &&
     loaderBody.includes('loadQcSampleAt(0,{openAdjust:false})'),
   'Validation-backed tutorials should return to Image QC and open the first image instead of jumping straight to Builder'

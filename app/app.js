@@ -9057,7 +9057,8 @@
       });
       if(el.builderControlGroup) el.builderControlGroup.value=imported.find(group=>group.condition==='control')?.groupId||el.builderControlGroup.value;
       if(el.builderTreatmentGroup) el.builderTreatmentGroup.value=imported.find(group=>group.condition==='treatment')?.groupId||el.builderTreatmentGroup.value;
-      if(options.finalModule==='qc') {
+      const finalModule=options.finalModule||'qc';
+      if(finalModule==='qc') {
         if(el.groupSelect) el.groupSelect.value=imported[0]?.groupId||el.groupSelect.value;
         setAppModule('qc');
         setMode('group',{scheduleMicroscope:false});

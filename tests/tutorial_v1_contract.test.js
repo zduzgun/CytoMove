@@ -23,11 +23,13 @@ test('full HUVEC tutorial starts from the bundled validation image set', () => {
   assert.match(appJs, /selector:'button\[data-module="builder"\]'/);
   assert.match(appJs, /const finalModule=config\.finalModule\|\|'qc'/);
   assert.match(appJs, /loadServedValidationSet\(config\.validationSetId,\{tutorial:true,finalModule\}\)/);
+  assert.match(appJs, /const finalModule=options\.finalModule\|\|'qc'/);
+  assert.match(appJs, /if\(finalModule==='qc'\)/);
   assert.doesNotMatch(appJs, /loadValidationSet\(config\.validationSetId\)/);
   assert.doesNotMatch(appJs, /switchModule\('qc'\)/);
   assert.match(appJs, /setAppModule\('qc'\)/);
-  assert.match(appHtml, /styles\.css\?v=20260624-publication-quality-tutorial/);
-  assert.match(appHtml, /app\.js\?v=20260624-publication-quality-tutorial/);
+  assert.match(appHtml, /styles\.css\?v=20260624-huvec-tutorial-qc-start/);
+  assert.match(appHtml, /app\.js\?v=20260624-huvec-tutorial-qc-start/);
 });
 
 test('full HUVEC tutorial teaches crop review before basic analysis tuning', () => {
