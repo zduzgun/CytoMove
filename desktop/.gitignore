@@ -1,0 +1,5 @@
+.audit-cache/
+.electron-cache/
+.npm-cache/
+release-preview*/
+release-portable-*/

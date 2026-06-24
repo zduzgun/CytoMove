@@ -1,12 +1,17 @@
 ﻿{
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "latestVersion": "1.0.0",
+  "minimumRequiredVersion": "1.0.0",
+  "updateMode": "recommended",
   "channel": "release",
   "status": "active",
   "message": "Desktop is the recommended path for faster local group analysis and heavier exports. Academic access is free; please send feedback from the Cytomove website after testing real image groups.",
-  "updateUrl": "https://cytomove.com/",
+  "updateUrl": "https://cytomove.com/download/",
+  "releaseNotesUrl": "https://cytomove.com/download/",
+  "installerUrl": "https://github.com/zduzgun/CytoMove/releases/latest",
+  "portableUrl": "https://github.com/zduzgun/CytoMove/releases/latest",
   "feedbackUrl": "https://cytomove.com/#feedback-title",
-  "accountUrl": "https://cytomove.com/",
+  "accountUrl": "https://cytomove.com/access/",
   "modules": [
     {
       "id": "wound-healing-core",

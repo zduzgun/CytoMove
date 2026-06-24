@@ -6,6 +6,9 @@ wound_healing_self_articles/
 __pycache__/
 *.pyc
 .codex_tmp/
+.claude/
+Sample_Figrues/
+screen_shot/
 validation_ref_sets/
 validation_sets/
 docs/literature/papers/
@@ -16,8 +19,17 @@ docs/comparator-benchmark/images/
 _screenshot_*.png
 Cytomove - Segmentation Lab.pdf
 find_backup.py
-desktop_beta/node_modules/
-desktop_beta/release/
+desktop/node_modules/
+desktop/release/
+desktop/.tmp-asar/
+desktop/.electron-cache/
+desktop/.audit-cache/
+desktop/.npm-cache/
+desktop/release-preview*/
+desktop/release-portable*/
+desktop/release-unpacked-check*/
+desktop/release-unpacked-filepicker-check*/
+desktop/products/
 
 # LibreOffice / soffice geçici ve kilit dosyaları
 .~lock.*#
@@ -44,6 +56,12 @@ PUBLICATION/
 docs/
 scripts/
 sample_imagej_apps/
+# Desktop app source subtrees are part of the public app package even though
+# generic repo-level rules ignore research scripts and validation datasets.
+!desktop/scripts/
+!desktop/scripts/**
+!desktop/validation_sets/
+!desktop/validation_sets/**
 trash/
 tools/
 old/

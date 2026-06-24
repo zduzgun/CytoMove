@@ -1,0 +1,23 @@
+<button class="pill pill-button" id="desktopUpdateStatus" type="button">Checking updates</button>
+<div class="desktop-update-banner" id="desktopUpdateBanner" hidden role="status">
+  <strong id="desktopUpdateTitle"></strong>
+  <span id="desktopUpdateMessage"></span>
+  <progress id="desktopUpdateProgress" max="100" value="0" hidden></progress>
+  <div class="desktop-update-actions">
+    <button class="btn primary" id="desktopUpdatePrimary" type="button">Download update</button>
+    <button class="btn" id="desktopUpdateLater" type="button">Later</button>
+  </div>
+</div>
+<div class="desktop-gate-backdrop" id="desktopUpdateGate" hidden role="dialog" aria-modal="true">
+  <section class="desktop-gate-card">
+    <div class="builder-kicker">Required update</div>
+    <h2 id="desktopRequiredUpdateTitle">Update required</h2>
+    <p id="desktopRequiredUpdateMessage"></p>
+    <progress id="desktopRequiredUpdateProgress" max="100" value="0" hidden></progress>
+    <div class="desktop-gate-actions">
+      <button class="btn primary" id="desktopRequiredUpdatePrimary" type="button">Download update</button>
+      <button class="btn" id="desktopRequiredUpdateDetails" type="button">View release details</button>
+    </div>
+  </section>
+</div>
+

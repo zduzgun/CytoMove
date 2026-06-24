@@ -1,0 +1,24 @@
+<div class="desktop-gate-backdrop" id="desktopAuthGate" role="dialog" aria-modal="true">
+  <section class="desktop-gate-card">
+    <div class="builder-kicker">Academic access</div>
+    <h2>Sign in to Cytomove Desktop</h2>
+    <p id="desktopAccessMessage">A verified and approved academic account is required.</p>
+    <div id="desktopAuthForm">
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tabSignin" type="button">Sign in</button>
+        <button class="auth-tab" id="tabSignup" type="button">Create account</button>
+      </div>
+      <input class="auth-input" id="authEmail" type="email" autocomplete="email" placeholder="you@university.edu">
+      <input class="auth-input" id="authPassword" type="password" autocomplete="current-password" placeholder="Password">
+      <div id="confirmField" hidden>
+        <input class="auth-input" id="authPasswordConfirm" type="password" autocomplete="new-password" placeholder="Confirm password">
+      </div>
+      <div class="desktop-gate-actions">
+        <button class="btn primary auth-submit" id="authSubmit" type="button">Sign in</button>
+        <button class="btn" id="googleSignIn" type="button">Continue with Google</button>
+      </div>
+    </div>
+    <div class="auth-status" id="authStatus" hidden role="status"></div>
+  </section>
+</div>
+

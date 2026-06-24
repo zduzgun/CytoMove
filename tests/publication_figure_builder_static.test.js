@@ -6,15 +6,64 @@ const vm = require('vm');
 const root = path.resolve(__dirname, '..');
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 
-const html = read('prototype_refactor/index.html');
-const js = read('prototype_refactor/app.js');
-const css = read('prototype_refactor/styles.css');
+const html = read('app/index.html');
+const js = read('app/app.js');
+const css = read('app/styles.css');
 const specPath = path.join(root, 'docs/superpowers/specs/2026-06-16-publication-figure-builder-v1-design.md');
 
 assert(fs.existsSync(specPath), 'Publication Figure Builder design spec should be saved as markdown');
 assert(
-  html.includes('app.js?v=20260619-qc-continuous-crop'),
-  'index.html should cache-bust app.js for the continuous QC crop workflow'
+  html.includes('app.js?v=20260624-publication-quality-tutorial'),
+  'index.html should cache-bust the canonical app.js asset'
+);
+
+const builderSettingsSource = js.slice(
+  js.indexOf('function builderSettings()'),
+  js.indexOf('function builderGroupRows(')
+);
+assert(
+  builderSettingsSource.includes('persistBuilderRepresentativeSelections();'),
+  'builderSettings should persist current representative selections'
+);
+assert(
+  builderSettingsSource.indexOf('persistBuilderRepresentativeSelections();') <
+    builderSettingsSource.indexOf('populateBuilderGroupSelects();'),
+  'builderSettings should persist the current representative selections before rebuilding group selects'
+);
+assert(
+  js.includes("builderState.controlRepresentativeId=el.builderControlGroup?.value||builderState.controlRepresentativeId||'';") &&
+    js.includes("builderState.treatmentRepresentativeId=el.builderTreatmentGroup?.value||builderState.treatmentRepresentativeId||'';"),
+  'representative group selections should be copied into builder state before an update'
+);
+const persistRepresentativeSource = js.match(
+  /function persistBuilderRepresentativeSelections\(\) \{[\s\S]*?\n  \}/
+);
+assert(persistRepresentativeSource, 'representative selection persistence helper should exist');
+const representativeSandbox = {
+  state: {
+    publicationBuilderState: {
+      controlRepresentativeId: 'control_r1',
+      treatmentRepresentativeId: 'treatment_r1'
+    }
+  },
+  el: {
+    builderControlGroup: { value: 'control_r3' },
+    builderTreatmentGroup: { value: 'treatment_r2' }
+  }
+};
+vm.runInNewContext(
+  `${persistRepresentativeSource[0]}; persistBuilderRepresentativeSelections();`,
+  representativeSandbox
+);
+assert.strictEqual(
+  representativeSandbox.state.publicationBuilderState.controlRepresentativeId,
+  'control_r3',
+  'Update Figure should preserve the newly selected control representative'
+);
+assert.strictEqual(
+  representativeSandbox.state.publicationBuilderState.treatmentRepresentativeId,
+  'treatment_r2',
+  'Update Figure should preserve the newly selected treatment representative'
 );
 assert(
   html.includes('id="builderValidationTools" hidden'),
@@ -38,6 +87,8 @@ assert(
   'builderTreatmentGroup',
   'builderControlReplicates',
   'builderTreatmentReplicates',
+  'builderTreatmentArms',
+  'addBuilderTreatmentArm',
   'builderValidationSet',
   'loadBuilderValidationSet',
   'builderScaleValue',
@@ -52,6 +103,8 @@ assert(
   'Image QC',
   'Publication Figure Builder',
   'Control vs Treatment',
+  'Control vs multiple treatments',
+  '+ Add treatment group',
   'Scale bar',
   'Caption draft'
 ].forEach(text => {
@@ -102,7 +155,9 @@ removedAnalysisGeometryIds.forEach(id => {
   'qcAutoCropFov',
   'qcAdjustCrop',
   'qcSaveCrop',
-  'qcResetCrop'
+  'qcResetCrop',
+  'qcImagePosition',
+  'qcAdvanceNotice'
 ].forEach(id => {
   assert(html.includes(`id="${id}"`), `#${id} should remain available under its owning panel`);
 });
@@ -134,6 +189,7 @@ removedAnalysisGeometryIds.forEach(id => {
   'updateQcState',
   'resetLockedQcSnapshot',
   'lastQcCropTemplateByGroup',
+  'lastQcCropTemplate',
   'preparedQcImages',
   'cropForQcSample',
   'prepareQcAnalysisInput',
@@ -231,9 +287,47 @@ assert(
   'Continue to Analysis should acquire and release one central QC transition lock'
 );
 assert(
+  continueFromQcSource[0].includes('clearAnalysisTransitionDisplay()') &&
   continueFromQcSource[0].includes("setMode('group',{scheduleMicroscope:false})") &&
+  continueFromQcSource[0].includes("setAppModule('analysis')") &&
+  continueFromQcSource[0].includes('loadGroupSampleAt(0)') &&
   !continueFromQcSource[0].includes('force:true'),
-  'Continue to Analysis should enter group mode without forced analysis or microscope scheduling'
+  'Continue to Analysis should clear the stale image, enter Group mode, and load the first group image'
+);
+assert(
+  continueFromQcSource[0].indexOf('state.lockedQcSnapshot=buildLockedQcSnapshot(samples)') <
+    continueFromQcSource[0].indexOf('clearAnalysisTransitionDisplay()') &&
+  continueFromQcSource[0].indexOf('clearAnalysisTransitionDisplay()') <
+    continueFromQcSource[0].indexOf("setMode('group',{scheduleMicroscope:false})") &&
+  continueFromQcSource[0].indexOf("setMode('group',{scheduleMicroscope:false})") <
+    continueFromQcSource[0].indexOf("setAppModule('analysis')") &&
+  continueFromQcSource[0].indexOf("setAppModule('analysis')") <
+    continueFromQcSource[0].indexOf('loadGroupSampleAt(0)'),
+  'Continue to Analysis should lock QC, clear stale display, activate Group mode, reveal Analysis, then load image 1'
+);
+assert(
+  !continueFromQcSource[0].includes('runSegmentation') &&
+    !continueFromQcSource[0].includes('autoApplyAfterLoad:true'),
+  'Continue to Analysis should not automatically analyze the first image'
+);
+const clearTransitionDisplaySource = js.match(/function clearAnalysisTransitionDisplay\(\)\s*\{[\s\S]*?\n  \}/);
+assert(clearTransitionDisplaySource, 'app.js should expose a focused stale Analysis display reset');
+[
+  'state.imageLoadSeq=(state.imageLoadSeq||0)+1',
+  'state.image=null',
+  'state.sample=null',
+  'el.canvas.hidden=true',
+  'el.emptyState.hidden=false'
+].forEach(fragment => {
+  assert(
+    clearTransitionDisplaySource[0].includes(fragment),
+    `Analysis transition display reset should perform ${fragment}`
+  );
+});
+assert(
+  !clearTransitionDisplaySource[0].includes('URL.revokeObjectURL') &&
+    !clearTransitionDisplaySource[0].includes('state.objectUrls'),
+  'Analysis transition display reset should not delete session image resources'
 );
 assert(
   continueFromQcSource[0].includes('cancelAutoApply()') &&
@@ -536,22 +630,34 @@ assert.strictEqual(restoredElements.groupSelect.value,'existing-group');
 assert.strictEqual(restoredElements.canvasTitle.textContent,'Prior title');
 assert.strictEqual(restoredElements.canvas.hidden,false);
 
-const loaderSource = js.match(/async function loadServedValidationSet\(setId\)\s*\{[\s\S]*?\n  \}/);
+const loaderSource = js.match(/async function loadServedValidationSet\(setId, options=\{\}\)\s*\{[\s\S]*?\n  \}/);
 assert(loaderSource, 'app.js should expose loadServedValidationSet');
 const loaderBody = loaderSource[0];
 const importedDeclarationIndex = loaderBody.indexOf('const imported=[];');
 const loaderTryIndex = loaderBody.indexOf('try {');
-const preflightIndex = loaderBody.indexOf('await fetchServedImageFile(config.groups[0].files[0])');
+const preflightIndex = loaderBody.indexOf('await Promise.all(validationPaths.map(async relativePath=>');
 const firstMutationIndex = loaderBody.indexOf('createCustomGroupFromFiles(');
 assert(importedDeclarationIndex>=0, 'Validation loader should declare imported before entering its try block');
 assert(
   importedDeclarationIndex<loaderTryIndex,
   'Validation loader should keep the imported collection available to its catch block'
 );
-assert(preflightIndex>=0, 'Validation loader should probe the first image before importing groups');
+assert(preflightIndex>=0, 'Validation loader should fetch all validation assets in parallel before importing groups');
+assert(
+  loaderBody.includes("options.finalModule==='qc'") &&
+    loaderBody.includes("setAppModule('qc')") &&
+    loaderBody.includes('loadQcSampleAt(0,{openAdjust:false})'),
+  'Validation-backed tutorials should return to Image QC and open the first image instead of jumping straight to Builder'
+);
 assert(
   preflightIndex<firstMutationIndex,
-  'Validation loader should complete its asset preflight before creating any custom group'
+  'Validation loader should complete its full asset preflight before creating any custom group'
+);
+assert(
+  loaderBody.includes('const validationFiles=new Map()') &&
+    loaderBody.includes('validationFiles.get(relativePath)') &&
+    !loaderBody.includes('files.push(await fetchServedImageFile(relativePath))'),
+  'Validation loader should reuse preflight files instead of downloading them again serially'
 );
 assert(
   loaderBody.includes('cleanupValidationOwnedResources(ownership)'),
@@ -588,6 +694,27 @@ assert(analyzeImportedGroupSource, 'app.js should expose analyzeImportedGroup');
 assert(
   analyzeImportedGroupSource[0].includes('el.groupSelect.value=groupId'),
   'Validation analysis should select each imported group before rendering its canvases'
+);
+assert(
+  analyzeImportedGroupSource[0].includes("settingsFromPresetKey('standard')") &&
+    analyzeImportedGroupSource[0].includes("setMode('group',{scheduleMicroscope:false})"),
+  'Validation analysis should use the known brightfield preset without decoding every group for microscope detection'
+);
+assert(
+  analyzeImportedGroupSource[0].includes('renderGroupContours(samples,{force:true,maxSide:480})'),
+  'Validation analysis should cap its working resolution instead of retaining full-resolution arrays'
+);
+
+const renderGroupContoursSource = js.match(/async function renderGroupContours\(samples, options=\{\}\)\s*\{[\s\S]*?\n  \}/);
+assert(renderGroupContoursSource, 'app.js should expose renderGroupContours');
+assert(
+  renderGroupContoursSource[0].includes('Number.isFinite(options.maxSide)') &&
+    renderGroupContoursSource[0].includes('await yieldToBrowser()'),
+  'Group rendering should accept an explicit analysis cap and yield between expensive images'
+);
+assert(
+  js.includes('function yieldToBrowser()'),
+  'app.js should expose a browser-yield helper for long validation analysis'
 );
 
 const restoreValidationSessionSource = js.match(/function restoreValidationSessionState\(snapshot\)\s*\{[\s\S]*?\n  \}/);
@@ -712,6 +839,54 @@ assert.strictEqual(
   'A reset crop should show the raw image without deleting the group crop template'
 );
 
+const currentGroupCropTemplateSource = js.match(/function currentGroupCropTemplate\(\)\s*\{[\s\S]*?\n  \}/);
+assert(currentGroupCropTemplateSource, 'app.js should expose currentGroupCropTemplate');
+const templateSandbox = {
+  state: {
+    lastQcCropTemplateByGroup: {},
+    lastQcCropTemplate: {x:0.15,y:0.1,w:0.7,h:0.8}
+  },
+  selectedGroup: () => ({id:'group-b'})
+};
+vm.runInNewContext(
+  `${currentGroupCropTemplateSource[0]}; this.currentGroupCropTemplate = currentGroupCropTemplate;`,
+  templateSandbox
+);
+assert.deepStrictEqual(
+  {...templateSandbox.currentGroupCropTemplate()},
+  templateSandbox.state.lastQcCropTemplate,
+  'A new group should inherit the latest session crop template'
+);
+templateSandbox.state.lastQcCropTemplateByGroup['group-b']={x:0.2,y:0.2,w:0.5,h:0.5};
+assert.deepStrictEqual(
+  {...templateSandbox.currentGroupCropTemplate()},
+  templateSandbox.state.lastQcCropTemplateByGroup['group-b'],
+  'A group-specific crop template should take priority over the session template'
+);
+const shouldOpenTemplateSource = js.match(/function shouldOpenQcCropTemplate\(qc, template\)\s*\{[\s\S]*?\n  \}/);
+assert(shouldOpenTemplateSource, 'app.js should decide whether an inherited crop opens in Adjust mode');
+vm.runInNewContext(
+  `${shouldOpenTemplateSource[0]}; this.shouldOpenQcCropTemplate = shouldOpenQcCropTemplate;`,
+  templateSandbox
+);
+assert.strictEqual(templateSandbox.shouldOpenQcCropTemplate({},latestTemplate),true);
+assert.strictEqual(templateSandbox.shouldOpenQcCropTemplate({cropSaved:true},latestTemplate),false);
+assert.strictEqual(templateSandbox.shouldOpenQcCropTemplate({cropReset:true},latestTemplate),false);
+assert.strictEqual(templateSandbox.shouldOpenQcCropTemplate({autoCropFov:true},latestTemplate),false);
+
+const qcAdvanceMessageSource = js.match(/function qcAdvanceMessage\(savedSample, activeSample, activeIndex, sampleCount\)\s*\{[\s\S]*?\n  \}/);
+assert(qcAdvanceMessageSource, 'app.js should expose a QC auto-advance message formatter');
+const advanceSandbox = {};
+vm.runInNewContext(
+  `${qcAdvanceMessageSource[0]}; this.qcAdvanceMessage = qcAdvanceMessage;`,
+  advanceSandbox
+);
+assert.strictEqual(
+  advanceSandbox.qcAdvanceMessage({time:'0h'},{time:'24h'},1,3),
+  '0h saved — now viewing 24h (image 2 of 3)',
+  'Save Crop should clearly name both the saved and newly active images'
+);
+
 const qcPreviewCropSource = js.match(/function qcPreviewCrop\(qc, crop\)\s*\{[\s\S]*?\n  \}/);
 assert(qcPreviewCropSource, 'app.js should expose qcPreviewCrop');
 const qcWorkflowSandbox = {};
@@ -756,12 +931,24 @@ assert(
   !applyQcCropSource[0].includes('samples.forEach'),
   'Saving a crop should not overwrite every image crop state'
 );
+assert(
+  applyQcCropSource[0].includes('state.lastQcCropTemplate={...cropRatio}'),
+  'Saving a crop should update the session-wide crop template'
+);
+assert(
+  applyQcCropSource[0].includes('advanceFromSample:sample'),
+  'Save-driven navigation should identify the image that was just saved'
+);
 
 const loadQcSampleSource = js.match(/function loadQcSampleAt\(index, options=\{\}\)\s*\{[\s\S]*?\n  \}/);
 assert(loadQcSampleSource, 'loadQcSampleAt should accept workflow options');
 assert(
   loadQcSampleSource[0].includes('openAdjust:!!options.openAdjust'),
   'Save-driven navigation should pass openAdjust into image loading'
+);
+assert(
+  loadQcSampleSource[0].includes('advanceFromSample:options.advanceFromSample||null'),
+  'Save-driven navigation should pass auto-advance feedback metadata into image loading'
 );
 
 const qcMutationBlockedSource = js.match(/function qcMutationBlocked\(\)\s*\{[\s\S]*?\n  \}/);
@@ -847,6 +1034,124 @@ assert.deepStrictEqual(
     borderCheckPerformed:false
   },
   'New QC image state should include persistent fine-rotation and auto-crop metadata'
+);
+
+const qcFingerprintSource = js.match(/function qcFingerprint\(qc=\{\}\)\s*\{[\s\S]*?\n  \}/);
+assert(qcFingerprintSource, 'app.js should expose a deterministic QC fingerprint');
+const qcFingerprintSandbox = {};
+vm.runInNewContext(
+  `${qcFingerprintSource[0]}; this.qcFingerprint = qcFingerprint;`,
+  qcFingerprintSandbox
+);
+const fingerprintBase = qcFingerprintSandbox.qcFingerprint({
+  orientation:'vertical',
+  cropRatio:{x:0.1,y:0.2,w:0.7,h:0.6},
+  cropSaved:true,
+  rotation:0,
+  fineRotation:0,
+  autoCropFov:false,
+  fovCutoff:null,
+  excluded:false,
+  editedAt:1,
+  needsCrop:false,
+  borderCheckPerformed:false
+});
+assert.strictEqual(
+  fingerprintBase,
+  qcFingerprintSandbox.qcFingerprint({
+    orientation:'vertical',
+    cropRatio:{x:0.1,y:0.2,w:0.7,h:0.6},
+    cropSaved:true,
+    rotation:0,
+    fineRotation:0,
+    autoCropFov:false,
+    fovCutoff:null,
+    excluded:false,
+    editedAt:999,
+    needsCrop:true,
+    borderCheckPerformed:true
+  }),
+  'Diagnostic-only QC fields should not invalidate analysis'
+);
+assert.notStrictEqual(
+  fingerprintBase,
+  qcFingerprintSandbox.qcFingerprint({
+    orientation:'vertical',
+    cropRatio:{x:0.1,y:0.2,w:0.5,h:0.6},
+    cropSaved:true
+  }),
+  'Changing crop geometry should invalidate analysis'
+);
+
+const updateQcStateSource = js.match(/function updateQcState\(sampleId, patch\)\s*\{[\s\S]*?\n  \}/);
+assert(updateQcStateSource, 'app.js should expose updateQcState');
+assert(
+  updateQcStateSource[0].includes('invalidateAnalysisForQcChange(sampleId,current,next)'),
+  'QC changes should invalidate stale sample analysis'
+);
+
+const invalidateQcAnalysisSource = js.match(/function invalidateAnalysisForQcChange\(sampleId, before, after\)\s*\{[\s\S]*?\n  \}/);
+assert(invalidateQcAnalysisSource, 'app.js should expose QC-aware analysis invalidation');
+[
+  'delete state.groupResults[sampleId]',
+  'delete state.manualOverrides[sampleId]',
+  'state.result=null'
+].forEach(fragment => {
+  assert(
+    invalidateQcAnalysisSource[0].includes(fragment),
+    `QC invalidation should perform ${fragment}`
+  );
+});
+
+const resultForSampleSource = js.match(/function resultForSample\(sample\)\s*\{[\s\S]*?\n  \}/);
+assert(resultForSampleSource, 'app.js should expose resultForSample');
+assert(
+  resultForSampleSource[0].includes('resultMatchesCurrentQc(sample,candidate)'),
+  'Builder rows should reject results created from an older QC state'
+);
+const builderFreshnessSource = js.match(/function builderGroupsHaveFreshResults\(settings\)\s*\{[\s\S]*?\n  \}/);
+assert(builderFreshnessSource, 'app.js should expose a Builder freshness gate');
+assert(
+  builderFreshnessSource[0].includes('builderResultCoverage(settings).complete'),
+  'Builder freshness should require current results across all selected replicate groups'
+);
+const builderCoverageSource = js.match(/function builderResultCoverage\(settings\)\s*\{[\s\S]*?\n  \}/);
+assert(builderCoverageSource, 'app.js should expose detailed Builder result coverage');
+assert(
+  builderCoverageSource[0].includes('missingSamples') &&
+    builderCoverageSource[0].includes('missingGroups') &&
+    builderCoverageSource[0].includes('storedContourForSample(sample)'),
+  'Builder coverage should identify each group and image requiring current analysis'
+);
+assert(
+  js.includes('function analyzeMissingBuilderGroups()') &&
+    js.includes('settingsWithCurrentQc') &&
+    js.includes('analyzeImageWithSettings') &&
+    js.includes('renderPublicationBuilder()'),
+  'Builder should analyze missing selected groups with current QC and render automatically'
+);
+const drawBuilderFigurePanelSource = js.match(/function drawBuilderFigurePanel\(style='grayscale', options=\{\}\)\s*\{[\s\S]*?\n  \}/);
+assert(drawBuilderFigurePanelSource, 'app.js should expose drawBuilderFigurePanel');
+assert(
+  drawBuilderFigurePanelSource[0].includes('if(!builderGroupsHaveFreshResults(settings)) return null'),
+  'Builder should refuse partial figures when any selected result is stale'
+);
+
+const groupOverlaySource = js.match(/function groupOverlayCanvas\(sample, options=\{\}\)\s*\{[\s\S]*?\n  \}/);
+assert(groupOverlaySource, 'app.js should expose groupOverlayCanvas');
+assert(
+  groupOverlaySource[0].includes('storedContourForSample(sample)'),
+  'Builder representative overlays should require the stored fresh Analysis source and mask'
+);
+assert(
+  js.includes('image(s) need analysis across') &&
+    js.includes('Analyze missing groups'),
+  'Builder should explain exactly how much analysis is missing and offer recovery'
+);
+assert(
+  js.includes('qcFingerprint:qcFingerprintForSample(sample.id)') &&
+    js.includes('qcFingerprint:qcFingerprintForSample(state.sample?.id)'),
+  'Group and single-image analysis results should record the QC fingerprint used'
 );
 
 const lockedQcEntrySource = js.match(/function lockedQcSnapshotEntry\(sample, groupId, qc, prepared=false\)\s*\{[\s\S]*?\n  \}/);
@@ -1278,7 +1583,7 @@ assert(
   'Analysis reset helpers should never mutate QC working state or reset its locked snapshot'
 );
 assert(
-  applyQcCropSource[0].includes('loadQcSampleAt(nextIndex,{openAdjust:true})'),
+  applyQcCropSource[0].includes('loadQcSampleAt(nextIndex,{openAdjust:true,advanceFromSample:sample})'),
   'Saving a non-final crop should auto-open Adjust on the next image'
 );
 assert(
@@ -1299,7 +1604,259 @@ assert(
 
 assert(js.includes('caption/cytomove_'), 'Builder ZIP should include a caption draft file');
 assert(js.includes('scale_bar'), 'Builder CSV should include scale bar metadata');
-assert(js.includes('buildBuilderPptxSlide'), 'Builder export should include a PPTX slide');
+assert(
+  html.includes('vendor/pptxgen.bundle.js'),
+  'The app should load the local PptxGenJS browser bundle'
+);
+assert(
+  html.includes('id="refreshBuilderFigure" type="button" disabled>Update Figure</button>'),
+  'Builder update control should be clearly named and disabled until settings change'
+);
+assert(
+  js.includes("builderPreviewStyle:'color'"),
+  'Builder preview should default to color'
+);
+assert(
+  js.includes("drawBuilderFigurePanel(state.builderPreviewStyle||'color')"),
+  'Builder preview should render with the selected color style'
+);
+assert(
+  js.includes('function syncBuilderUpdateButton()') &&
+    js.includes("classList.toggle('is-dirty',dirty)") &&
+    js.includes('el.refreshBuilderFigure.disabled=!dirty'),
+  'Builder should synchronize the Update Figure enabled and highlighted state'
+);
+assert(
+  js.includes('function markBuilderPreviewDirty()') &&
+    js.includes('Settings changed — click Update Figure.'),
+  'Builder controls should make the explicit Update Figure action meaningful'
+);
+assert(
+  js.includes('Figure updated: color image with contour overlays.'),
+  'Update Figure should visibly confirm the rendered result'
+);
+assert(
+  css.includes('#refreshBuilderFigure.is-dirty'),
+  'Dirty Builder settings should visibly highlight Update Figure'
+);
+[
+  'builderPanelTitle',
+  'builderPanelFont',
+  'builderPanelFontSize',
+  'builderPanelFontWeight',
+  'builderApplyTypographyAll',
+  'resetBuilderLayout',
+  'builderPanelOverlay',
+  'analyzeMissingBuilderGroups'
+].forEach(id => {
+  assert(html.includes(`id="${id}"`), `Builder editor should expose ${id}`);
+});
+assert(
+  ['Arial','Helvetica','Times New Roman','Georgia','Calibri'].every(font => html.includes(`>${font}<`)),
+  'Builder typography should offer a constrained scientific font list'
+);
+assert(
+  js.includes("'Representative wound-edge morphology'") &&
+    js.includes("'Wound closure'") &&
+    js.includes("'Normalized wound area'"),
+  'Builder should use scientific default panel titles'
+);
+assert(
+  js.includes('drawBuilderPanelA') &&
+    js.includes('drawBuilderPanelB') &&
+    js.includes('drawBuilderPanelC') &&
+    js.includes('composeBuilderPanels'),
+  'Builder should compose independently positioned panel canvases'
+);
+
+const panelDefaultsSource = js.match(/function builderPanelLayoutDefaults\(\)\s*\{[\s\S]*?\n  \}/);
+const panelOverlapSource = js.match(/function builderPanelsOverlap\(a,b\)\s*\{[\s\S]*?\n  \}/);
+const panelSnapSource = js.match(/function snapBuilderPanelPosition\(position,panel,layout,canvas=\{width:2600,height:1580\},grid=20\)\s*\{[\s\S]*?\n  \}/);
+assert(panelDefaultsSource, 'app.js should expose Builder panel layout defaults');
+assert(panelOverlapSource, 'app.js should expose Builder panel overlap detection');
+assert(panelSnapSource, 'app.js should expose Builder panel snapping');
+const panelLayoutSandbox = {};
+vm.runInNewContext(
+  `${panelDefaultsSource[0]};${panelOverlapSource[0]};${panelSnapSource[0]};` +
+  `this.defaults=builderPanelLayoutDefaults;this.snap=snapBuilderPanelPosition;`,
+  panelLayoutSandbox
+);
+const defaultPanelLayout = JSON.parse(JSON.stringify(panelLayoutSandbox.defaults()));
+assert.deepStrictEqual(Object.keys(defaultPanelLayout), ['A','B','C'], 'Builder should define A/B/C panel bounds');
+assert.strictEqual(defaultPanelLayout.A.titleSize, 34, 'Panel A should use the same scientific title size as other panels');
+assert.strictEqual(defaultPanelLayout.B.titleSize, 34, 'Panel B should use the common scientific title size');
+assert.strictEqual(defaultPanelLayout.C.titleSize, 34, 'Panel C should use the common scientific title size');
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(panelLayoutSandbox.snap(
+    {x:1513,y:57},
+    {...defaultPanelLayout.B},
+    {A:defaultPanelLayout.A,C:defaultPanelLayout.C}
+  ))),
+  {x:1520,y:60,valid:true},
+  'Builder panel movement should snap to the 20 px grid'
+);
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(panelLayoutSandbox.snap(
+    {x:3000,y:-50},
+    {...defaultPanelLayout.B},
+    {}
+  ))),
+  {x:1580,y:0,valid:true},
+  'Builder panels should remain within the 2600x1580 canvas'
+);
+assert.strictEqual(
+  panelLayoutSandbox.snap(
+    {x:100,y:100},
+    {...defaultPanelLayout.B},
+    {A:defaultPanelLayout.A}
+  ).valid,
+  false,
+  'Builder should reject panel positions that overlap another panel'
+);
+const publicationProfilesSource = js.match(/function builderPublicationProfiles\(aspect=1580\/2600\)\s*\{[\s\S]*?\n  \}/);
+assert(publicationProfilesSource, 'app.js should expose 600 DPI publication profiles');
+const publicationProfileSandbox = {};
+vm.runInNewContext(
+  `${publicationProfilesSource[0]}; this.builderPublicationProfiles=builderPublicationProfiles;`,
+  publicationProfileSandbox
+);
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(publicationProfileSandbox.builderPublicationProfiles())),
+  [
+    {key:'single_column',label:'Single column',widthMm:85,dpi:600,widthPx:2008,heightPx:1220},
+    {key:'double_column',label:'Double column',widthMm:180,dpi:600,widthPx:4252,heightPx:2584}
+  ],
+  'Builder should provide 85 mm and 180 mm 600 DPI export profiles'
+);
+assert(
+  js.includes('pngBytesWithDpi') &&
+    js.includes("type:'pHYs'") &&
+    js.includes('23622'),
+  'Builder PNG exports should include 600 DPI physical-resolution metadata'
+);
+assert(
+  js.includes('canvasToTiffBytes') &&
+    js.includes('writeTiffEntry(view,entryOffset,282') &&
+    js.includes('writeTiffEntry(view,entryOffset,283') &&
+    js.includes('writeTiffEntry(view,entryOffset,296'),
+  'Builder TIFF exports should include X/Y resolution and resolution-unit tags'
+);
+[
+  'single_column_85mm_600dpi.png',
+  'single_column_85mm_600dpi.tiff',
+  'double_column_180mm_600dpi.png',
+  'double_column_180mm_600dpi.tiff'
+].forEach(suffix => {
+  assert(js.includes(suffix), `Builder ZIP should include ${suffix}`);
+});
+assert(
+  js.includes("contour:'#161A1D'") &&
+    js.includes("contourHalo:'#F7F7F2'"),
+  'Color figures should use a publication-style dark contour and light halo'
+);
+assert(
+  js.includes('contourThickness:2') &&
+    js.includes('contourHaloRadius:1'),
+  'Color contours should stay thin enough to preserve cellular detail'
+);
+const contourTargetStyleSource = js.match(
+  /function contourStyleForTarget\(sourceWidth,sourceHeight,targetWidth,targetHeight,cfg\)\s*\{[\s\S]*?\n  \}/
+);
+assert(contourTargetStyleSource, 'app.js should adapt stored Analysis contours to publication cell scale');
+const contourTargetSandbox = {Math};
+vm.runInNewContext(
+  `${contourTargetStyleSource[0]}; this.contourStyleForTarget=contourStyleForTarget;`,
+  contourTargetSandbox
+);
+const fittedContourStyle = contourTargetSandbox.contourStyleForTarget(
+  2282,1506,500,260,
+  {contour:'#161A1D',contourHalo:'#F7F7F2',contourThickness:2,contourHaloRadius:1}
+);
+const fittedScale = Math.max(500/2282,260/1506);
+assert(
+  fittedContourStyle.thickness*fittedScale>=1,
+  'Publication contour thickness should remain at least one output pixel after image reduction'
+);
+assert.strictEqual(fittedContourStyle.color,'#161A1D');
+assert.strictEqual(fittedContourStyle.haloColor,'#F7F7F2');
+const builderPanelASource = js.match(/function drawBuilderPanelA\(panel, settings, representativeRows, timepoints, style='color'\)\s*\{[\s\S]*?\n  \}/);
+assert(builderPanelASource, 'app.js should expose Builder Panel A drawing');
+assert(
+  builderPanelASource[0].includes('groupOverlayCanvas(row.sample,{style,targetWidth:colW,targetHeight:rowH})'),
+  'Builder Panel A should request target-aware drawing of the stored Analysis contour'
+);
+assert(
+  js.includes('function drawContainedImage'),
+  'Builder should provide a contain-fit image draw helper for narrow multi-treatment cells'
+);
+assert(
+  builderPanelASource[0].includes('drawContainedImage(ctx,overlay.canvas,x,y,colW,rowH)'),
+  'Builder Panel A should show the full crop/overlay area instead of cover-cropping narrow treatment cells'
+);
+assert(
+  (js.match(/groupOverlayCanvas\([^)]*\{style,targetWidth:cellW,targetHeight:cellH\}\)/g)||[]).length>=2,
+  'Other composite publication grids should also preserve stored contour visibility after reduction'
+);
+const groupOverlayPngBytesSource = js.match(/function groupOverlayPngBytes\(sample\)\s*\{[\s\S]*?\n  \}/);
+assert(groupOverlayPngBytesSource, 'app.js should expose original-size contour PNG rendering');
+assert(
+  groupOverlayPngBytesSource[0].includes('groupOverlayCanvas(sample)') &&
+    !groupOverlayPngBytesSource[0].includes('targetWidth') &&
+    !groupOverlayPngBytesSource[0].includes('targetHeight'),
+  'Individual contour PNGs should render at stored Analysis dimensions without publication scaling'
+);
+assert(
+  groupOverlayPngBytesSource[0].includes('width:overlay.width,height:overlay.height'),
+  'Individual contour PNG metadata should retain original Analysis width and height'
+);
+const builderFullImageSource = js.match(/function builderFullImageExportSamples\(settings\)\s*\{[\s\S]*?\n  \}/);
+assert(builderFullImageSource, 'Builder export should expose the analyzed sample list for full-image assets');
+assert(
+  builderFullImageSource[0].includes('settings.controlReplicateIds') &&
+    builderFullImageSource[0].includes('settings.treatmentArms') &&
+    builderFullImageSource[0].includes('groupSamplesById'),
+  'Builder full-image export should collect every selected control and treatment replicate image'
+);
+const builderFullImageFilesSource = js.match(/async function builderFullImageExportFiles\(settings, exportStyle, groupName\)\s*\{[\s\S]*?\n  \}/);
+assert(builderFullImageFilesSource, 'Builder ZIP should prepare full-size original and contour overlay assets');
+assert(
+  builderFullImageFilesSource[0].includes('samples.filter(sampleNeedsFullResolutionContour)') &&
+    builderFullImageFilesSource[0].includes('await renderGroupContours(samples,{force:true})'),
+  'Builder ZIP should prepare missing full-resolution contours before packaging full images'
+);
+assert(
+  builderFullImageFilesSource[0].includes('full_images/original/') &&
+    builderFullImageFilesSource[0].includes('full_images/contour_overlay/'),
+  'Builder ZIP should include separate full_images/original and full_images/contour_overlay folders'
+);
+assert(
+  js.includes('...await builderFullImageExportFiles(settings,exportStyle,groupName)'),
+  'Publication Builder ZIP should include the full-image files in the exported package'
+);
+const fullResolutionNeedSource = js.match(
+  /function sampleNeedsFullResolutionContour\(sample\)\s*\{[\s\S]*?\n  \}/
+);
+assert(fullResolutionNeedSource, 'app.js should verify every group image has a full-resolution stored contour');
+assert(
+  fullResolutionNeedSource[0].includes('storedContourForSample(sample)') &&
+    fullResolutionNeedSource[0].includes('previewOnly'),
+  'Full-resolution export readiness should require both stored contour data and a non-preview analysis'
+);
+const exportGroupOverlaySource = js.match(/async function exportGroupPngOverlays\(\)\s*\{[\s\S]*?\n  \}/);
+assert(exportGroupOverlaySource, 'app.js should expose group contour ZIP export');
+assert(
+  exportGroupOverlaySource[0].includes('samples.filter(sampleNeedsFullResolutionContour)'),
+  'Group contour ZIP should prepare every image that lacks a full-resolution stored contour'
+);
+assert(
+  js.includes('buildBuilderPptxBlob') &&
+    js.includes('new window.PptxGenJS()'),
+  'Builder export should use PptxGenJS for a reliable PPTX'
+);
+assert(
+  !/makePptxDeck\(\[slide\]\)/.test(js),
+  'Builder export should no longer use handcrafted OOXML'
+);
 
 const timeMatchSource = js.match(/function customFileTimeMatch\(stem\)\s*\{[\s\S]*?\n  \}/);
 assert(timeMatchSource, 'app.js should expose customFileTimeMatch');
@@ -1396,16 +1953,38 @@ const closurePlotSource = js.match(/function drawBuilderClosurePlot\(ctx,rows,x,
 const linePlotSource = js.match(/function drawBuilderLinePlot\(ctx,rows,x,y,w,h,settings,style='grayscale',includeHeader=true\)\s*\{[\s\S]*?\n  \}/);
 assert(closurePlotSource?.[0].includes('areaClosurePctSd'), 'Panel B should draw closure SD error bars');
 assert(linePlotSource?.[0].includes('`${metric}Sd`'), 'Panel C should draw metric SD error bars');
+assert(js.includes('function builderLegendLayout'), 'Builder plots should calculate a multi-row legend layout for 4+ conditions');
+assert(js.includes('function drawBuilderLegend'), 'Builder plots should share a dynamic legend drawing helper');
+assert(closurePlotSource?.[0].includes('legendLayout.rows'), 'Panel B should reserve x-axis space for multi-row legends');
+assert(linePlotSource?.[0].includes('legendLayout.rows'), 'Panel C should reserve x-axis space for multi-row legends');
+assert(closurePlotSource?.[0].includes('drawBuilderLegend'), 'Panel B should use the dynamic legend helper');
+assert(linePlotSource?.[0].includes('drawBuilderLegend'), 'Panel C should use the dynamic legend helper');
 assert(js.includes('summary_mean'), 'Builder CSV should export aggregate means');
 assert(js.includes('summary_sd'), 'Builder CSV should export aggregate SD values');
 assert(js.includes('summary_n'), 'Builder CSV should export replicate counts');
 assert(js.includes('Bars and points show mean ± SD'), 'Builder caption should define the error bars');
+
+assert(js.includes('function builderTreatmentArms'), 'Builder should expose treatment arms for multi-treatment figures');
+assert(js.includes('function addBuilderTreatmentArm'), 'Builder should support adding another treatment condition');
+assert(js.includes('function builderConditionSeries'), 'Builder plots should use dynamic condition series');
+assert(js.includes('multi-treatment'), 'Builder should keep a multi-treatment template mode');
+assert(js.includes('additionalTreatmentArms'), 'Builder state should persist added treatment arms');
+assert(js.includes('treatment-2'), 'Builder should key extra treatment arms separately from the primary treatment');
+assert(js.includes('replicateIds'), 'Additional treatment arms should persist their own replicate IDs');
+assert(js.includes('data-treatment-arm-replicate'), 'Additional treatment arm cards should expose replicate checkboxes');
+assert(js.includes('selectedBuilderTreatmentArmReplicates'), 'Additional treatment arms should read their selected replicates');
+assert(js.includes('builderTreatmentArms'), 'Builder UI should render added treatment arms');
+assert(css.includes('.builder-treatment-arms'), 'styles.css should style multi-treatment arm controls');
+assert(css.includes('.builder-treatment-arm'), 'styles.css should style each treatment arm card');
 
 [
   '.module-tabs',
   '.image-qc',
   '.qc-layout',
   '.qc-preview',
+  '.qc-image-position',
+  '.qc-advance-notice',
+  '.qc-image-row.arrived',
   '.qc-crop-overlay',
   '.qc-crop-handle',
   '.builder-empty[hidden]',

@@ -4,33 +4,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cytomove Guided Tutorials - Scratch Assay Demo Groups</title>
-  <meta name="description" content="Open guided Cytomove tutorials with preloaded M8F and WHAD-MCF7 wound healing scratch assay image groups.">
+  <meta name="description" content="Open Cytomove 1.0 guided tutorials for Image QC, Analysis, Publication Figure Builder, and 600 DPI figure export.">
   <link rel="canonical" href="https://cytomove.com/tutorial/">
   <meta property="og:title" content="Cytomove Guided Tutorial">
-  <meta property="og:description" content="Guided browser demos with preloaded scratch assay image groups.">
+  <meta property="og:description" content="Guided Cytomove 1.0 demos from Image QC to publication-ready figure export.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://cytomove.com/tutorial/">
-  <meta property="og:image" content="https://cytomove.com/assets/tutorial/m8f/m8f_0h_001.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Cytomove Guided Tutorial">
-  <meta name="twitter:description" content="Analyze preloaded scratch assay image groups with step-by-step guidance.">
-  <meta name="twitter:image" content="https://cytomove.com/assets/tutorial/m8f/m8f_0h_001.png">
+  <meta name="twitter:description" content="Practice Image QC, Analysis, Publication Figure Builder, and export with guided example groups.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' stroke='%230f9f8f' stroke-width='2' fill='white'/><circle cx='10' cy='16' r='4' fill='%23bdeee8' stroke='%230f9f8f' stroke-width='1.4'/><circle cx='22' cy='16' r='4' fill='%23bdeee8' stroke='%230f9f8f' stroke-width='1.4'/><path d='M14 12.7L18.5 16 14 19.3' stroke='%2308766c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "HowTo",
       "name": "Cytomove guided scratch assay tutorial",
-      "description": "Guided workflows for opening preloaded scratch assay image groups, applying segmentation, reviewing group results, and checking plots.",
+      "description": "Guided workflows for opening preloaded scratch assay image groups, reviewing Image QC, running Analysis, preparing publication-ready figures, and exporting 600 DPI PNG/TIFF files.",
       "step": [
-        { "@type": "HowToStep", "name": "Fix the scratch orientation" },
-        { "@type": "HowToStep", "name": "Select Brightfield normal cells" },
-        { "@type": "HowToStep", "name": "Analyze the first image" },
-        { "@type": "HowToStep", "name": "Apply settings to the group" },
-        { "@type": "HowToStep", "name": "Open the wound area plot" },
-        { "@type": "HowToStep", "name": "Close the plot panel" },
-        { "@type": "HowToStep", "name": "Inspect the next image" },
-        { "@type": "HowToStep", "name": "Check the binary mask" }
+        { "@type": "HowToStep", "name": "Review images in Image QC" },
+        { "@type": "HowToStep", "name": "Lock QC and continue to Analysis" },
+        { "@type": "HowToStep", "name": "Apply analysis settings" },
+        { "@type": "HowToStep", "name": "Review group measurements and masks" },
+        { "@type": "HowToStep", "name": "Open Publication Figure Builder" },
+        { "@type": "HowToStep", "name": "Prepare a publication-ready figure" },
+        { "@type": "HowToStep", "name": "Export 600 DPI PNG/TIFF and ZIP files" }
       ]
     }
   </script>
@@ -111,6 +108,21 @@
       line-height: 1.7;
     }
     .cta-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
+    .workflow-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 24px;
+      color: var(--teal-dark);
+      font-size: 13px;
+      font-weight: 850;
+    }
+    .workflow-strip span {
+      border: 1px solid rgba(15, 159, 143, 0.26);
+      border-radius: 999px;
+      background: rgba(15, 159, 143, 0.08);
+      padding: 7px 10px;
+    }
     .button {
       min-height: 48px;
       display: inline-flex;
@@ -289,46 +301,48 @@
         <a class="nav-link" href="../">Home</a>
         <a class="nav-link" href="../wound-healing-scratch-assay-analysis/">Guide</a>
         <a class="nav-link" href="../download/">Download</a>
-        <a class="nav-link primary" href="../app/?tutorial=m8f">Launch quick start</a>
+        <a class="nav-link primary" href="../app/?tutorial=huvec-full">Start HUVEC tutorial</a>
       </nav>
     </header>
 
     <main>
       <section class="hero">
         <div>
-          <h1>Learn Cytomove with guided example groups.</h1>
+          <h1>Learn Cytomove 1.0 with the full HUVEC validation tutorial.</h1>
           <p class="lead">
-            Open Cytomove with example wound healing image groups already loaded.
-            Start with the M8F quick-start workflow, then try the WHAD-MCF7 phase-contrast
-            workflow to review a public near-closure time course.
+            Open the bundled HUVEC Control vs FDI validation set with 18 images already loaded.
+            Start with Image QC, continue to Analysis, then build a publication figure and export
+            600 DPI PNG/TIFF files plus full-size contour overlays for manual figure assembly.
+            Image QC → Analysis → Publication Figure Builder → Export.
           </p>
+          <div class="workflow-strip" aria-label="Cytomove 1.0 workflow">
+            <span>Image QC</span>
+            <span>→ Analysis</span>
+            <span>→ Publication Figure Builder</span>
+            <span>→ Export</span>
+          </div>
           <div class="cta-row">
-            <a class="button" href="../app/?tutorial=m8f">Launch M8F quick start</a>
-            <a class="button secondary" href="../app/?tutorial=mcf7">Launch MCF7 phase contrast</a>
-            <a class="button secondary" href="../app/?tutorial=manual">Launch manual correction</a>
-            <a class="button secondary" href="../app/?tutorial=manual-hard">Launch hard correction</a>
+            <a class="button" href="../app/?tutorial=huvec-full">Start full HUVEC tutorial</a>
+            <a class="button secondary" href="../app/?tutorial=manual">Start manual correction</a>
+            <a class="button secondary" href="../app/?tutorial=publication-quality">Build publication figure</a>
             <a class="button secondary" href="../wound-healing-scratch-assay-analysis/">Read the guide</a>
           </div>
         </div>
 
-        <aside class="preview-panel" aria-label="M8F tutorial images">
+        <aside class="preview-panel" aria-label="Full HUVEC validation tutorial">
           <div class="preview-head">
-            <span>M8F example group</span>
-            <span>0h / 24h / 48h</span>
+            <span>HUVEC validation set</span>
+            <span>18 images</span>
           </div>
-          <div class="thumb-grid">
-            <figure class="thumb">
-              <img src="../assets/tutorial/m8f/m8f_0h_001.png" alt="M8F 0 hour scratch assay image">
-              <span><strong>0h</strong> loaded first</span>
-            </figure>
-            <figure class="thumb">
-              <img src="../assets/tutorial/m8f/m8f_24h_002.png" alt="M8F 24 hour scratch assay image">
-              <span><strong>24h</strong> group image</span>
-            </figure>
-            <figure class="thumb">
-              <img src="../assets/tutorial/m8f/m8f_48h_003.png" alt="M8F 48 hour scratch assay image">
-              <span><strong>48h</strong> group image</span>
-            </figure>
+          <div class="tutorial-card-body">
+            <h2>Control vs FDI, 3 replicates</h2>
+            <p>The tutorial uses the bundled Cytomove-owned HUVEC image set: 3 Control groups and 3 FDI groups, each with 0h, 24h, and 48h images.</p>
+            <div class="tutorial-meta">
+              <span>Control vs FDI</span>
+              <span>3 replicates</span>
+              <span>0h / 24h / 48h</span>
+            </div>
+            <a class="button" href="../app/?tutorial=huvec-full">Open HUVEC tutorial</a>
           </div>
         </aside>
       </section>
@@ -336,109 +350,50 @@
       <section class="tutorial-options" aria-label="Available guided tutorials">
         <article class="tutorial-card">
           <div class="preview-head">
-            <span>Quick start</span>
-            <span>M8F brightfield</span>
-          </div>
-          <div class="thumb-grid">
-            <figure class="thumb">
-              <img src="../assets/tutorial/m8f/m8f_0h_001.png" alt="M8F 0 hour scratch assay image">
-              <span><strong>0h</strong> start</span>
-            </figure>
-            <figure class="thumb">
-              <img src="../assets/tutorial/m8f/m8f_24h_002.png" alt="M8F 24 hour scratch assay image">
-              <span><strong>24h</strong> mid</span>
-            </figure>
-            <figure class="thumb">
-              <img src="../assets/tutorial/m8f/m8f_48h_003.png" alt="M8F 48 hour scratch assay image">
-              <span><strong>48h</strong> late</span>
-            </figure>
+            <span>Main tutorial</span>
+            <span>Full workflow</span>
           </div>
           <div class="tutorial-card-body">
-            <h2>M8F quick start</h2>
-            <p>Practice orientation correction, brightfield preset selection, group analysis, plotting, navigation, and mask review.</p>
+            <h2>Full HUVEC validation tutorial</h2>
+            <p>Follow the complete 1.0 path using 18 bundled validation images: QC review, Analysis, group comparison, Publication Figure Builder, and publication export.</p>
             <div class="tutorial-meta">
-              <span>Brightfield</span>
-              <span>Orientation warning</span>
-              <span>8 steps</span>
+              <span>18 images</span>
+              <span>Analysis contours</span>
+              <span>Builder export</span>
             </div>
-            <a class="button" href="../app/?tutorial=m8f">Launch M8F tutorial</a>
+            <a class="button" href="../app/?tutorial=huvec-full">Start full tutorial</a>
           </div>
         </article>
-
         <article class="tutorial-card">
           <div class="preview-head">
-            <span>Phase contrast</span>
-            <span>WHAD-MCF7</span>
-          </div>
-          <div class="thumb-grid">
-            <figure class="thumb">
-              <img src="../assets/tutorial/mcf7/whad_mcf7_001.png" alt="WHAD-MCF7 1 hour phase-contrast scratch assay image">
-              <span><strong>1h</strong> early</span>
-            </figure>
-            <figure class="thumb">
-              <img src="../assets/tutorial/mcf7/whad_mcf7_021.png" alt="WHAD-MCF7 21 hour phase-contrast scratch assay image">
-              <span><strong>21h</strong> mid</span>
-            </figure>
-            <figure class="thumb">
-              <img src="../assets/tutorial/mcf7/whad_mcf7_046.png" alt="WHAD-MCF7 46 hour phase-contrast scratch assay image">
-              <span><strong>46h</strong> near close</span>
-            </figure>
-          </div>
-          <div class="tutorial-card-body">
-            <h2>MCF7 phase contrast</h2>
-            <p>Practice the phase-contrast preset, group application, area-plot review, and mask inspection on a public near-closure sequence.</p>
-            <div class="tutorial-meta">
-              <span>Phase contrast</span>
-              <span>Near closure</span>
-              <span>7 steps</span>
-            </div>
-            <a class="button" href="../app/?tutorial=mcf7">Launch MCF7 tutorial</a>
-          </div>
-        </article>
-
-        <article class="tutorial-card">
-          <div class="preview-head">
+            <span>Advanced tutorial</span>
             <span>Manual correction</span>
-            <span>M8F single image</span>
-          </div>
-          <div class="thumb-grid">
-            <figure class="thumb">
-              <img src="../assets/tutorial/manual/m8f_48h_003.png" alt="M8F 48 hour brightfield scratch assay image for manual correction">
-              <span><strong>48h</strong> normal</span>
-            </figure>
           </div>
           <div class="tutorial-card-body">
-            <h2>Manual correction</h2>
-            <p>Practice Fill area, Erase scan, Add scan, Clean specks, Undo, and Reset correction on one M8F brightfield image.</p>
+            <h2>Manual correction tutorial</h2>
+            <p>Practice what to do when an automatic mask needs local review: inspect the mask, fill a missed wound region, erase a false-positive region, then undo or reset safely.</p>
             <div class="tutorial-meta">
-              <span>Manual tools</span>
-              <span>One image</span>
-              <span>13 steps</span>
+              <span>Mask review</span>
+              <span>Fill / erase</span>
+              <span>Undo / reset</span>
             </div>
-            <a class="button" href="../app/?tutorial=manual">Launch manual tutorial</a>
+            <a class="button" href="../app/?tutorial=manual">Launch correction tutorial</a>
           </div>
         </article>
-
         <article class="tutorial-card">
           <div class="preview-head">
-            <span>Hard correction</span>
-            <span>Fragmented MCF7</span>
-          </div>
-          <div class="thumb-grid">
-            <figure class="thumb">
-              <img src="../assets/tutorial/manual-hard/whad_mcf7_026.png" alt="WHAD-MCF7 26 hour fragmented phase-contrast image for hard manual correction">
-              <span><strong>26h</strong> hard</span>
-            </figure>
+            <span>Figure tutorial</span>
+            <span>Publication export</span>
           </div>
           <div class="tutorial-card-body">
-            <h2>Manual hard case</h2>
-            <p>Practice cleanup and local edits on one fragmented phase-contrast image where the automatic mask needs careful review.</p>
+            <h2>Publication quality figure tutorial</h2>
+            <p>Open the bundled HUVEC Control vs FDI dataset directly in Publication Figure Builder with 3 Control and 3 FDI replicate groups already analyzed.</p>
             <div class="tutorial-meta">
-              <span>Fragmented mask</span>
-              <span>One image</span>
-              <span>12 steps</span>
+              <span>3 replicates</span>
+              <span>Panel layout</span>
+              <span>600 DPI export</span>
             </div>
-            <a class="button" href="../app/?tutorial=manual-hard">Launch hard tutorial</a>
+            <a class="button" href="../app/?tutorial=publication-quality">Build publication figure</a>
           </div>
         </article>
       </section>
@@ -446,43 +401,43 @@
       <section class="steps" aria-label="Tutorial steps">
         <article class="step">
           <strong>01</strong>
-          <h2>Fix orientation</h2>
-          <p>Use Scratch orientation to rotate the horizontal scratch into vertical analysis view.</p>
+          <h2>Review Image QC</h2>
+          <p>Load local or tutorial images, confirm crop/orientation, and make sure the first image is ready before analysis.</p>
         </article>
         <article class="step">
           <strong>02</strong>
-          <h2>Choose preset</h2>
-          <p>Select Brightfield normal cells before running the first segmentation.</p>
+          <h2>Continue to Analysis</h2>
+          <p>Lock the Image QC snapshot so Analysis uses the reviewed image state instead of drifting back to the original.</p>
         </article>
         <article class="step">
           <strong>03</strong>
           <h2>Click Apply</h2>
-          <p>Run segmentation on the first image and create the initial contour overlay.</p>
+          <p>Run segmentation on the prepared image, then inspect the calculated contour and numeric wound measurements.</p>
         </article>
         <article class="step">
           <strong>04</strong>
-          <h2>Apply to group</h2>
-          <p>Reuse the same settings across the three loaded M8F time points.</p>
+          <h2>Review the group</h2>
+          <p>Move through time points, compare masks/overlays, and check the wound area trend before figure building.</p>
         </article>
         <article class="step">
           <strong>05</strong>
-          <h2>Open area plot</h2>
-          <p>Review the wound area trend before exporting or changing settings.</p>
+          <h2>Open Builder</h2>
+          <p>Use Publication Figure Builder when control and treatment groups have been analyzed and are ready to compare.</p>
         </article>
         <article class="step">
           <strong>06</strong>
-          <h2>Close plot</h2>
-          <p>Return from the plot panel to the image workspace before navigating.</p>
+          <h2>Prepare panels</h2>
+          <p>Choose representatives and replicates, adjust panel layout and titles, and preview colored contour overlays.</p>
         </article>
         <article class="step">
           <strong>07</strong>
-          <h2>Next image</h2>
-          <p>Move to the next time point and inspect the restored contour.</p>
+          <h2>Export figures</h2>
+          <p>Export publication-ready figure packages, including 600 DPI PNG/TIFF files and Builder ZIP outputs.</p>
         </article>
         <article class="step">
           <strong>08</strong>
-          <h2>Check mask</h2>
-          <p>Switch from contour to mask view to verify what is being measured.</p>
+          <h2>Manual correction</h2>
+          <p>Use the correction tutorial to practice reversible local mask edits when an automatic contour needs scientific review.</p>
         </article>
       </section>
     </main>
@@ -492,9 +447,7 @@
       <a href="../app/">Open Cytomove without tutorial</a>
     </footer>
     <p class="data-note">
-      WHAD-MCF7 example images are from the WHAD/CAMAD dataset by Iheme et al. (2024),
-      Zenodo, CC BY 4.0, DOI:
-      <a href="https://doi.org/10.5281/zenodo.12806149">10.5281/zenodo.12806149</a>.
+      Manual correction is available as a separate advanced tutorial after the full HUVEC validation workflow.
     </p>
   </div>
 </body>

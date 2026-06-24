@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../prototype_refactor/styles.css?v=20260614-tutorial-playground">
+  <link rel="stylesheet" href="styles.css?v=20260624-publication-quality-tutorial">
   <script>
     /* Apply saved theme before paint to avoid a flash. JS is the single source of
        truth: in "auto" the OS preference is resolved here and written to data-theme. */
@@ -82,13 +82,19 @@
 
     <div class="demo-banner" id="demoModeBanner" hidden>
       <strong>Demo mode</strong>
-      <span>Load local images and review overlays without signing in. Full CSV, Excel, PNG, and ZIP exports will require registered academic access.</span>
+      <span>Load local images and review overlays without signing in. Full CSV, figure data, PNG, and ZIP exports will require registered academic access.</span>
       <a href="../access/">Sign in for full access</a>
     </div>
 
     <div class="layout">
       <aside class="sidebar">
         <div class="sidebar-inner">
+
+          <div class="module-tabs" id="moduleTabs" role="tablist" aria-label="Cytomove modules">
+            <button class="module-tab active" id="qcModuleTab" data-module="qc" type="button">Image QC</button>
+            <button class="module-tab" data-module="analysis" type="button">Analysis</button>
+            <button class="module-tab" data-module="builder" type="button">Publication Figure Builder</button>
+          </div>
 
           <div class="section" id="reviewModeSection">
             <div class="section-title">Review Mode</div>
@@ -102,6 +108,7 @@
               <button class="icon-btn danger" id="deleteGroup" type="button" title="Delete selected group" aria-label="Delete selected group">
                 <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 4h10M6 4V3h4v1M5 6v6M8 6v6M11 6v6M4.5 4l.5 10h6l.5-10" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </button>
+              <button class="btn group-add-cta" id="addImageGroup" type="button">+ Add another image group</button>
             </div>
           </div>
 
@@ -169,8 +176,8 @@
             <div class="control">
               <label for="fovCutoff">FOV cutoff</label>
               <div class="range-row">
-                <input id="fovCutoff" type="range" min="0" max="180" value="0" step="1">
-                <input class="value-input" id="fovCutoffVal" type="number" min="0" max="180" value="0" step="1">
+                <input id="fovCutoff" type="range" min="0" max="180" value="25" step="1">
+                <input class="value-input" id="fovCutoffVal" type="number" min="0" max="180" value="25" step="1">
               </div>
             </div>
             <div class="control">
@@ -183,39 +190,6 @@
                 <button class="view-btn active" data-fov-mode="cutoff" type="button">Brightfield</button>
               </div>
               <input id="fovMode" type="hidden" value="cutoff">
-            </div>
-            <div class="control">
-              <label id="scratchOrientationLabel" class="orientation-label" for="scratchOrientation">Scratch orientation</label>
-              <select id="scratchOrientation">
-                <option value="vertical">Vertical scratch</option>
-                <option value="horizontal">Horizontal scratch</option>
-              </select>
-              <div id="orientationHint" class="inline-warning" hidden></div>
-            </div>
-            <div class="control">
-              <label for="deskewAngle">Fine rotation (deg)</label>
-              <div class="range-row">
-                <input id="deskewAngle" type="range" min="-20" max="20" value="0" step="0.5">
-                <input class="value-input" id="deskewAngleVal" type="number" min="-20" max="20" value="0" step="0.5">
-              </div>
-            </div>
-            <button class="btn" id="angleRulerToggle" type="button" style="width:100%;margin-bottom:10px;">Show angle ruler</button>
-            <div class="control">
-              <label class="check-row" for="autoCropFov">
-                <input id="autoCropFov" type="checkbox">
-                Auto crop FOV
-              </label>
-              <div class="check-hint">Cuts the non-black microscope field before analysis; rectangular crops are allowed.</div>
-              <label class="check-row" for="applyCropRatioGroup" style="margin-top:8px;">
-                <input id="applyCropRatioGroup" type="checkbox">
-                Apply current crop ratio to group
-              </label>
-              <div class="check-hint">Uses the same relative rectangle for each image in group review.</div>
-              <div class="action-row">
-                <button class="btn" id="adjustCrop" type="button" disabled>Adjust crop</button>
-                <button class="btn primary" id="applyCrop" type="button" disabled>Apply crop</button>
-              </div>
-              <button class="btn" id="resetCrop" type="button" disabled style="width:100%;margin-top:7px;">Reset crop</button>
             </div>
           </div>
 
@@ -286,11 +260,162 @@
             <div class="export-row">
               <button class="btn" id="exportPng" type="button" disabled>PNG overlay</button>
               <button class="btn" id="exportGroupPng" type="button" disabled>Group PNGs ZIP</button>
-              <button class="btn" id="exportPlots" type="button" disabled>Plots ZIP</button>
+              <button class="btn" id="exportPlots" type="button" disabled>Publication figures ZIP</button>
               <button class="btn" id="showAreaPlot" type="button" disabled>Area plot</button>
               <button class="btn" id="showWidthPlot" type="button" disabled>Width plot</button>
               <button class="btn" id="exportCsv" type="button" disabled>CSV data</button>
-              <button class="btn" id="exportExcel" type="button" disabled>Excel table</button>
+              <button class="btn" id="exportExcel" type="button" disabled>Figure data</button>
+            </div>
+          </div>
+
+          <div class="section builder-section" id="publicationBuilderControls" hidden>
+            <div class="section-title">Publication Figure Builder</div>
+            <div class="section-content">
+              <label for="builderControlGroup">Control representative group</label>
+              <select id="builderControlGroup"></select>
+              <div class="control">
+                <label for="builderControlReplicates">Control replicates</label>
+                <div class="builder-replicates" id="builderControlReplicates"></div>
+              </div>
+              <div class="control">
+                <label for="builderTreatmentGroup">Treatment representative group</label>
+                <select id="builderTreatmentGroup"></select>
+              </div>
+              <div class="control">
+                <label for="builderTreatmentReplicates">Treatment replicates</label>
+                <div class="builder-replicates" id="builderTreatmentReplicates"></div>
+              </div>
+              <div class="control">
+                <label for="builderTemplate">Template</label>
+                <select id="builderTemplate">
+                  <option value="control-treatment" selected>Control vs Treatment</option>
+                  <option value="multi-treatment">Control vs multiple treatments</option>
+                </select>
+              </div>
+              <div class="control builder-treatment-arms-control" id="builderTreatmentArmsControl">
+                <div class="builder-editor-head">
+                  <span>Additional treatment groups</span>
+                  <button class="btn" id="addBuilderTreatmentArm" type="button">+ Add treatment group</button>
+                </div>
+                <div class="builder-treatment-arms" id="builderTreatmentArms"></div>
+                <div class="check-hint">Use this for FDI, drug B, drug C, dose groups, or any condition beyond the first treatment.</div>
+              </div>
+              <div class="control">
+                <label for="builderMetricSelect">Panel C metric</label>
+                <select id="builderMetricSelect">
+                  <option value="area" selected>Normalized area</option>
+                  <option value="width">Normalized width</option>
+                </select>
+              </div>
+              <div class="builder-editor">
+                <div class="builder-editor-head">
+                  <span>Panel layout & typography</span>
+                  <button class="btn" id="resetBuilderLayout" type="button">Reset layout</button>
+                </div>
+                <div class="control">
+                  <label for="builderSelectedPanel">Selected panel</label>
+                  <select id="builderSelectedPanel">
+                    <option value="A">A — image panel</option>
+                    <option value="B">B — closure plot</option>
+                    <option value="C">C — normalized metric</option>
+                  </select>
+                </div>
+                <div class="control">
+                  <label for="builderPanelTitle">Scientific title</label>
+                  <input class="value-input" id="builderPanelTitle" type="text" value="Representative wound-edge morphology">
+                </div>
+                <div class="control">
+                  <label for="builderPanelFont">Font family</label>
+                  <select id="builderPanelFont">
+                    <option value="Arial">Arial</option>
+                    <option value="Helvetica">Helvetica</option>
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Calibri">Calibri</option>
+                  </select>
+                </div>
+                <div class="style-row">
+                  <div>
+                    <label for="builderPanelFontSize">Title size</label>
+                    <select id="builderPanelFontSize">
+                      <option value="28">28</option>
+                      <option value="30">30</option>
+                      <option value="32">32</option>
+                      <option value="34" selected>34</option>
+                      <option value="36">36</option>
+                      <option value="40">40</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="builderPanelFontWeight">Weight</label>
+                    <select id="builderPanelFontWeight">
+                      <option value="400">Regular</option>
+                      <option value="600">Semibold</option>
+                      <option value="700" selected>Bold</option>
+                    </select>
+                  </div>
+                </div>
+                <label class="check-row" for="builderApplyTypographyAll">
+                  <input id="builderApplyTypographyAll" type="checkbox" checked>
+                  Apply typography to all panel titles
+                </label>
+                <div class="check-hint">Drag A, B, or C directly on the figure. Panels snap to the layout grid.</div>
+              </div>
+              <div class="style-row">
+                <div>
+                  <label for="builderControlLabel">Control label</label>
+                  <input class="value-input" id="builderControlLabel" type="text" value="Control">
+                </div>
+                <div>
+                  <label for="builderTreatmentLabel">Treatment label</label>
+                  <input class="value-input" id="builderTreatmentLabel" type="text" value="Treatment">
+                </div>
+              </div>
+              <div class="style-row">
+                <div>
+                  <label for="builderCellType">Cell type</label>
+                  <input class="value-input" id="builderCellType" type="text" placeholder="e.g. MCF-7">
+                </div>
+                <div>
+                  <label for="builderReplicate">Replicate</label>
+                  <input class="value-input" id="builderReplicate" type="text" placeholder="n=3">
+                </div>
+              </div>
+              <div class="control">
+                <label for="builderScaleValue">Scale bar</label>
+                <div class="range-row">
+                  <input class="value-input" id="builderScaleValue" type="number" min="0" step="0.001" placeholder="optional">
+                  <select id="builderScaleMode">
+                    <option value="um_per_pixel">um / pixel</option>
+                    <option value="pixels_per_100um">pixels / 100 um</option>
+                  </select>
+                </div>
+                <div class="check-hint">Valid calibration draws a 100 um scale bar on Panel A.</div>
+              </div>
+              <div class="style-row">
+                <div>
+                  <label for="builderPValue">p-value label</label>
+                  <input class="value-input" id="builderPValue" type="text" placeholder="optional">
+                </div>
+                <div>
+                  <label for="builderStars">Stars</label>
+                  <input class="value-input" id="builderStars" type="text" placeholder="*, **">
+                </div>
+              </div>
+              <div id="builderValidationTools" hidden>
+                <div class="control">
+                  <label for="builderValidationSet">Validation set</label>
+                  <select id="builderValidationSet">
+                    <option value="">None</option>
+                    <option value="full_thread_control">HUVEC control vs FDI (3 replicates)</option>
+                  </select>
+                </div>
+                <button class="btn" id="loadBuilderValidationSet" type="button" style="width:100%;margin-top:7px;">Load validation set</button>
+              </div>
+              <div class="action-row">
+                <button class="btn primary" id="refreshBuilderFigure" type="button" disabled>Update Figure</button>
+                <button class="btn" id="exportBuilderFigure" type="button" disabled>Export Builder ZIP</button>
+              </div>
             </div>
           </div>
 
@@ -312,16 +437,6 @@
             </button>
             <button class="icon-btn" id="zoomReset" title="Reset zoom" type="button">
               <svg viewBox="0 0 16 16" fill="none"><path d="M3 8a5 5 0 1 1 1.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3 12V8h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-            <button class="icon-btn" id="deskewMinus" title="Deskew -0.5 degrees" type="button" disabled>
-              <svg viewBox="0 0 16 16" fill="none"><path d="M11.5 4.5A5 5 0 1 0 12 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M11.5 2v2.8H8.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-            <div class="angle-chip" id="deskewBadge">0 deg</div>
-            <button class="icon-btn" id="deskewPlus" title="Deskew +0.5 degrees" type="button" disabled>
-              <svg viewBox="0 0 16 16" fill="none"><path d="M4.5 4.5A5 5 0 1 1 4 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M4.5 2v2.8h2.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-            <button class="icon-btn" id="rotateImage" title="Rotate image 90 degrees" type="button" disabled>
-              <svg viewBox="0 0 16 16" fill="none"><path d="M12.5 5.5A5 5 0 1 0 13 10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M12.5 2.5v3h-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
             <label class="icon-btn file-picker-label" id="openFile" title="Open local image" style="cursor:pointer;">
               <svg viewBox="0 0 16 16" fill="none"><path d="M2 11V13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M8 2v8M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -357,6 +472,135 @@
 
         <div class="group-view" id="groupView" hidden></div>
 
+        <div class="publication-builder image-qc empty-qc" id="imageQcPanel" hidden>
+          <div class="builder-head">
+            <div>
+              <div class="builder-kicker">Step 1</div>
+              <h1>Image QC</h1>
+            </div>
+            <div class="builder-status" id="qcStatus">Load a group, then review images before analysis.</div>
+          </div>
+          <div class="qc-layout">
+            <aside class="qc-sidebar" aria-label="QC image list">
+              <div class="builder-kicker">Series</div>
+              <div class="qc-image-list" id="qcImageList"></div>
+            </aside>
+            <div class="qc-preview">
+              <div class="qc-image-position" id="qcImagePosition" hidden aria-live="polite"></div>
+              <div class="qc-advance-notice" id="qcAdvanceNotice" hidden role="status" aria-live="polite"></div>
+              <canvas id="qcCanvas" hidden></canvas>
+              <div class="qc-crop-overlay" id="qcCropOverlay" hidden>
+                <span class="qc-crop-handle top" data-crop-handle="top"></span>
+                <span class="qc-crop-handle right" data-crop-handle="right"></span>
+                <span class="qc-crop-handle bottom" data-crop-handle="bottom"></span>
+                <span class="qc-crop-handle left" data-crop-handle="left"></span>
+                <span class="qc-crop-handle top-left" data-crop-handle="top-left"></span>
+                <span class="qc-crop-handle top-right" data-crop-handle="top-right"></span>
+                <span class="qc-crop-handle bottom-left" data-crop-handle="bottom-left"></span>
+                <span class="qc-crop-handle bottom-right" data-crop-handle="bottom-right"></span>
+              </div>
+              <div class="qc-onboarding" id="qcEmpty">
+                <div class="qc-onboarding-mark" aria-hidden="true">
+                  <svg viewBox="0 0 48 48" fill="none">
+                    <rect x="7" y="9" width="34" height="30" rx="8" stroke="currentColor" stroke-width="2"/>
+                    <path d="M13 31l7-7 6 5 4-4 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="31.5" cy="18.5" r="3.5" fill="currentColor" opacity=".28"/>
+                  </svg>
+                </div>
+                <div class="builder-kicker">Image QC workspace</div>
+                <strong>Start with local images</strong>
+                <span>Load one scratch-assay image or a complete time-series group. Cytomove will open the first image in Image QC before analysis.</span>
+                <div class="qc-onboarding-actions">
+                  <button class="btn primary" id="openImageGroupButton" type="button" onclick="var input=document.getElementById('fileInput');input.multiple=true;input.click()">Open image group</button>
+                  <button class="btn" id="openOneImageButton" type="button" onclick="var input=document.getElementById('fileInput');input.multiple=false;input.click()">Open one image</button>
+                </div>
+                <div class="qc-local-note">
+                  <strong>Images stay local on this device</strong>
+                  <span>Supported formats: PNG, JPG, BMP, GIF</span>
+                </div>
+              </div>
+            </div>
+            <section class="qc-tools" aria-label="QC tools">
+              <div class="qc-tools-empty">
+                <div class="qc-tools-empty-icon" aria-hidden="true">01</div>
+                <strong>QC controls unlock after loading an image</strong>
+                <span>Orientation, crop, rotation, exclusion, and navigation controls will appear here.</span>
+              </div>
+              <div class="builder-kicker">Image controls</div>
+              <label for="qcOrientation">Scratch orientation</label>
+              <select id="qcOrientation">
+                <option value="vertical">Vertical scratch</option>
+                <option value="horizontal">Horizontal scratch</option>
+              </select>
+              <div class="qc-tool-row">
+                <button class="btn" id="qcRotateLeft" type="button">Rotate left</button>
+                <button class="btn" id="qcRotateRight" type="button">Rotate right</button>
+              </div>
+              <div class="control qc-fine-rotation">
+                <label for="qcFineRotation">Fine rotation (deg)</label>
+                <div class="range-row">
+                  <input id="qcFineRotation" type="range" min="-20" max="20" value="0" step="0.5">
+                  <input class="value-input" id="qcFineRotationVal" type="number" min="-20" max="20" value="0" step="0.5">
+                </div>
+              </div>
+              <button class="btn" id="qcAngleRulerToggle" type="button">Show angle ruler</button>
+              <label class="check-row qc-auto-crop" for="qcAutoCropFov">
+                <input id="qcAutoCropFov" type="checkbox">
+                Auto crop FOV
+              </label>
+              <div class="qc-tool-row qc-crop-actions">
+                <button class="btn" id="qcAdjustCrop" type="button">Adjust crop</button>
+                <button class="btn" id="qcSaveCrop" type="button" disabled>Save crop</button>
+              </div>
+              <button class="btn" id="qcResetCrop" type="button">Reset crop</button>
+              <div class="qc-tool-row qc-history-actions">
+                <button class="btn" id="qcUndoCrop" type="button" disabled title="Undo last crop">↶ Undo</button>
+                <button class="btn" id="qcRedoCrop" type="button" disabled title="Redo crop">↷ Redo</button>
+              </div>
+              <div class="qc-tool-row qc-navigation">
+                <button class="btn" id="qcPrevImage" type="button" title="Previous image">← Previous</button>
+                <button class="btn" id="qcNextImage" type="button" title="Next image">Next →</button>
+              </div>
+              <label class="check-row" for="qcExcludeToggle">
+                <input id="qcExcludeToggle" type="checkbox">
+                Exclude from analysis
+              </label>
+              <button class="btn primary" id="goToAnalysisFromQc" type="button">Continue to Analysis</button>
+            </section>
+          </div>
+        </div>
+
+        <div class="publication-builder" id="publicationBuilderPanel" hidden>
+          <div class="builder-head">
+            <div>
+              <div class="builder-kicker">Publication Figure Builder</div>
+              <h1>Control vs Treatment figure</h1>
+            </div>
+            <div class="builder-status" id="builderStatus">Select two analyzed groups to begin.</div>
+          </div>
+          <div class="builder-grid">
+            <div class="builder-preview">
+              <div class="builder-canvas-stage" id="builderCanvasStage" hidden>
+                <canvas id="builderCanvas"></canvas>
+                <div class="builder-panel-overlay" id="builderPanelOverlay" aria-label="Draggable figure panels">
+                  <button type="button" data-builder-panel="A" aria-label="Move panel A"><span>A</span></button>
+                  <button type="button" data-builder-panel="B" aria-label="Move panel B"><span>B</span></button>
+                  <button type="button" data-builder-panel="C" aria-label="Move panel C"><span>C</span></button>
+                </div>
+              </div>
+              <div class="builder-empty" id="builderEmpty">
+                <strong>No builder preview yet</strong>
+                <span>Analyze at least two groups, then select control and treatment groups from the Builder controls.</span>
+                <button class="btn primary" id="analyzeMissingBuilderGroups" type="button" hidden>Analyze missing groups</button>
+              </div>
+            </div>
+            <div class="builder-caption">
+              <div class="builder-kicker">Caption draft</div>
+              <div id="builderCaptionText">Caption draft will appear after preview.</div>
+            </div>
+          </div>
+        </div>
+
         <div class="plot-panel" id="plotPanel" hidden>
           <div class="plot-dialog" role="dialog" aria-modal="true" aria-labelledby="plotDialogTitle">
             <div class="plot-head">
@@ -366,6 +610,27 @@
               </button>
             </div>
             <div class="plot-body" id="plotBody"></div>
+          </div>
+        </div>
+
+        <div class="plot-panel" id="exportStylePanel" hidden>
+          <div class="plot-dialog export-style-dialog" role="dialog" aria-modal="true" aria-labelledby="exportStyleTitle">
+            <div class="plot-head">
+              <div class="plot-title" id="exportStyleTitle">Publication figure style</div>
+              <button class="icon-btn" id="cancelExportStyle" type="button" aria-label="Close export style">
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+            <div class="export-style-body">
+              <button class="export-style-option primary" id="exportStyleGrayscale" type="button">
+                <strong>Grayscale</strong>
+                <span>Journal-safe black-and-white figures for publication workflows.</span>
+              </button>
+              <button class="export-style-option" id="exportStyleColor" type="button">
+                <strong>Color</strong>
+                <span>Teal and blue figures for presentations, reports, and visual review.</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -386,7 +651,7 @@
       var bannerStrong = banner ? banner.querySelector('strong') : null;
       var exportIds = ['exportPng', 'exportGroupPng', 'exportPlots', 'exportCsv', 'exportExcel'];
       var exportsRequireAccess = false;
-      var exportGateMessage = 'Full CSV, Excel, PNG, and ZIP exports require registered academic access.';
+      var exportGateMessage = 'Full CSV, figure data, PNG, and ZIP exports require registered academic access.';
 
       function showGateBanner(title, message) {
         if (!banner) return;
@@ -398,7 +663,7 @@
       if (isDemo) {
         exportsRequireAccess = true;
         document.documentElement.dataset.accessMode = 'demo';
-        showGateBanner('Demo mode', 'Load local images and review overlays without signing in. Full CSV, Excel, PNG, and ZIP exports require registered academic access.');
+        showGateBanner('Demo mode', 'Load local images and review overlays without signing in. Full CSV, figure data, PNG, and ZIP exports require registered academic access.');
       } else if (window.CytomoveAuth && window.CytomoveAuth.isConfigured()) {
         document.documentElement.dataset.accessMode = 'checking';
         window.CytomoveAuth.getAccessSnapshot().then(function (snapshot) {
@@ -410,8 +675,8 @@
           exportsRequireAccess = true;
           document.documentElement.dataset.accessMode = snapshot.signedIn ? 'pending' : 'signed-out';
           exportGateMessage = snapshot.signedIn
-            ? 'Your account is signed in but email verification is not complete. Full CSV, Excel, PNG, and ZIP exports require a verified academic account.'
-            : 'Sign in from Cytomove Access with a verified account to use full CSV, Excel, PNG, and ZIP exports.';
+            ? 'Your account is signed in but email verification is not complete. Full CSV, figure data, PNG, and ZIP exports require a verified academic account.'
+            : 'Sign in from Cytomove Access with a verified account to use full CSV, figure data, PNG, and ZIP exports.';
           showGateBanner(snapshot.signedIn ? 'Email verification required' : 'Sign in required', exportGateMessage);
         }).catch(function (error) {
           exportsRequireAccess = true;
@@ -532,7 +797,22 @@
       }
     }());
   </script>
-  <script src="../prototype_refactor/app.js?v=20260614-tutorial-playground"></script>
+  <div class="group-name-dialog" id="groupNameDialog" hidden role="dialog" aria-modal="true" aria-labelledby="groupNameTitle">
+    <section class="group-name-card">
+      <div class="builder-kicker">Local image group</div>
+      <h2 id="groupNameTitle">Name this image group</h2>
+      <p id="groupNameHint">Cytomove will create one reviewable group from the selected images.</p>
+      <label for="groupNameInput">Group name</label>
+      <input class="auth-input" id="groupNameInput" type="text" autocomplete="off">
+      <div class="desktop-gate-actions group-name-actions">
+        <button class="btn" id="cancelGroupName" type="button">Cancel</button>
+        <button class="btn primary" id="confirmGroupName" type="button">Create group</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="vendor/pptxgen.bundle.js?v=4.0.1"></script>
+  <script src="app.js?v=20260624-publication-quality-tutorial"></script>
   <script>
     // Mark sidebar sections the user has interacted with (shows a dot when collapsed).
     (function () {

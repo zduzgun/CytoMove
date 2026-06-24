@@ -1,0 +1,71 @@
+{
+  "name": "cytomove-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cytomove Desktop - local-first wound healing analysis app.",
+  "main": "main.js",
+  "author": "Cytomove",
+  "license": "UNLICENSED",
+  "scripts": {
+    "sync:renderer": "node scripts/sync-renderer.js",
+    "check:renderer": "node scripts/sync-renderer.js --check",
+    "prestart": "npm run sync:renderer",
+    "start": "electron .",
+    "check": "npm run check:renderer && node --check main.js && node --check preload.js && node --check renderer/app.js && node --test ../tests/desktop_*.test.js",
+    "pack:win": "powershell -ExecutionPolicy Bypass -File scripts/package-win-unpacked.ps1",
+    "pack:win:builder": "electron-builder --win --dir",
+    "dist:win:preview": "powershell -ExecutionPolicy Bypass -File scripts/build-preview.ps1",
+    "portable:win:preview": "powershell -ExecutionPolicy Bypass -File scripts/build-portable-preview.ps1",
+    "dist:win": "node scripts/require-signing.js && electron-builder --win nsis",
+    "portable:win": "node scripts/require-signing.js && electron-builder --win portable"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.108.2",
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.6.2"
+  },
+  "devDependencies": {
+    "electron": "^42.4.1",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.cytomove.desktop",
+    "productName": "Cytomove Desktop",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "lib/**/*",
+      "config/**/*",
+      "assets/tutorial/**/*",
+      "validation_sets/full_thread_control/**/*",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "portable": {
+      "artifactName": "Cytomove-Desktop-${version}-portable.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "Cytomove-Desktop-${version}-setup.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "zduzgun",
+        "repo": "CytoMove"
+      }
+    ],
+    "electronUpdaterCompatibility": ">=2.16"
+  }
+}
