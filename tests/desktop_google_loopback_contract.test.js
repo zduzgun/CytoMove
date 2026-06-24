@@ -12,6 +12,8 @@ test('Google loopback accepts IPv4 and IPv6 localhost and times out promptly', (
   assert.match(main, /server\.listen\(GOOGLE_LOOPBACK_PORT\);/);
   assert.doesNotMatch(main, /server\.listen\(GOOGLE_LOOPBACK_PORT,\s*['"]127\.0\.0\.1['"]\)/);
   assert.match(main, /60\s*\*\s*1000/);
+  assert.match(main, /Access-Control-Allow-Origin/);
+  assert.match(main, /request\.method === 'OPTIONS'/);
 });
 
 test('development installers stay on the 1.0.0 product version', () => {

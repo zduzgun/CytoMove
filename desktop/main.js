@@ -243,10 +243,22 @@ ipcMain.handle('cytomove:read-validation-asset', async (_event, relativePath) =>
 ipcMain.handle('cytomove:google-auth-wait', () => new Promise((resolve, reject) => {
   let settled = false;
   const server = http.createServer((request, response) => {
+    if (request.method === 'OPTIONS') {
+      response.writeHead(204, {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      });
+      response.end();
+      return;
+    }
     const fullUrl = `http://localhost:${GOOGLE_LOOPBACK_PORT}${request.url || ''}`;
     const callback = new URL(fullUrl);
     const completed = callback.searchParams.has('code') || callback.searchParams.has('error') || callback.searchParams.has('error_description');
-    response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    response.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Access-Control-Allow-Origin': '*'
+    });
     response.end(completed
       ? '<!doctype html><html><body style="font-family:system-ui;text-align:center;padding:48px"><h2>Cytomove</h2><p>Sign-in complete. Return to the desktop app.</p></body></html>'
       : '<!doctype html><html><body style="font-family:system-ui;text-align:center;padding:48px"><h2>Cytomove</h2><p>Waiting for the Google response...</p></body></html>');

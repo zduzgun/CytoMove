@@ -26,6 +26,12 @@
     if (/timed out/i.test(text)) {
       return 'Access check timed out. Check your internet connection and try again.';
     }
+    if (/did not return to Cytomove|did not return a code|authorization code/i.test(text)) {
+      return 'Google sign-in did not return to Cytomove. Make sure Supabase Redirect URLs include http://localhost:54545, then try again.';
+    }
+    if (/helper could not start|EADDRINUSE|already running/i.test(text)) {
+      return 'Google sign-in helper could not start on localhost:54545. Fully close Cytomove, reopen it, and try Continue with Google again.';
+    }
     if (/invalid login credentials/i.test(text)) {
       return 'Email or password is incorrect. If this account was created with Google, use Continue with Google.';
     }
@@ -101,9 +107,26 @@
       submit.disabled = false;
     }
   }
+  function delay(ms) {
+    return new Promise(function (resolve) { setTimeout(resolve, ms); });
+  }
+  async function waitForGoogleLoopbackReady() {
+    var lastError = null;
+    for (var attempt = 0; attempt < 20; attempt += 1) {
+      try {
+        await fetch('http://localhost:54545', { method: 'GET', mode: 'no-cors', cache: 'no-store' });
+        return true;
+      } catch (error) {
+        lastError = error;
+        await delay(50);
+      }
+    }
+    throw new Error('Google sign-in helper could not start on localhost:54545' + (lastError ? ': ' + lastError.message : '.'));
+  }
   async function googleSignIn() {
     google.disabled = true;
     try {
+      setStatus('Preparing Google sign-in...');
       var client = await window.CytomoveAuth.getClient();
       var response = await client.auth.signInWithOAuth({
         provider: 'google',
@@ -111,8 +134,9 @@
       });
       if (response.error) throw response.error;
       var callbackPromise = window.cytomoveDesktop.awaitGoogleCallback();
+      await waitForGoogleLoopbackReady();
       await window.cytomoveDesktop.openExternal(response.data.url);
-      setStatus('Waiting for Google sign-in...');
+      setStatus('Opened Google in your browser. Waiting for sign-in to return to Cytomove...');
       var callback = new URL(await callbackPromise);
       var code = callback.searchParams.get('code');
       if (!code) throw new Error(callback.searchParams.get('error_description') || 'Google sign-in did not return a code.');
@@ -120,7 +144,7 @@
       if (exchange.error) throw exchange.error;
       await validateCurrentSession();
     } catch (error) {
-      setStatus(error && error.message || String(error), true);
+      setStatus(authErrorMessage(error), true);
     } finally {
       google.disabled = false;
     }
