@@ -5369,6 +5369,11 @@
 
   async function analyzeMissingBuilderGroups() {
     const settings=builderSettings();
+    if(!settings.controlReplicateIds.length||!settings.treatmentReplicateIds.length) {
+      renderPublicationBuilder();
+      setLog('<strong>Builder needs both Control and Treatment groups before missing analyses can run.</strong> Add or select a Treatment group, then try again.');
+      return;
+    }
     const coverage=builderResultCoverage(settings);
     if(!coverage.missingSamples.length) {
       renderPublicationBuilder();
@@ -5423,7 +5428,17 @@
     if(!settings.controlReplicateIds.length||!settings.treatmentReplicateIds.length) {
       if(el.builderCanvasStage) el.builderCanvasStage.hidden=true;
       el.builderEmpty.hidden=false;
-      if(el.analyzeMissingBuilderGroups) el.analyzeMissingBuilderGroups.hidden=true;
+      const hasControl=!!settings.controlReplicateIds.length;
+      const emptyStrong=el.builderEmpty?.querySelector('strong');
+      const emptyText=el.builderEmpty?.querySelector('span');
+      if(emptyStrong) emptyStrong.textContent=hasControl?'Add a Treatment group':'No builder preview yet';
+      if(emptyText) emptyText.textContent=hasControl
+        ? 'Control is ready. Add or select a second image group as Treatment to build a comparative figure.'
+        : 'Analyze at least two groups, then select control and treatment groups from the Builder controls.';
+      if(el.analyzeMissingBuilderGroups) {
+        el.analyzeMissingBuilderGroups.hidden=true;
+        el.analyzeMissingBuilderGroups.disabled=true;
+      }
       if(el.builderStatus) el.builderStatus.textContent='Assign at least one replicate group to both Control and Treatment.';
       if(el.builderCaptionText) el.builderCaptionText.textContent='Caption draft will appear after preview.';
       if(el.exportBuilderFigure) el.exportBuilderFigure.disabled=true;
@@ -5440,7 +5455,10 @@
       const emptyText=el.builderEmpty?.querySelector('span');
       if(emptyStrong) emptyStrong.textContent='Current QC changes need group analysis';
       if(emptyText) emptyText.textContent=`Missing: ${groupSummary||'selected groups'}. Choose Analyze missing groups to continue with the current QC crop and orientation.`;
-      if(el.analyzeMissingBuilderGroups) el.analyzeMissingBuilderGroups.hidden=!coverage.missingSamples.length;
+      if(el.analyzeMissingBuilderGroups) {
+        el.analyzeMissingBuilderGroups.hidden=!coverage.missingSamples.length;
+        el.analyzeMissingBuilderGroups.disabled=!coverage.missingSamples.length;
+      }
       if(el.builderCaptionText) el.builderCaptionText.textContent='Caption draft will appear after preview.';
       if(el.exportBuilderFigure) el.exportBuilderFigure.disabled=true;
       return;

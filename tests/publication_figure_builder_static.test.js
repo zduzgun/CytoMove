@@ -13,7 +13,7 @@ const specPath = path.join(root, 'docs/superpowers/specs/2026-06-16-publication-
 
 assert(fs.existsSync(specPath), 'Publication Figure Builder design spec should be saved as markdown');
 assert(
-  html.includes('app.js?v=20260624-single-group-builder'),
+  html.includes('app.js?v=20260624-builder-empty-state'),
   'index.html should cache-bust the canonical app.js asset'
 );
 
@@ -129,6 +129,25 @@ assert(
 assert(
   js.includes('el.addBuilderTreatmentArm.disabled=groups.length<2'),
   'Extra treatment groups should not be addable until at least two groups exist'
+);
+assert(
+  css.includes('[hidden] { display: none !important; }'),
+  'Hidden controls such as Analyze missing groups should not be overridden by .btn display styles'
+);
+assert(
+  js.includes("emptyStrong.textContent=hasControl?'Add a Treatment group':'No builder preview yet'") &&
+    js.includes('Control is ready. Add or select a second image group as Treatment to build a comparative figure.'),
+  'Builder empty state should explain that a second Treatment group is required'
+);
+assert(
+  js.includes('if(el.analyzeMissingBuilderGroups) {') &&
+    js.includes('el.analyzeMissingBuilderGroups.hidden=true;') &&
+    js.includes('el.analyzeMissingBuilderGroups.disabled=true;'),
+  'Builder should disable the stale Analyze missing groups action when no Treatment group is selected'
+);
+assert(
+  js.includes('Builder needs both Control and Treatment groups before missing analyses can run.'),
+  'Analyze missing groups should guard against incomplete Control/Treatment assignments'
 );
 assert(
   html.includes('id="builderValidationTools"') && !html.includes('id="builderValidationTools" hidden'),
