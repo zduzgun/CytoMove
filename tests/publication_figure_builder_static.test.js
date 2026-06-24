@@ -703,6 +703,14 @@ assert(
     loaderBody.includes('await analyzeMissingBuilderGroups()'),
   'Builder validation load should resolve any current-QC coverage gaps before showing the Builder preview'
 );
+assert(
+  loaderBody.includes('let validationAnalysisIncomplete=false') &&
+    loaderBody.includes("if(finalModule==='builder') {") &&
+    loaderBody.includes('validationAnalysisIncomplete=true') &&
+    loaderBody.includes('continue;') &&
+    loaderBody.includes('Some images still need analysis in this browser'),
+  'Builder validation load should keep fetched images available when automatic analysis is incomplete'
+);
 assert(loaderBody.includes('state.validationLoadActive=true'),'Validation loader should activate its mutation guard');
 assert(loaderBody.includes('setValidationLoadControlsLocked(true)'),'Validation loader should lock local mutation controls');
 assert(loaderBody.includes('recordValidationOwnershipChanges('),'Validation loader should record ownership around each group creation');

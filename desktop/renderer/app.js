@@ -9011,6 +9011,7 @@ const CALIBRATION = [
     const imported=[];
     const ownership={groupIds:[],sampleIds:[],objectUrls:[]};
     let validationLoaded=false;
+    let validationAnalysisIncomplete=false;
     try {
       const validationPaths=[...new Set(config.groups.flatMap(group=>group.files))];
       const validationFiles=new Map();
@@ -9039,7 +9040,13 @@ const CALIBRATION = [
             currentResult:state.result,
             excludedSampleIds:group.samples.filter(sample=>sampleExcludedFromAnalysis(sample.id)).map(sample=>sample.id)
           })) {
-            throw new Error('Validation analysis incomplete');
+            if(finalModule==='builder') {
+              validationAnalysisIncomplete=true;
+              continue;
+            }
+            const analysisError=new Error('Validation analysis incomplete');
+            analysisError.validationKind='analysis';
+            throw analysisError;
           }
         }
       }
@@ -9069,6 +9076,8 @@ const CALIBRATION = [
         const builderCoverage=builderResultCoverage(builderSettings());
         if(!builderCoverage.complete&&builderCoverage.missingSamples.length) {
           await analyzeMissingBuilderGroups();
+          const remainingCoverage=builderResultCoverage(builderSettings());
+          validationAnalysisIncomplete=!remainingCoverage.complete;
         }
       }
       if(finalModule==='qc') {
@@ -9081,9 +9090,11 @@ const CALIBRATION = [
         renderPublicationBuilder();
       }
       validationLoaded=true;
-      setLog(preAnalyze
-        ? `<strong>Validation set loaded:</strong> ${config.label}. Imported ${imported.length} groups and analyzed their image series for replicate testing.`
-        : `<strong>Validation set loaded:</strong> ${config.label}. Imported ${imported.length} groups and opened the first image for Image QC.`);
+      setLog(validationAnalysisIncomplete
+        ? `<strong>Validation images loaded:</strong> ${config.label}. Some images still need analysis in this browser. Click Analyze missing groups to complete the Builder preview.`
+        : preAnalyze
+          ? `<strong>Validation set loaded:</strong> ${config.label}. Imported ${imported.length} groups and analyzed their image series for replicate testing.`
+          : `<strong>Validation set loaded:</strong> ${config.label}. Imported ${imported.length} groups and opened the first image for Image QC.`);
     } catch(err) {
       cleanupValidationOwnedResources(ownership);
       restoreValidationSessionState(sessionSnapshot);
