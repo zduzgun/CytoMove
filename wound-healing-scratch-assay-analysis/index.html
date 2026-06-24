@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wound Healing Scratch Assay Analysis - Browser Guide | Cytomove</title>
-  <meta name="description" content="A practical guide to wound healing scratch assay analysis: image input, wound area, mean gap width, mask review, manual correction, and export with Cytomove.">
+  <title>Wound Healing Scratch Assay Analysis Guide | Cytomove</title>
+  <meta name="description" content="A practical guide to Cytomove 1.0 wound healing scratch assay analysis: Image QC, contour review, manual correction, Publication Figure Builder, and 600 DPI exports.">
   <link rel="canonical" href="https://cytomove.com/wound-healing-scratch-assay-analysis/">
   <meta property="og:title" content="Wound Healing Scratch Assay Analysis - Cytomove">
-  <meta property="og:description" content="Learn how wound healing scratch assay images can be reviewed in the browser with area and width metrics, mask review, and export.">
+  <meta property="og:description" content="Learn the Cytomove workflow for Image QC, analysis, manual correction, publication figures, and export-ready scratch assay results.">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://cytomove.com/wound-healing-scratch-assay-analysis/">
   <meta property="og:image" content="https://cytomove.com/assets/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Wound Healing Scratch Assay Analysis - Cytomove">
-  <meta name="twitter:description" content="A practical browser-based guide to wound area, gap width, mask review, manual correction, and export.">
+  <meta name="twitter:description" content="A practical browser-based guide to Image QC, wound area, gap width, manual correction, publication figures, and export.">
   <meta name="twitter:image" content="https://cytomove.com/assets/og-image.png">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' stroke='%230f9f8f' stroke-width='2' fill='white'/><circle cx='10' cy='16' r='4' fill='%23bdeee8' stroke='%230f9f8f' stroke-width='1.4'/><circle cx='22' cy='16' r='4' fill='%23bdeee8' stroke='%230f9f8f' stroke-width='1.4'/><path d='M14 12.7L18.5 16 14 19.3' stroke='%2308766c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
   <script type="application/ld+json">
@@ -21,7 +21,7 @@
       "@context": "https://schema.org",
       "@type": "Article",
       "headline": "Wound Healing Scratch Assay Analysis",
-      "description": "A practical guide to browser-based wound healing scratch assay analysis with area and width metrics.",
+      "description": "A practical guide to browser-based wound healing scratch assay analysis with Image QC, area and width metrics, manual correction, publication figure building, and export.",
       "author": {
         "@type": "Person",
         "name": "Zekeriya Duzgun"
@@ -260,6 +260,7 @@
         <a class="nav-link" href="../">Home</a>
         <a class="nav-link" href="#metrics">Metrics</a>
         <a class="nav-link" href="#workflow">Workflow</a>
+        <a class="nav-link" href="#publication-builder">Builder</a>
         <a class="nav-link primary" href="../app/">Open Web App</a>
       </nav>
     </header>
@@ -270,14 +271,15 @@
           <div class="eyebrow">Practical guide</div>
           <h1>Wound healing scratch assay analysis.</h1>
           <p>
-            Scratch assays are simple to run, but image analysis can become inconsistent
-            when masks, crop regions, and time-point exports are handled manually.
-            Cytomove is being built as a browser-based way to review those steps.
+            Scratch assays are simple to run, but analysis becomes fragile when crop
+            regions, masks, correction steps, replicate groups, and publication exports
+            are handled in separate tools. Cytomove 1.0 keeps the workflow reviewable:
+            Image QC, Analysis, Manual correction, Publication Figure Builder, and export.
           </p>
         </div>
         <aside class="cta-card">
           <strong>Try the web app</strong>
-          <p>Open local scratch assay images, review the mask, measure wound area and width, then export results.</p>
+          <p>Open local scratch assay images, review contours, compare groups, build publication figures, and export results.</p>
           <a class="button" href="../app/">Open Web App</a>
         </aside>
       </section>
@@ -291,8 +293,10 @@
             are captured over time to estimate how quickly cells migrate into the open area.
           </p>
           <p>
-            The key image-analysis task is to separate the wound region from the cell-covered
-            region, inspect the segmentation mask, and report reproducible measurements.
+            The key image-analysis task is to separate the wound region from the
+            cell-covered region, inspect the segmentation boundary, and report measurements
+            that can be traced back to the exact image crop, orientation, and analysis
+            settings used for the experiment.
           </p>
 
           <h2 id="metrics">Which measurements matter?</h2>
@@ -313,20 +317,84 @@
 
           <div class="note">
             <p>
-              A reliable workflow should not hide the mask. Researchers need to see where
-              the segmentation boundary is, adjust settings when needed, and document the
-              export used for reporting.
+              A reliable workflow should not hide the segmentation result. Researchers
+              need to see the calculated contours, adjust settings when needed, and export
+              the same reviewed result that will be used in figures or supplementary files.
             </p>
           </div>
 
-          <h2 id="workflow">A browser-based analysis workflow</h2>
+          <h2 id="workflow">The Cytomove 1.0 workflow</h2>
+          <p>
+            Cytomove is organized as a step-by-step review workspace instead of a single
+            black-box measurement button. The intended order is:
+          </p>
           <ol>
-            <li>Open one scratch assay image, or drop multiple time-point images to create a group.</li>
-            <li>Select a brightfield or phase contrast preset and review the contour or mask.</li>
-            <li>Adjust threshold, variance radius, field crop, orientation, or rotation if needed.</li>
-            <li>Use manual correction tools for difficult regions, debris, or missed wound fragments.</li>
-            <li>Export PNG overlays, group PNG ZIPs, plots, CSV, or Excel-compatible tables.</li>
+            <li><strong>Image QC:</strong> load images, create or name groups, crop the field of view, rotate if needed, and exclude unusable images before analysis.</li>
+            <li><strong>Analysis:</strong> choose the microscope preset, apply the threshold and variance radius settings, then inspect the calculated wound contours.</li>
+            <li><strong>Manual correction:</strong> use fill, erase, undo, and reset only when the automatic mask needs local human review.</li>
+            <li><strong>Publication Figure Builder:</strong> assemble a single-group figure, a Control vs Treatment comparison, or a multi-treatment figure from reviewed groups.</li>
+            <li><strong>Export:</strong> save metrics, charts, figures, and full-size contour-overlay images for reporting or manual figure assembly.</li>
           </ol>
+
+          <h2 id="image-qc">Image QC before analysis</h2>
+          <p>
+            Image QC is where the raw microscopy view is made consistent before any
+            measurement is trusted. Use it to name the image group, review each time point,
+            set scratch orientation, fine-rotate tilted images, crop the field of view, and
+            remove images that should not be included in the experiment.
+          </p>
+          <p>
+            The crop is intentionally explicit. If a group has several time points, saving
+            a crop on one image can carry the same crop position forward so the user can
+            keep the field of view consistent across the series rather than redrawing it
+            from scratch each time.
+          </p>
+
+          <h2 id="analysis-review">Analysis and contour review</h2>
+          <p>
+            Analysis starts from a preset such as brightfield normal cells, then uses
+            adjustable settings such as threshold, variance radius, minimum region size,
+            and island handling. After clicking Apply, Cytomove displays the calculated
+            contour lines so the user can judge whether the wound boundary is scientifically
+            acceptable before moving on.
+          </p>
+          <p>
+            Use Apply to group when a setting is appropriate for the whole series. If a
+            publication figure later includes a group that does not yet have stored
+            contours, the Builder shows Analyze missing groups so the selected groups can
+            be completed before figure export.
+          </p>
+
+          <h2 id="manual-correction">Manual correction for difficult masks</h2>
+          <p>
+            Manual correction is for edge cases: debris inside the wound, missed wound
+            regions, false-positive cell islands, or local artifacts that the global
+            threshold cannot handle cleanly. It is not meant to replace careful automatic
+            settings; it is a review tool for making a documented correction when the
+            image clearly needs it.
+          </p>
+          <p>
+            The correction workflow supports fill and erase actions, undo, reset, and
+            visual mask inspection. A good habit is to tune the main analysis settings
+            first, then use manual correction only for the small remaining local issue.
+          </p>
+
+          <h2 id="publication-builder">Publication Figure Builder</h2>
+          <p>
+            The Publication Figure Builder turns reviewed groups into presentation-ready
+            summary figures. If only one group is loaded, Cytomove now creates a
+            single-group figure rather than forcing an artificial treatment comparison.
+            With two groups, it builds a Control vs Treatment figure. For drug panels,
+            dose groups, or additional conditions, the multi-treatment template can add
+            extra treatment groups with their own replicate selections.
+          </p>
+          <p>
+            Panel A shows representative images with the calculated wound contours. Panel B
+            summarizes wound closure, and Panel C can show the normalized wound area or a
+            secondary metric. Titles, labels, fonts, and panel placement can be adjusted in
+            the Builder so the exported figure is closer to a publication layout rather
+            than a raw software screenshot.
+          </p>
 
           <h2 id="imagej">How does this relate to ImageJ workflows?</h2>
           <p>
@@ -341,19 +409,27 @@
             a substitute for experiment-specific validation.
           </p>
 
+          <h2 id="formats">Supported exports</h2>
+          <p>
+            Cytomove exports both measurement data and figure-oriented assets. The
+            Publication Figure Builder export is designed for manuscript preparation and
+            can include 600 DPI PNG output, TIFF output when supported by the browser
+            environment, PowerPoint/PDF-oriented figure assets, CSV tables, and a Builder
+            ZIP package.
+          </p>
+          <p>
+            For users who prefer to assemble figures manually, the export package also
+            includes the full-size original images and full-size contour-overlay images.
+            That means the reviewed segmentation result can be reused outside Cytomove
+            without depending only on the compact preview shown in the Builder.
+          </p>
+
           <h2 id="privacy">What does browser-local image handling mean?</h2>
           <p>
             You can open image files normally through the file picker or drag-and-drop.
             The current web workflow analyzes those files in the browser and keeps assay
             image files on your device. This is important for unpublished microscopy data
             and early-stage academic workflows.
-          </p>
-
-          <h2 id="formats">Supported exports</h2>
-          <p>
-            Cytomove currently focuses on practical outputs for review and reporting:
-            overlay PNGs, group overlay ZIP files, area and width plot ZIP files, CSV
-            metrics, and Excel-compatible tables.
           </p>
 
           <div class="inline-cta">
@@ -366,10 +442,14 @@
           <strong>On this page</strong>
           <a href="#overview">Scratch assay overview</a>
           <a href="#metrics">Area and width metrics</a>
-          <a href="#workflow">Browser workflow</a>
+          <a href="#workflow">Cytomove workflow</a>
+          <a href="#image-qc">Image QC</a>
+          <a href="#analysis-review">Analysis and contours</a>
+          <a href="#manual-correction">Manual correction</a>
+          <a href="#publication-builder">Publication Figure Builder</a>
           <a href="#imagej">ImageJ relation</a>
-          <a href="#privacy">Local image handling</a>
           <a href="#formats">Exports</a>
+          <a href="#privacy">Local image handling</a>
         </aside>
       </div>
     </main>

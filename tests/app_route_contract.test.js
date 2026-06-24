@@ -71,6 +71,28 @@ assert(
   'Guide calls to action should point directly to /app/'
 );
 assert(
+  !guideHtml.includes('id="visualGuideTabs"') &&
+    !guideHtml.includes('<img '),
+  'Guide should stay text-only and should not reintroduce the visual tabbed guide'
+);
+[
+  'Image QC',
+  'Manual correction',
+  'Publication Figure Builder',
+  'single-group figure',
+  'Control vs Treatment',
+  'multi-treatment',
+  'Analyze missing groups',
+  '600 DPI',
+  'TIFF',
+  'full-size contour-overlay'
+].forEach(requiredGuidePhrase => {
+  assert(
+    guideHtml.includes(requiredGuidePhrase),
+    `Guide should explain the Cytomove 1.0 feature: ${requiredGuidePhrase}`
+  );
+});
+assert(
   fs.existsSync(localServerPath) &&
     read('scripts/serve_local.py').includes('Cache-Control') &&
     read('scripts/serve_local.py').includes('no-store'),
