@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cytomove User Guide - Image QC, Analysis, Figures, and Export</title>
+  <meta name="description" content="Detailed Cytomove user guide for Image QC, analysis parameters, manual correction, Publication Figure Builder, export packages, and troubleshooting.">
+  <link rel="canonical" href="https://cytomove.com/user-guide/">
+  <meta property="og:title" content="Cytomove User Guide">
+  <meta property="og:description" content="A practical text guide for using Cytomove from image loading to publication figure export.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://cytomove.com/user-guide/">
+  <meta property="og:image" content="https://cytomove.com/assets/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Cytomove User Guide">
+  <meta name="twitter:description" content="Step-by-step Cytomove documentation for Image QC, analysis, manual correction, Builder, and export.">
+  <meta name="twitter:image" content="https://cytomove.com/assets/og-image.png">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' stroke='%230f9f8f' stroke-width='2' fill='white'/><circle cx='10' cy='16' r='4' fill='%23bdeee8' stroke='%230f9f8f' stroke-width='1.4'/><circle cx='22' cy='16' r='4' fill='%23bdeee8' stroke='%230f9f8f' stroke-width='1.4'/><path d='M14 12.7L18.5 16 14 19.3' stroke='%2308766c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "TechArticle",
+      "headline": "Cytomove User Guide",
+      "description": "Detailed text documentation for using Cytomove to review wound healing scratch assay images, analyze contours, correct masks, build publication figures, and export results.",
+      "author": {
+        "@type": "Person",
+        "name": "Zekeriya Duzgun"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Cytomove"
+      },
+      "mainEntityOfPage": "https://cytomove.com/user-guide/"
+    }
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f7faf9;
+      --paper: #ffffff;
+      --soft: #eef7f5;
+      --ink: #102027;
+      --muted: #526d6b;
+      --dim: #7e9290;
+      --line: #d8e6e3;
+      --teal: #0f9f8f;
+      --teal-dark: #08766c;
+      --shadow: 0 22px 58px rgba(16, 32, 39, 0.10);
+    }
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.65;
+    }
+    a { color: inherit; }
+    .page { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
+    .site-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 22px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+    .logo-mark {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--paper);
+      box-shadow: 0 8px 22px rgba(16, 32, 39, 0.06);
+    }
+    .logo-text { font-size: 19px; font-weight: 800; letter-spacing: -0.02em; }
+    .site-nav { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+    .nav-link {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 750;
+      padding: 9px 11px;
+      border-radius: 999px;
+    }
+    .nav-link:hover { color: var(--ink); background: rgba(255, 255, 255, 0.82); }
+    .nav-link.primary { color: #ffffff; background: var(--ink); padding-inline: 15px; }
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 0.36fr);
+      gap: 40px;
+      align-items: end;
+      padding: 58px 0 44px;
+      border-bottom: 1px solid var(--line);
+    }
+    .eyebrow {
+      color: var(--teal-dark);
+      font-size: 12px;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+    h1 {
+      max-width: 820px;
+      font-size: clamp(40px, 6vw, 72px);
+      line-height: 0.99;
+      letter-spacing: -0.055em;
+      font-weight: 760;
+    }
+    .hero p {
+      max-width: 760px;
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .status-card {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: var(--paper);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+    .status-card strong { display: block; font-size: 17px; margin-bottom: 8px; }
+    .status-card p { color: var(--muted); font-size: 14px; line-height: 1.55; margin-bottom: 16px; }
+    .button {
+      min-height: 46px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--ink);
+      border-radius: 12px;
+      background: var(--ink);
+      color: #ffffff;
+      padding: 12px 16px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 820;
+      width: 100%;
+    }
+    .content {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 280px;
+      gap: 52px;
+      padding: 48px 0 64px;
+    }
+    article {
+      min-width: 0;
+      max-width: 800px;
+    }
+    article h2 {
+      font-size: clamp(25px, 3vw, 36px);
+      line-height: 1.12;
+      letter-spacing: -0.035em;
+      margin: 42px 0 12px;
+    }
+    article h2:first-child { margin-top: 0; }
+    article h3 {
+      font-size: 19px;
+      letter-spacing: -0.02em;
+      margin: 24px 0 8px;
+    }
+    article p, article li {
+      color: var(--muted);
+      font-size: 16px;
+    }
+    article p + p { margin-top: 12px; }
+    ul, ol { padding-left: 22px; margin: 12px 0 0; }
+    li + li { margin-top: 8px; }
+    code {
+      color: var(--ink);
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 2px 6px;
+      font-size: 0.92em;
+    }
+    .note, .warning {
+      border-left: 4px solid var(--teal);
+      background: var(--soft);
+      border-radius: 0 14px 14px 0;
+      padding: 16px 18px;
+      margin: 24px 0;
+    }
+    .warning { border-left-color: #d88a16; background: #fff8ea; }
+    .note p, .warning p { font-size: 15px; }
+    .checklist {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+      padding-left: 0;
+      list-style: none;
+    }
+    .checklist li {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.72);
+      padding: 12px 14px;
+    }
+    .toc {
+      position: sticky;
+      top: 18px;
+      align-self: start;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.72);
+      padding: 17px;
+    }
+    .toc strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 11px;
+    }
+    .toc a {
+      display: block;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 7px 0;
+    }
+    .toc a:hover { color: var(--ink); }
+    .inline-cta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: var(--paper);
+      padding: 20px;
+      margin-top: 38px;
+    }
+    .inline-cta p { margin: 0; font-size: 15px; }
+    .inline-cta .button { width: auto; min-width: 160px; }
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      color: var(--dim);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+      padding: 24px 0 34px;
+    }
+    footer a { color: var(--muted); text-decoration: none; }
+    footer a:hover { color: var(--ink); }
+    @media (max-width: 880px) {
+      .hero, .content { grid-template-columns: 1fr; }
+      .toc { position: static; }
+      .inline-cta { display: block; }
+      .inline-cta .button { width: 100%; margin-top: 14px; }
+    }
+    @media (max-width: 620px) {
+      body { padding: 0 14px; overflow-x: hidden; }
+      .page { width: 100%; }
+      .site-header { align-items: flex-start; flex-direction: column; }
+      .site-nav { width: 100%; }
+      .nav-link.primary { width: 100%; text-align: center; }
+      h1 { font-size: 34px; line-height: 1.08; letter-spacing: -0.035em; }
+      .hero p { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="site-header">
+      <a class="logo" href="../" aria-label="Cytomove home">
+        <span class="logo-mark">
+          <svg width="25" height="25" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <circle cx="16" cy="16" r="13" stroke="#0f9f8f" stroke-width="1.8"/>
+            <ellipse cx="10.5" cy="16" rx="4" ry="4" fill="#bdeee8" stroke="#0f9f8f" stroke-width="1.4"/>
+            <ellipse cx="21.5" cy="16" rx="4" ry="4" fill="#bdeee8" stroke="#0f9f8f" stroke-width="1.4"/>
+            <path d="M14 12.5L18.5 16 14 19.5" stroke="#08766c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="logo-text">Cytomove</span>
+      </a>
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a class="nav-link" href="../wound-healing-scratch-assay-analysis/">Scratch Assay Guide</a>
+        <a class="nav-link" href="../tutorial/">Tutorials</a>
+        <a class="nav-link" href="#export">Exports</a>
+        <a class="nav-link primary" href="../app/">Open Web App</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <div class="eyebrow">Detailed documentation</div>
+          <h1>Cytomove User Guide.</h1>
+          <p>
+            This guide explains the practical Cytomove 1.0 workflow for wound healing
+            scratch assay analysis: loading local images, reviewing Image QC, tuning
+            analysis parameters, making manual corrections, building figures, and exporting
+            publication-ready results.
+          </p>
+        </div>
+        <aside class="status-card">
+          <strong>Best starting point</strong>
+          <p>Use this page when you want button-level guidance. Use the shorter scratch assay guide for the scientific overview.</p>
+          <a class="button" href="../app/">Open Web App</a>
+        </aside>
+      </section>
+
+      <div class="content">
+        <article>
+          <h2 id="quick-start">Quick start</h2>
+          <ol>
+            <li>Open the Cytomove web app or desktop app.</li>
+            <li>Use <strong>Open images</strong> or drag-and-drop to load a time-series group.</li>
+            <li>Name the group clearly, for example <code>HUVEC control r1</code> or <code>FDI r2</code>.</li>
+            <li>Review the first image in Image QC, then crop and orient the image series.</li>
+            <li>Continue to Analysis, apply settings, and inspect the calculated contour overlay.</li>
+            <li>Open Publication Figure Builder to create a single-group figure, Control vs Treatment figure, or multi-treatment figure.</li>
+            <li>Export the figure and supporting files when the preview reflects the reviewed analysis.</li>
+          </ol>
+
+          <div class="note">
+            <p>
+              Cytomove is intentionally reviewable. If the preview looks wrong, return to
+              Image QC or Analysis before exporting. A clean export should be the result of
+              a visible review path, not a hidden automatic measurement.
+            </p>
+          </div>
+
+          <h2 id="image-qc">Image QC</h2>
+          <p>
+            Image QC is the first checkpoint. It prevents avoidable measurement errors
+            before segmentation starts. Use it to create a group, review every time point,
+            crop the field of view, correct scratch orientation, fine-rotate tilted images,
+            and exclude images that should not contribute to the group analysis.
+          </p>
+          <h3>Loading a group</h3>
+          <p>
+            When several images are selected together, Cytomove asks for a group name before
+            creating the reviewable image group. Keep the group name meaningful because it
+            will later appear in replicate lists, Builder controls, and exported files.
+          </p>
+          <h3>Crop and orientation</h3>
+          <p>
+            Use <strong>Adjust crop</strong> to reveal the crop rectangle, drag the rectangle
+            or its handles until the wound field is centered, then use <strong>Save crop</strong>.
+            If later images share the same field of view, the saved crop can be carried
+            forward so the series stays consistent.
+          </p>
+          <p>
+            The scratch orientation should describe the wound geometry, not the camera
+            frame. Vertical scratch is the usual left-to-right wound gap. If the wound gap
+            is top-to-bottom, use horizontal scratch and rotate if needed before analysis.
+          </p>
+
+          <h2 id="analysis">Analysis parameters</h2>
+          <p>
+            The Analysis step converts the reviewed image into a wound mask and contour.
+            Start with the preset that best matches the microscopy mode, usually brightfield
+            normal cells for typical scratch assay images. Then click <strong>Apply</strong>
+            and inspect the contour lines.
+          </p>
+          <h3>Threshold and variance radius</h3>
+          <p>
+            Threshold controls the separation between wound and cell-covered regions.
+            Variance radius changes how local texture is interpreted. Moving the radius can
+            improve brightfield images where cell texture, illumination, or microscope field
+            artifacts confuse a simple intensity threshold.
+          </p>
+          <h3>Islands and small regions</h3>
+          <p>
+            The island handling controls decide how tiny internal components are treated.
+            Use trace or ignore tiny islands when speckles or debris are being counted as
+            biologically meaningful wound fragments. After each change, click
+            <strong>Apply</strong> again and compare the contour overlay.
+          </p>
+          <h3>Apply to group</h3>
+          <p>
+            Use <strong>Apply to group</strong> only when the current analysis settings are
+            appropriate for the full image series. This keeps replicate analysis faster
+            while still leaving a visible result for review.
+          </p>
+
+          <h2 id="manual-correction">Manual correction</h2>
+          <p>
+            Manual correction is for local segmentation problems that remain after the main
+            settings are tuned. It is useful for a missed wound pocket, a false-positive
+            debris region, or a small artifact that should not drive the biological result.
+          </p>
+          <ul class="checklist">
+            <li><strong>Fill area:</strong> add a missed wound region when the automatic mask is too conservative.</li>
+            <li><strong>Erase area:</strong> remove a false-positive wound region when debris or texture was misclassified.</li>
+            <li><strong>Undo:</strong> step back from the most recent correction if the edit was too broad.</li>
+            <li><strong>Reset correction:</strong> return to the uncorrected analysis result and start the correction again.</li>
+          </ul>
+          <div class="warning">
+            <p>
+              Manual correction should be documented by the exported overlay. Do not use it
+              to force a preferred result; use it to fix a visible local mask error.
+            </p>
+          </div>
+
+          <h2 id="builder">Publication Figure Builder</h2>
+          <p>
+            Publication Figure Builder assembles reviewed image groups and analysis results
+            into a figure layout. It is designed for the last review step before export,
+            where the user checks representative images, calculated contour overlays,
+            summary charts, labels, and typography.
+          </p>
+          <h3>Single group</h3>
+          <p>
+            When only one image group exists, Cytomove creates a single-group figure. This
+            avoids a fake Control or Treatment comparison and is useful for method checks,
+            pilot experiments, and one-condition examples.
+          </p>
+          <h3>Control vs Treatment</h3>
+          <p>
+            With two groups, choose the control representative group, the treatment
+            representative group, and the replicate groups that belong to each condition.
+            The Control vs Treatment layout summarizes representative contours, wound
+            closure, and normalized area.
+          </p>
+          <h3>Multi-treatment</h3>
+          <p>
+            For FDI, drug B, drug C, dose groups, or any condition beyond the first
+            treatment, use the multi-treatment template and add extra treatment groups.
+            Each added treatment has its own representative group and replicate selection.
+          </p>
+          <h3>Panel layout and typography</h3>
+          <p>
+            Builder panels can be adjusted so the figure better fits publication space.
+            Use the title fields, font family, title size, weight, labels, and snap-to-grid
+            panel dragging to refine the layout while keeping the scientific content intact.
+          </p>
+          <h3>Analyze missing groups</h3>
+          <p>
+            If a selected group does not yet have stored contours, the Builder shows
+            <strong>Analyze missing groups</strong>. Click it to complete the missing group
+            analysis before exporting the figure. This keeps Builder previews tied to the
+            current Image QC crop and analysis settings.
+          </p>
+
+          <h2 id="export">Export package</h2>
+          <p>
+            Cytomove exports both compact publication figures and supporting files for
+            independent review. The Builder export can include 600 DPI PNG output, TIFF
+            output when supported, CSV data, chart assets, and a ZIP package for manuscript
+            preparation.
+          </p>
+          <p>
+            For manual figure assembly, the export package can also include full-size
+            original images and full-size contour-overlay images. The full-size
+            contour-overlay files are useful when a journal, collaborator, or reviewer
+            wants to inspect segmentation on the original-resolution field rather than the
+            Builder preview.
+          </p>
+          <ul>
+            <li><strong>CSV metrics:</strong> wound area, closure, width, and supporting values.</li>
+            <li><strong>Figure images:</strong> publication-style figure previews and 600 DPI outputs.</li>
+            <li><strong>TIFF:</strong> high-resolution figure export where browser support allows it.</li>
+            <li><strong>Builder ZIP:</strong> combined figure, data, and full-size contour-overlay assets.</li>
+          </ul>
+
+          <h2 id="troubleshooting">Troubleshooting</h2>
+          <h3>No images appear after loading</h3>
+          <p>
+            Try a fresh browser tab, then reload the page. If the app was recently updated,
+            a stale browser cache may keep an older script active. The local development
+            server disables stale caching, but public browsers can still hold old files.
+          </p>
+          <h3>The contour does not match the wound</h3>
+          <p>
+            Return to Analysis, adjust the preset, threshold, variance radius, and island
+            handling, then click Apply again. Use Manual correction only after the global
+            settings are close.
+          </p>
+          <h3>The Builder preview says groups need analysis</h3>
+          <p>
+            Use Analyze missing groups. This usually means the group was selected in the
+            Builder before stored contour results existed for all selected images.
+          </p>
+          <h3>Export is disabled</h3>
+          <p>
+            Sign in when full export access is required, verify that selected groups have
+            analysis results, and confirm the Builder preview is available before exporting.
+          </p>
+
+          <div class="inline-cta">
+            <p><strong>Need the scientific overview?</strong><br>Read the shorter scratch assay guide, or open the app and try the workflow directly.</p>
+            <a class="button" href="../wound-healing-scratch-assay-analysis/">Scratch Assay Guide</a>
+          </div>
+        </article>
+
+        <aside class="toc" aria-label="User guide contents">
+          <strong>User Guide</strong>
+          <a href="#quick-start">Quick start</a>
+          <a href="#image-qc">Image QC</a>
+          <a href="#analysis">Analysis parameters</a>
+          <a href="#manual-correction">Manual correction</a>
+          <a href="#builder">Publication Figure Builder</a>
+          <a href="#export">Export package</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </aside>
+      </div>
+    </main>
+
+    <footer>
+      <p>Copyright 2026 Cytomove</p>
+      <p>
+        <a href="https://github.com/zduzgun/CytoMove" target="_blank" rel="noopener noreferrer">GitHub</a>
+        &nbsp;/&nbsp;
+        <a href="mailto:zekeriya.duzgun@giresun.edu.tr">Contact</a>
+      </p>
+    </footer>
+  </div>
+</body>
+</html>

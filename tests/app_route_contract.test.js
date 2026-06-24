@@ -11,7 +11,9 @@ const landingHtml = read('index.html');
 const legacyHtml = read('prototype_refactor/index.html');
 const olderLegacyHtml = read('prototype/index.html');
 const guideHtml = read('wound-healing-scratch-assay-analysis/index.html');
+const sitemapXml = read('sitemap.xml');
 const localServerPath = path.join(root, 'scripts/serve_local.py');
+const userGuidePath = path.join(root, 'user-guide', 'index.html');
 
 assert(
   appHtml.includes('id="qcModuleTab"') &&
@@ -92,6 +94,54 @@ assert(
     `Guide should explain the Cytomove 1.0 feature: ${requiredGuidePhrase}`
   );
 });
+assert(
+  !landingHtml.includes('user-guide/'),
+  'Landing page should stay focused and should not be changed for the detailed user guide'
+);
+assert(
+  guideHtml.includes('../user-guide/'),
+  'Scratch assay guide should link to the detailed user guide'
+);
+assert(
+  fs.existsSync(userGuidePath),
+  '/user-guide/ should provide a detailed text user guide'
+);
+const userGuideHtml = read('user-guide/index.html');
+assert(
+  userGuideHtml.includes('rel="canonical" href="https://cytomove.com/user-guide/"') &&
+    userGuideHtml.includes('../app/') &&
+    userGuideHtml.includes('../wound-healing-scratch-assay-analysis/'),
+  'User guide should have canonical metadata and links back to the app and scratch assay guide'
+);
+[
+  'Quick start',
+  'Image QC',
+  'Analysis parameters',
+  'Manual correction',
+  'Publication Figure Builder',
+  'Export package',
+  'Troubleshooting',
+  'single-group figure',
+  'Control vs Treatment',
+  'multi-treatment',
+  'Analyze missing groups',
+  '600 DPI',
+  'TIFF',
+  'full-size contour-overlay'
+].forEach(requiredUserGuidePhrase => {
+  assert(
+    userGuideHtml.includes(requiredUserGuidePhrase),
+    `User guide should document: ${requiredUserGuidePhrase}`
+  );
+});
+assert(
+  !userGuideHtml.includes('<img '),
+  'User guide should be text-only for this release'
+);
+assert(
+  sitemapXml.includes('https://cytomove.com/user-guide/'),
+  'Sitemap should include the detailed user guide route'
+);
 assert(
   fs.existsSync(localServerPath) &&
     read('scripts/serve_local.py').includes('Cache-Control') &&
