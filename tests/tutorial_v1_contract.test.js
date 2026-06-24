@@ -18,13 +18,17 @@ test('full HUVEC tutorial starts from the bundled validation image set', () => {
   assert.match(appHtml, /id="openImageGroupButton"/);
   assert.match(appJs, /'huvec-full':\s*\{/);
   assert.match(appJs, /validationSetId:'full_thread_control'/);
+  assert.match(appJs, /preAnalyzeValidationSet:false/);
   assert.match(appJs, /18 images/);
   assert.match(appJs, /selector:'#goToAnalysisFromQc'/);
   assert.match(appJs, /selector:'#rerun'/);
   assert.match(appJs, /selector:'button\[data-module="builder"\]'/);
   assert.match(appJs, /const finalModule=config\.finalModule\|\|'qc'/);
-  assert.match(appJs, /loadServedValidationSet\(config\.validationSetId,\{tutorial:true,finalModule\}\)/);
+  assert.match(appJs, /const preAnalyze=config\.preAnalyzeValidationSet!==false/);
+  assert.match(appJs, /loadServedValidationSet\(config\.validationSetId,\{tutorial:true,finalModule,preAnalyze\}\)/);
   assert.match(appJs, /const finalModule=options\.finalModule\|\|'qc'/);
+  assert.match(appJs, /const preAnalyze=options\.preAnalyze!==false/);
+  assert.match(appJs, /if\(preAnalyze\)\s*\{/);
   assert.match(appJs, /if\(finalModule==='qc'\)/);
   assert.doesNotMatch(appJs, /loadValidationSet\(config\.validationSetId\)/);
   assert.doesNotMatch(appJs, /switchModule\('qc'\)/);
@@ -140,6 +144,7 @@ test('publication quality figure tutorial loads the 3-replicate validation set i
   }
   assert.match(body, /validationSetId:'full_thread_control'/);
   assert.match(body, /finalModule:'builder'/);
+  assert.doesNotMatch(body, /preAnalyzeValidationSet:false/);
   assert.match(body, /3 Control and 3 FDI replicate groups/);
   assert.match(body, /600 DPI PNG\/TIFF/);
 });

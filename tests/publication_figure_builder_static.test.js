@@ -644,6 +644,12 @@ assert(
 );
 assert(preflightIndex>=0, 'Validation loader should fetch all validation assets in parallel before importing groups');
 assert(
+  loaderBody.includes("const preAnalyze=options.preAnalyze!==false") &&
+    loaderBody.includes('if(preAnalyze)') &&
+    loaderBody.includes('await analyzeImportedGroup(group.groupId)'),
+  'Validation loader should allow QC-first tutorials to import images immediately without pre-analysis'
+);
+assert(
   loaderBody.includes("const finalModule=options.finalModule||'qc'") &&
     loaderBody.includes("if(finalModule==='qc')") &&
     loaderBody.includes("setAppModule('qc')") &&

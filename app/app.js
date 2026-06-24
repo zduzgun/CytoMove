@@ -28,6 +28,7 @@
       id:'tutorial-huvec-full',
       label:'Full HUVEC validation tutorial',
       validationSetId:'full_thread_control',
+      preAnalyzeValidationSet:false,
       completeBody:'You loaded the bundled 18 images from the HUVEC Control vs FDI validation set, reviewed Image QC, analyzed the groups, and opened Publication Figure Builder. Continue in Playground to adjust the figure, export the 600 DPI package, or inspect full-size contour overlays.',
       steps:[
         {
@@ -7598,10 +7599,11 @@
     }
     if(config.validationSetId) {
       const finalModule=config.finalModule||'qc';
+      const preAnalyze=config.preAnalyzeValidationSet!==false;
       setAppModule(finalModule==='builder'?'builder':'qc');
       setMode('group');
       if(finalModule!=='builder') setupTutorialCoach(config,[]);
-      loadServedValidationSet(config.validationSetId,{tutorial:true,finalModule}).then(()=>{
+      loadServedValidationSet(config.validationSetId,{tutorial:true,finalModule,preAnalyze}).then(()=>{
         setupTutorialCoach(config,selectedGroupSamples());
       });
       setLog(`<strong>${escHtml(config.label)} started.</strong> Loading the bundled validation image set.`);
@@ -9023,16 +9025,19 @@
         }
         imported.push({...group,...created});
       }
-      for(const group of imported) {
-        await analyzeImportedGroup(group.groupId);
-        if(!validationGroupAnalysisComplete(group.samples,{
-          groupResults:state.groupResults,
-          manualOverrides:state.manualOverrides,
-          currentSampleId:state.sample?.id,
-          currentResult:state.result,
-          excludedSampleIds:group.samples.filter(sample=>sampleExcludedFromAnalysis(sample.id)).map(sample=>sample.id)
-        })) {
-          throw new Error('Validation analysis incomplete');
+      const preAnalyze=options.preAnalyze!==false;
+      if(preAnalyze) {
+        for(const group of imported) {
+          await analyzeImportedGroup(group.groupId);
+          if(!validationGroupAnalysisComplete(group.samples,{
+            groupResults:state.groupResults,
+            manualOverrides:state.manualOverrides,
+            currentSampleId:state.sample?.id,
+            currentResult:state.result,
+            excludedSampleIds:group.samples.filter(sample=>sampleExcludedFromAnalysis(sample.id)).map(sample=>sample.id)
+          })) {
+            throw new Error('Validation analysis incomplete');
+          }
         }
       }
       const applyImportedAssignments=()=>{
@@ -9068,7 +9073,9 @@
         renderPublicationBuilder();
       }
       validationLoaded=true;
-      setLog(`<strong>Validation set loaded:</strong> ${config.label}. Imported ${imported.length} groups and analyzed their image series for replicate testing.`);
+      setLog(preAnalyze
+        ? `<strong>Validation set loaded:</strong> ${config.label}. Imported ${imported.length} groups and analyzed their image series for replicate testing.`
+        : `<strong>Validation set loaded:</strong> ${config.label}. Imported ${imported.length} groups and opened the first image for Image QC.`);
     } catch(err) {
       cleanupValidationOwnedResources(ownership);
       restoreValidationSessionState(sessionSnapshot);
