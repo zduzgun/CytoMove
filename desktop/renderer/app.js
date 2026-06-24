@@ -668,10 +668,14 @@ const CALIBRATION = [
     moduleTabs:         document.getElementById('moduleTabs'),
     publicationBuilderControls: document.getElementById('publicationBuilderControls'),
     publicationBuilderPanel: document.getElementById('publicationBuilderPanel'),
+    builderControlGroupLabel: document.getElementById('builderControlGroupLabel'),
     builderControlGroup: document.getElementById('builderControlGroup'),
+    builderControlReplicatesLabel: document.getElementById('builderControlReplicatesLabel'),
     builderTreatmentGroup: document.getElementById('builderTreatmentGroup'),
+    builderTreatmentGroupControl: document.getElementById('builderTreatmentGroupControl'),
     builderControlReplicates: document.getElementById('builderControlReplicates'),
     builderTreatmentReplicates: document.getElementById('builderTreatmentReplicates'),
+    builderTreatmentReplicatesControl: document.getElementById('builderTreatmentReplicatesControl'),
     builderTreatmentArms: document.getElementById('builderTreatmentArms'),
     addBuilderTreatmentArm: document.getElementById('addBuilderTreatmentArm'),
     builderTemplate:    document.getElementById('builderTemplate'),
@@ -699,6 +703,7 @@ const CALIBRATION = [
     builderCanvasStage: document.getElementById('builderCanvasStage'),
     builderPanelOverlay: document.getElementById('builderPanelOverlay'),
     builderEmpty:       document.getElementById('builderEmpty'),
+    builderTitle:       document.getElementById('builderTitle'),
     builderStatus:      document.getElementById('builderStatus'),
     builderCaptionText: document.getElementById('builderCaptionText'),
     analyzeMissingBuilderGroups: document.getElementById('analyzeMissingBuilderGroups'),
@@ -4513,17 +4518,32 @@ const CALIBRATION = [
     ];
   }
 
+  function builderActiveTreatmentArms(settings) {
+    return (settings.treatmentArms||[]).filter(arm=>(arm.replicateIds||[]).length);
+  }
+
+  function builderIsSingleGroup(settings) {
+    return !!(settings.controlReplicateIds||[]).length&&builderActiveTreatmentArms(settings).length===0;
+  }
+
+  function builderSingleGroupLabel(settings) {
+    const group=groupById(settings.controlId)||(settings.controlReplicateIds||[]).map(id=>groupById(id)).find(Boolean);
+    return group?.label||settings.cellType||'Image group';
+  }
+
   function builderConditionSeries(settings) {
-    return [
-      {
+    const series=[];
+    if((settings.controlReplicateIds||[]).length) {
+      series.push({
         id:'control',
         conditionKey:'control',
-        label:settings.controlLabel,
+        label:builderIsSingleGroup(settings)?builderSingleGroupLabel(settings):settings.controlLabel,
         representativeId:settings.controlId,
         replicateIds:settings.controlReplicateIds||[]
-      },
-      ...(settings.treatmentArms||[])
-    ];
+      });
+    }
+    series.push(...builderActiveTreatmentArms(settings));
+    return series;
   }
 
   function builderConditionColors(settings, style='grayscale') {
@@ -4535,6 +4555,7 @@ const CALIBRATION = [
   }
 
   function builderComparisonLabel(settings) {
+    if(builderIsSingleGroup(settings)) return `${builderSingleGroupLabel(settings)} single-group figure`;
     const labels=builderConditionSeries(settings).map(item=>item.label).filter(Boolean);
     if(labels.length<=2) return `${settings.controlLabel} vs ${settings.treatmentLabel}`;
     return `${settings.controlLabel} vs ${labels.slice(1).join(' vs ')}`;
@@ -4643,9 +4664,13 @@ const CALIBRATION = [
     };
     fillSelect(el.builderControlGroup,builderState.controlReplicateIds,builderState.controlRepresentativeId||groups[0]?.id);
     fillSelect(el.builderTreatmentGroup,builderState.treatmentReplicateIds,builderState.treatmentRepresentativeId||(groups[1]?.id||''));
+    if(el.builderControlGroupLabel) el.builderControlGroupLabel.textContent=groups.length<2?'Representative group':'Control representative group';
+    if(el.builderControlReplicatesLabel) el.builderControlReplicatesLabel.textContent=groups.length<2?'Selected image group':'Control replicates';
+    if(el.builderTreatmentGroupControl) el.builderTreatmentGroupControl.hidden=groups.length<2;
+    if(el.builderTreatmentReplicatesControl) el.builderTreatmentReplicatesControl.hidden=groups.length<2;
     renderBuilderReplicateOptions();
     renderBuilderTreatmentArms();
-    if(el.exportBuilderFigure) el.exportBuilderFigure.disabled=groups.length<2;
+    if(el.exportBuilderFigure) el.exportBuilderFigure.disabled=groups.length<1;
     if(el.addBuilderTreatmentArm) el.addBuilderTreatmentArm.disabled=groups.length<2;
   }
 
@@ -4767,8 +4792,9 @@ const CALIBRATION = [
   }
 
   function builderFigureRows(settings=builderSettings()) {
-    const controlRows=builderConditionRows(settings.controlReplicateIds,settings.controlId,'control',settings.controlLabel);
-    const treatmentRows=(settings.treatmentArms||[]).flatMap(arm=>builderConditionRows(arm.replicateIds,arm.representativeId,arm.conditionKey,arm.label));
+    const controlLabel=builderIsSingleGroup(settings)?builderSingleGroupLabel(settings):settings.controlLabel;
+    const controlRows=builderConditionRows(settings.controlReplicateIds,settings.controlId,'control',controlLabel);
+    const treatmentRows=builderActiveTreatmentArms(settings).flatMap(arm=>builderConditionRows(arm.replicateIds,arm.representativeId,arm.conditionKey,arm.label));
     return [...controlRows,...treatmentRows].sort((a,b)=>a.x-b.x||a.conditionKey.localeCompare(b.conditionKey));
   }
 
@@ -4804,9 +4830,10 @@ const CALIBRATION = [
   }
 
   function builderRepresentativeRows(settings=builderSettings()) {
+    const controlLabel=builderIsSingleGroup(settings)?builderSingleGroupLabel(settings):settings.controlLabel;
     return [
-      ...builderGroupRows(settings.controlId,'control',settings.controlLabel,'representative'),
-      ...(settings.treatmentArms||[]).flatMap(arm=>builderGroupRows(arm.representativeId,arm.conditionKey,arm.label,'representative'))
+      ...builderGroupRows(settings.controlId,'control',controlLabel,'representative'),
+      ...builderActiveTreatmentArms(settings).flatMap(arm=>builderGroupRows(arm.representativeId,arm.conditionKey,arm.label,'representative'))
     ].sort((a,b)=>a.x-b.x||a.conditionKey.localeCompare(b.conditionKey));
   }
 
@@ -5148,6 +5175,12 @@ const CALIBRATION = [
   function builderCaptionDraft(settings=builderSettings(), rows=builderFigureRows(settings)) {
     const metric=settings.metric==='width'?'normalized wound width':'normalized wound area';
     const timeLabels=builderTimepoints(rows).map(tp=>tp.label).join(', ');
+    if(builderIsSingleGroup(settings)) {
+      const groupLabel=builderSingleGroupLabel(settings);
+      const stats=settings.pValue||settings.stars ? ` Statistical annotation: ${[settings.stars,settings.pValue].filter(Boolean).join(' ')}.` : '';
+      const scale=Number.isFinite(settings.scaleValue)&&settings.scaleValue>0 ? ' Scale bar: 100 um.' : '';
+      return `Representative wound healing scratch assay images and quantification for ${settings.cellType||'cells'}. Panel A shows contour overlays for ${groupLabel} across ${timeLabels||'the analyzed timepoints'}.${scale} Panel B shows wound closure normalized to baseline. Panel C shows ${metric}. Points show the selected image group time course. ${builderReplicateSummary(settings)}. ${stats}`.replace(/\s+/g,' ').trim();
+    }
     const treatmentLabels=(settings.treatmentArms||[]).map(arm=>arm.label).join(', ')||settings.treatmentLabel;
     const replicateSummary=builderReplicateSummary(settings);
     const stats=settings.pValue||settings.stars ? ` Statistical annotation: ${[settings.stars,settings.pValue].filter(Boolean).join(' ')}.` : '';
@@ -5369,9 +5402,9 @@ const CALIBRATION = [
 
   async function analyzeMissingBuilderGroups() {
     const settings=builderSettings();
-    if(!settings.controlReplicateIds.length||!settings.treatmentReplicateIds.length) {
+    if(!settings.controlReplicateIds.length) {
       renderPublicationBuilder();
-      setLog('<strong>Builder needs both Control and Treatment groups before missing analyses can run.</strong> Add or select a Treatment group, then try again.');
+      setLog('<strong>Builder needs an image group before missing analyses can run.</strong> Add or select a group, then try again.');
       return;
     }
     const coverage=builderResultCoverage(settings);
@@ -5425,21 +5458,20 @@ const CALIBRATION = [
     if(!el.builderCanvas) return;
     populateBuilderGroupSelects();
     const settings=builderSettings();
-    if(!settings.controlReplicateIds.length||!settings.treatmentReplicateIds.length) {
+    const builderTitle=el.builderTitle;
+    if(builderTitle) builderTitle.textContent=builderIsSingleGroup(settings)?'Single group figure':'Control vs Treatment figure';
+    if(!settings.controlReplicateIds.length) {
       if(el.builderCanvasStage) el.builderCanvasStage.hidden=true;
       el.builderEmpty.hidden=false;
-      const hasControl=!!settings.controlReplicateIds.length;
       const emptyStrong=el.builderEmpty?.querySelector('strong');
       const emptyText=el.builderEmpty?.querySelector('span');
-      if(emptyStrong) emptyStrong.textContent=hasControl?'Add a Treatment group':'No builder preview yet';
-      if(emptyText) emptyText.textContent=hasControl
-        ? 'Control is ready. Add or select a second image group as Treatment to build a comparative figure.'
-        : 'Analyze at least two groups, then select control and treatment groups from the Builder controls.';
+      if(emptyStrong) emptyStrong.textContent='No builder preview yet';
+      if(emptyText) emptyText.textContent='Analyze a group first, then Cytomove will build a single-group or comparative publication figure from the selected Builder controls.';
       if(el.analyzeMissingBuilderGroups) {
         el.analyzeMissingBuilderGroups.hidden=true;
         el.analyzeMissingBuilderGroups.disabled=true;
       }
-      if(el.builderStatus) el.builderStatus.textContent='Assign at least one replicate group to both Control and Treatment.';
+      if(el.builderStatus) el.builderStatus.textContent='Assign at least one analyzed image group.';
       if(el.builderCaptionText) el.builderCaptionText.textContent='Caption draft will appear after preview.';
       if(el.exportBuilderFigure) el.exportBuilderFigure.disabled=true;
       return;
@@ -5473,7 +5505,13 @@ const CALIBRATION = [
     syncBuilderPanelEditorControls();
     const rows=builderFigureRows(settings);
     if(el.builderCaptionText) el.builderCaptionText.textContent=builderCaptionDraft(settings,rows);
-    if(el.builderStatus) el.builderStatus.textContent=`${builderComparisonLabel(settings)}: ${builderConditionSeries(settings).length} condition(s), ${builderTimepoints(canvas.builderMeta.plotRows||rows).length} timepoint(s).`;
+    if(el.builderStatus) {
+      const conditionCount=builderConditionSeries(settings).length;
+      const pointCount=builderTimepoints(canvas.builderMeta.plotRows||rows).length;
+      el.builderStatus.textContent=builderIsSingleGroup(settings)
+        ? `${builderSingleGroupLabel(settings)}: single image group, ${pointCount} timepoint(s).`
+        : `${builderComparisonLabel(settings)}: ${conditionCount} condition(s), ${pointCount} timepoint(s).`;
+    }
     if(el.exportBuilderFigure) el.exportBuilderFigure.disabled=false;
     state.builderPreviewDirty=false;
     syncBuilderUpdateButton();
@@ -5502,7 +5540,7 @@ const CALIBRATION = [
     const exportStyle=style==='color'?'color':'grayscale';
     const canvas=drawBuilderFigurePanel(exportStyle);
     if(!canvas) {
-      setLog('<strong>Publication Figure Builder:</strong> select analyzed control and treatment groups before export.');
+      setLog('<strong>Publication Figure Builder:</strong> select at least one analyzed image group before export.');
       return;
     }
     const settings=canvas.builderMeta.settings;

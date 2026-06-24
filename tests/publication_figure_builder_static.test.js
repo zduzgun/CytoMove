@@ -13,7 +13,7 @@ const specPath = path.join(root, 'docs/superpowers/specs/2026-06-16-publication-
 
 assert(fs.existsSync(specPath), 'Publication Figure Builder design spec should be saved as markdown');
 assert(
-  html.includes('app.js?v=20260624-builder-empty-state'),
+  html.includes('app.js?v=20260624-single-group-figure'),
   'index.html should cache-bust the canonical app.js asset'
 );
 
@@ -135,19 +135,51 @@ assert(
   'Hidden controls such as Analyze missing groups should not be overridden by .btn display styles'
 );
 assert(
-  js.includes("emptyStrong.textContent=hasControl?'Add a Treatment group':'No builder preview yet'") &&
-    js.includes('Control is ready. Add or select a second image group as Treatment to build a comparative figure.'),
-  'Builder empty state should explain that a second Treatment group is required'
+  html.includes('id="builderTitle"'),
+  'Publication Figure Builder title should be runtime-updatable for single-group and comparative figures'
+);
+assert(
+  html.includes('id="builderControlGroupLabel"') &&
+    html.includes('id="builderControlReplicatesLabel"') &&
+    html.includes('id="builderTreatmentGroupControl"') &&
+    html.includes('id="builderTreatmentReplicatesControl"'),
+  'Builder controls should expose addressable labels/sections for single-group terminology'
+);
+const renderPublicationBuilderSource = js.slice(
+  js.indexOf('function renderPublicationBuilder()'),
+  js.indexOf('function updateBuilderCanvasDisplay')
+);
+assert(
+  renderPublicationBuilderSource.includes('if(!settings.controlReplicateIds.length)') &&
+    !renderPublicationBuilderSource.includes('if(!settings.controlReplicateIds.length||!settings.treatmentReplicateIds.length)'),
+  'Builder should render a single-group figure when only one analyzed group is selected'
+);
+assert(
+  js.includes('function builderIsSingleGroup(settings)') &&
+    js.includes('function builderSingleGroupLabel(settings)') &&
+    js.includes('builderIsSingleGroup(settings)?builderSingleGroupLabel(settings):settings.controlLabel'),
+  'Single-group Builder mode should use the group label, not Control/Treatment labels'
+);
+assert(
+  js.includes("el.builderControlGroupLabel.textContent=groups.length<2?'Representative group':'Control representative group'") &&
+    js.includes("el.builderControlReplicatesLabel.textContent=groups.length<2?'Selected image group':'Control replicates'") &&
+    js.includes('el.builderTreatmentGroupControl.hidden=groups.length<2') &&
+    js.includes('el.builderTreatmentReplicatesControl.hidden=groups.length<2'),
+  'Single-group Builder mode should hide Treatment controls and remove Control wording from visible labels'
+);
+assert(
+  renderPublicationBuilderSource.includes("builderTitle.textContent=builderIsSingleGroup(settings)?'Single group figure':'Control vs Treatment figure'"),
+  'Builder heading should switch to a single-group figure title when no Treatment group is selected'
 );
 assert(
   js.includes('if(el.analyzeMissingBuilderGroups) {') &&
     js.includes('el.analyzeMissingBuilderGroups.hidden=true;') &&
     js.includes('el.analyzeMissingBuilderGroups.disabled=true;'),
-  'Builder should disable the stale Analyze missing groups action when no Treatment group is selected'
+  'Builder should disable Analyze missing groups when no image group is selected'
 );
 assert(
-  js.includes('Builder needs both Control and Treatment groups before missing analyses can run.'),
-  'Analyze missing groups should guard against incomplete Control/Treatment assignments'
+  js.includes('Builder needs an image group before missing analyses can run.'),
+  'Analyze missing groups should guard only against an empty Builder selection'
 );
 assert(
   html.includes('id="builderValidationTools"') && !html.includes('id="builderValidationTools" hidden'),

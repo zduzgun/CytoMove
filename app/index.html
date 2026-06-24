@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260624-builder-empty-state">
+  <link rel="stylesheet" href="styles.css?v=20260624-single-group-figure">
   <script>
     /* Apply saved theme before paint to avoid a flash. JS is the single source of
        truth: in "auto" the OS preference is resolved here and written to data-theme. */
@@ -271,17 +271,17 @@
           <div class="section builder-section" id="publicationBuilderControls" hidden>
             <div class="section-title">Publication Figure Builder</div>
             <div class="section-content">
-              <label for="builderControlGroup">Control representative group</label>
+              <label id="builderControlGroupLabel" for="builderControlGroup">Control representative group</label>
               <select id="builderControlGroup"></select>
               <div class="control">
-                <label for="builderControlReplicates">Control replicates</label>
+                <label id="builderControlReplicatesLabel" for="builderControlReplicates">Control replicates</label>
                 <div class="builder-replicates" id="builderControlReplicates"></div>
               </div>
-              <div class="control">
+              <div class="control" id="builderTreatmentGroupControl">
                 <label for="builderTreatmentGroup">Treatment representative group</label>
                 <select id="builderTreatmentGroup"></select>
               </div>
-              <div class="control">
+              <div class="control" id="builderTreatmentReplicatesControl">
                 <label for="builderTreatmentReplicates">Treatment replicates</label>
                 <div class="builder-replicates" id="builderTreatmentReplicates"></div>
               </div>
@@ -574,7 +574,7 @@
           <div class="builder-head">
             <div>
               <div class="builder-kicker">Publication Figure Builder</div>
-              <h1>Control vs Treatment figure</h1>
+              <h1 id="builderTitle">Control vs Treatment figure</h1>
             </div>
             <div class="builder-status" id="builderStatus">Select two analyzed groups to begin.</div>
           </div>
@@ -812,7 +812,7 @@
   </div>
 
   <script src="vendor/pptxgen.bundle.js?v=4.0.1"></script>
-  <script src="app.js?v=20260624-builder-empty-state"></script>
+  <script src="app.js?v=20260624-single-group-figure"></script>
   <script>
     // Mark sidebar sections the user has interacted with (shows a dot when collapsed).
     (function () {
