@@ -12,3 +12,15 @@ test('desktop update restart observes canonical app busy state', () => {
   assert.match(updateUi, /cytomove:busy-state/);
   assert.match(updateUi, /Restart and update/);
 });
+
+test('desktop update banner does not offer downloads when already current', () => {
+  assert.match(updateUi, /function updateAvailableByPolicy\(\)/);
+  assert.match(updateUi, /function bannerAllowed\(\)/);
+  assert.match(updateUi, /updateState\.status === 'manual'\) return updateAvailableByPolicy\(\)/);
+  assert.match(updateUi, /if \(!bannerAllowed\(\)\) \{ banner\.hidden = true; return; \}/);
+  assert.doesNotMatch(
+    updateUi,
+    /!\['available','downloading','downloaded','error','manual'\]\.includes\(updateState\.status\)/,
+    'manual update state alone should not show a download banner'
+  );
+});

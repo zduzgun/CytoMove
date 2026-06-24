@@ -19,6 +19,13 @@
   if (!statusButton || !window.cytomoveDesktop) return;
 
   function required() { return Boolean(policy && policy.required); }
+  function updateAvailableByPolicy() { return Boolean(policy && policy.updateAvailable); }
+  function bannerAllowed() {
+    if (required()) return false;
+    if (['available','downloading','downloaded','error'].includes(updateState.status)) return true;
+    if (updateState.status === 'manual') return updateAvailableByPolicy();
+    return false;
+  }
   function setWorkspaceLocked(locked) {
     appShell?.classList.toggle('desktop-policy-locked', locked);
     gate.hidden = !locked;
@@ -33,7 +40,7 @@
       : updateState.status === 'checking' ? 'Checking updates'
       : 'Up to date';
     statusButton.textContent = label;
-    banner.hidden = mustUpdate || !['available','downloading','downloaded','error','manual'].includes(updateState.status);
+    banner.hidden = !bannerAllowed();
     title.textContent = label;
     message.textContent = policy?.manifest?.message || updateState.error || '';
     later.hidden = mustUpdate;
@@ -69,7 +76,10 @@
   requiredDetails.addEventListener('click', function () {
     window.cytomoveDesktop.openExternal(policy?.manifest?.releaseNotesUrl || 'https://cytomove.com/download/');
   });
-  statusButton.addEventListener('click', function () { banner.hidden = !banner.hidden; });
+  statusButton.addEventListener('click', function () {
+    if (!bannerAllowed()) { banner.hidden = true; return; }
+    banner.hidden = !banner.hidden;
+  });
   window.addEventListener('cytomove:busy-state', function (event) {
     busyState = event.detail || { busy: false, label: '' };
   });
