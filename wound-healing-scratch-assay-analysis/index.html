@@ -178,6 +178,104 @@
       margin: 24px 0;
     }
     .note p { font-size: 15px; }
+    .visual-guide {
+      margin: 34px 0 48px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .preview-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      background: var(--soft);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+    .guide-tabs {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfdfc;
+    }
+    .guide-tab {
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--muted);
+      padding: 9px 13px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 820;
+      cursor: pointer;
+    }
+    .guide-tab[aria-selected="true"] {
+      background: var(--ink);
+      color: #fff;
+      border-color: var(--ink);
+    }
+    .guide-panel {
+      display: none;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 0.72fr);
+      gap: 24px;
+      padding: 24px;
+    }
+    .guide-panel.active { display: grid; }
+    .guide-panel h3 {
+      margin: 0 0 10px;
+      font-size: 25px;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+    }
+    .guide-panel p { color: var(--muted); }
+    .guide-figure {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #f8fbfa;
+      overflow: hidden;
+    }
+    .guide-figure img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+    }
+    .guide-figure figcaption {
+      padding: 10px 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .guide-checklist,
+    .guide-watch {
+      margin-top: 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      color: var(--muted);
+      background: #f8fbfa;
+      font-size: 14px;
+    }
+    .guide-watch {
+      border-color: rgba(15, 159, 143, 0.26);
+      background: rgba(15, 159, 143, 0.08);
+    }
+    .guide-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+    .guide-actions .button { width: auto; }
     .toc {
       position: sticky;
       top: 18px;
@@ -231,6 +329,11 @@
       .inline-cta { display: block; }
       .inline-cta .button { width: 100%; margin-top: 14px; }
     }
+    @media (max-width: 760px) {
+      .guide-panel { grid-template-columns: 1fr; }
+      .guide-actions .button { width: 100%; }
+      .preview-head { flex-direction: column; }
+    }
     @media (max-width: 620px) {
       body { padding: 0 14px; overflow-x: hidden; }
       .page { width: 100%; }
@@ -280,6 +383,153 @@
           <p>Open local scratch assay images, review the mask, measure wound area and width, then export results.</p>
           <a class="button" href="../app/">Open Web App</a>
         </aside>
+      </section>
+
+      <section class="visual-guide" id="visual-guide" aria-labelledby="visualGuideTitle">
+        <div class="preview-head">
+          <span id="visualGuideTitle">Visual Cytomove guide</span>
+          <span>Image QC → Analysis → Publication Figure Builder → Export</span>
+        </div>
+        <div class="guide-tabs" id="visualGuideTabs" role="tablist" aria-label="Cytomove guide sections">
+          <button class="guide-tab" type="button" role="tab" aria-selected="true" aria-controls="guide-overview" data-guide-tab="guide-overview">Overview</button>
+          <button class="guide-tab" type="button" role="tab" aria-selected="false" aria-controls="guide-load" data-guide-tab="guide-load">Load images</button>
+          <button class="guide-tab" type="button" role="tab" aria-selected="false" aria-controls="guide-qc" data-guide-tab="guide-qc">Image QC</button>
+          <button class="guide-tab" type="button" role="tab" aria-selected="false" aria-controls="guide-analysis" data-guide-tab="guide-analysis">Analysis</button>
+          <button class="guide-tab" type="button" role="tab" aria-selected="false" aria-controls="guide-manual" data-guide-tab="guide-manual">Manual correction</button>
+          <button class="guide-tab" type="button" role="tab" aria-selected="false" aria-controls="guide-builder" data-guide-tab="guide-builder">Publication figures</button>
+          <button class="guide-tab" type="button" role="tab" aria-selected="false" aria-controls="guide-export" data-guide-tab="guide-export">Export</button>
+          <button class="guide-tab" type="button" role="tab" aria-selected="false" aria-controls="guide-troubleshooting" data-guide-tab="guide-troubleshooting">Troubleshooting</button>
+        </div>
+
+        <div class="guide-panel active" id="guide-overview" role="tabpanel">
+          <div>
+            <h3>Reviewable scratch-assay analysis from image to figure.</h3>
+            <p>Cytomove 1.0 follows one reviewable path: Image QC, Analysis, Publication Figure Builder, and Export. The goal is not to hide segmentation; it is to make crop, contour, mask, figure, and export decisions visible.</p>
+            <div class="guide-checklist"><strong>Use this guide when:</strong> you want to understand the workflow before running the guided tutorial, or you need to explain the analysis path to a collaborator.</div>
+            <div class="guide-watch"><strong>Watch for this:</strong> if a result looks surprising, return to the visual contour or mask first before trusting the table.</div>
+            <div class="guide-actions">
+              <a class="button" href="../app/?tutorial=huvec-full">Start full HUVEC tutorial</a>
+              <a class="button secondary" href="../app/">Open playground</a>
+            </div>
+          </div>
+          <figure class="guide-figure">
+            <img src="../assets/validation/figure6-ab-phase-timecourse.jpg" alt="Example Cytomove validation time-course figure">
+            <figcaption>Example validation figure showing how reviewed images become publication-style outputs.</figcaption>
+          </figure>
+        </div>
+
+        <div class="guide-panel" id="guide-load" role="tabpanel">
+          <div>
+            <h3>Load images as named reviewable groups.</h3>
+            <p>Start with one image group or a full 0h / 24h / 48h time series. A clear group name matters because the same label follows images into Analysis, Publication Figure Builder, and export files.</p>
+            <div class="guide-checklist"><strong>Checklist:</strong> choose related images together, name the group before review, and confirm the first image opens in Image QC.</div>
+            <div class="guide-watch"><strong>Watch for this:</strong> if only one group is loaded, Builder should create a single-group figure rather than a Control vs Treatment comparison.</div>
+            <div class="guide-actions">
+              <a class="button" href="../app/">Open Cytomove</a>
+              <a class="button secondary" href="../app/?tutorial=huvec-full">Use bundled HUVEC set</a>
+            </div>
+          </div>
+          <figure class="guide-figure">
+            <img src="../validation_sets/full_thread_control/huvec_control_r1/0.jpg" alt="HUVEC 0 hour scratch assay image">
+            <figcaption>A 0h HUVEC validation image can be loaded as part of a named time-series group.</figcaption>
+          </figure>
+        </div>
+
+        <div class="guide-panel" id="guide-qc" role="tabpanel">
+          <div>
+            <h3>Image QC locks the image state before analysis.</h3>
+            <p>Use Image QC to review crop, orientation, fine rotation, and exclusions before segmentation. Saved crop/orientation should carry forward so Analysis and Publication Figure Builder do not drift back to the original image.</p>
+            <div class="guide-checklist"><strong>Checklist:</strong> adjust the rectangle, keep the scratch centered, save crop, and exclude images that should not contribute to analysis.</div>
+            <div class="guide-watch"><strong>Watch for this:</strong> a crop that cuts off wound edges can make downstream contours scientifically misleading.</div>
+            <div class="guide-actions">
+              <a class="button" href="../app/?tutorial=huvec-full">Practice Image QC</a>
+            </div>
+          </div>
+          <figure class="guide-figure">
+            <img src="../assets/tutorial/m8f/m8f_0h_001.png" alt="Example scratch assay image for Image QC">
+            <figcaption>Image QC is the review step before the analysis snapshot is locked.</figcaption>
+          </figure>
+        </div>
+
+        <div class="guide-panel" id="guide-analysis" role="tabpanel">
+          <div>
+            <h3>Analysis should be applied, inspected, and adjusted.</h3>
+            <p>Choose the brightfield normal cells preset, click Apply, inspect contour quality, then adjust variance radius if the boundary is too noisy or too smooth. Use Apply to group only when settings look good for the time series.</p>
+            <div class="guide-checklist"><strong>Checklist:</strong> run Apply, inspect contour overlay, adjust variance radius, run Apply again, then review the group trend.</div>
+            <div class="guide-watch"><strong>Watch for this:</strong> good numbers are not enough; the contour should visually follow the wound edge.</div>
+            <div class="guide-actions">
+              <a class="button" href="../app/?tutorial=huvec-full">Practice Analysis</a>
+            </div>
+          </div>
+          <figure class="guide-figure">
+            <img src="../assets/validation/figure3-whst-cytomove-agreement.jpg" alt="Cytomove validation agreement plot">
+            <figcaption>Analysis outputs should be reviewable as both contours and quantitative measurements.</figcaption>
+          </figure>
+        </div>
+
+        <div class="guide-panel" id="guide-manual" role="tabpanel">
+          <div>
+            <h3>Manual correction is for local scientific review.</h3>
+            <p>When an automatic mask misses a local wound region or includes a false-positive island, switch to correction tools. Use ignore tiny islands, fill, erase, undo, and reset deliberately.</p>
+            <div class="guide-checklist"><strong>Checklist:</strong> inspect mask, use ignore tiny islands when needed, fill missed wound area, erase false positives, and undo before reset when possible.</div>
+            <div class="guide-watch"><strong>Watch for this:</strong> correction should improve a specific local mask problem, not repaint the whole image from scratch.</div>
+            <div class="guide-actions">
+              <a class="button" href="../app/?tutorial=manual">Start manual correction</a>
+            </div>
+          </div>
+          <figure class="guide-figure">
+            <img src="../assets/tutorial/manual/m8f_48h_003.png" alt="Manual correction tutorial image">
+            <figcaption>The manual correction tutorial teaches reversible local edits on a hard segmentation case.</figcaption>
+          </figure>
+        </div>
+
+        <div class="guide-panel" id="guide-builder" role="tabpanel">
+          <div>
+            <h3>Publication Figure Builder turns reviewed results into panels.</h3>
+            <p>Builder supports single-group figure mode, Control vs Treatment, and multi-treatment comparison. Panel A shows representative contour-overlay images; Panel B summarizes wound closure; Panel C shows normalized area or width.</p>
+            <div class="guide-checklist"><strong>Checklist:</strong> choose representative groups, select replicates, update the figure, adjust panel titles/fonts, and inspect contour overlays before export.</div>
+            <div class="guide-watch"><strong>Watch for this:</strong> if selected groups need current QC analysis, use Analyze missing groups before exporting.</div>
+            <div class="guide-actions">
+              <a class="button" href="../app/?tutorial=publication-quality">Build publication figure</a>
+            </div>
+          </div>
+          <figure class="guide-figure">
+            <img src="../assets/validation/figure6-ab-phase-timecourse.jpg" alt="Publication-style Cytomove figure panels">
+            <figcaption>Publication figures combine representative images, contour overlays, and summary plots.</figcaption>
+          </figure>
+        </div>
+
+        <div class="guide-panel" id="guide-export" role="tabpanel">
+          <div>
+            <h3>Export includes figures and reusable source assets.</h3>
+            <p>Publication export should include 600 DPI PNG/TIFF/PDF outputs, editable PPTX where available, CSV or figure data, plus full-size original and full-size contour-overlay images for manual figure assembly.</p>
+            <div class="guide-checklist"><strong>Checklist:</strong> export the Builder ZIP, archive figure data, and keep full-size contour overlays if you want to assemble figures manually.</div>
+            <div class="guide-watch"><strong>Watch for this:</strong> export buttons can be disabled until the required image groups are analyzed.</div>
+            <div class="guide-actions">
+              <a class="button" href="../app/?tutorial=publication-quality">Practice export</a>
+            </div>
+          </div>
+          <figure class="guide-figure">
+            <img src="../assets/validation/figure3-whst-cytomove-agreement.jpg" alt="Exported validation figure example">
+            <figcaption>Export packages should preserve both publication-ready output and reusable source material.</figcaption>
+          </figure>
+        </div>
+
+        <div class="guide-panel" id="guide-troubleshooting" role="tabpanel">
+          <div>
+            <h3>Most confusing states have a simple cause.</h3>
+            <p>If no images are loaded, start with a group. If the crop rectangle disappears, return to Image QC and adjust crop. If contours look wrong, inspect orientation, preset, variance radius, and manual correction. If validation images do not load, hard refresh or use a fresh session.</p>
+            <div class="guide-checklist"><strong>Checklist:</strong> confirm image group, check Image QC state, rerun Apply, use Analyze missing groups, and retry export after the preview updates.</div>
+            <div class="guide-watch"><strong>Watch for this:</strong> stale browser cache can make a fixed tutorial or validation set look broken after an update.</div>
+            <div class="guide-actions">
+              <a class="button" href="../app/">Open Cytomove playground</a>
+            </div>
+          </div>
+          <figure class="guide-figure">
+            <img src="../assets/tutorial/manual-hard/whad_mcf7_046.png" alt="Hard correction case used for troubleshooting guidance">
+            <figcaption>Troubleshooting starts by checking whether the visible contour matches the biological wound edge.</figcaption>
+          </figure>
+        </div>
       </section>
 
       <div class="content">
@@ -383,5 +633,18 @@
       </p>
     </footer>
   </div>
+  <script>
+    document.querySelectorAll('[data-guide-tab]').forEach(button => {
+      button.addEventListener('click', () => {
+        const target = button.dataset.guideTab;
+        document.querySelectorAll('[data-guide-tab]').forEach(tab => {
+          tab.setAttribute('aria-selected', String(tab === button));
+        });
+        document.querySelectorAll('.guide-panel').forEach(panel => {
+          panel.classList.toggle('active', panel.id === target);
+        });
+      });
+    });
+  </script>
 </body>
 </html>
