@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict');
+const childProcess = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
@@ -30,6 +31,20 @@ test('full HUVEC tutorial starts from the bundled validation image set', () => {
   assert.match(appJs, /setAppModule\('qc'\)/);
   assert.match(appHtml, /styles\.css\?v=20260624-huvec-tutorial-qc-start/);
   assert.match(appHtml, /app\.js\?v=20260624-huvec-tutorial-qc-start/);
+});
+
+test('full HUVEC validation assets are tracked for the web tutorial', () => {
+  const tracked = childProcess
+    .execFileSync('git', ['ls-files', 'validation_sets/full_thread_control'], { cwd: root, encoding: 'utf8' })
+    .trim()
+    .split(/\r?\n/)
+    .filter(Boolean);
+  const jpgs = tracked.filter(file => /\.jpe?g$/i.test(file));
+  assert.equal(jpgs.length, 18, 'web HUVEC tutorial should ship 18 tracked validation images');
+  assert.ok(
+    tracked.includes('validation_sets/full_thread_control/README.md'),
+    'web HUVEC tutorial should ship its validation README'
+  );
 });
 
 test('full HUVEC tutorial teaches crop review before basic analysis tuning', () => {
