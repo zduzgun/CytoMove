@@ -13,6 +13,7 @@ const olderLegacyHtml = read('prototype/index.html');
 const guideHtml = read('wound-healing-scratch-assay-analysis/index.html');
 const downloadHtml = read('download/index.html');
 const sitemapXml = read('sitemap.xml');
+const appCss = read('app/styles.css');
 const localServerPath = path.join(root, 'scripts/serve_local.py');
 const userGuidePath = path.join(root, 'user-guide', 'index.html');
 
@@ -31,6 +32,21 @@ assert(
     fs.existsSync(path.join(root, 'app/styles.css')),
   'Canonical application assets should live under app/'
 );
+[
+  '[data-theme="dark"] input',
+  '[data-theme="dark"] select',
+  '[data-theme="dark"] option',
+  '[data-theme="dark"] .builder-editor',
+  '[data-theme="dark"] .builder-replicates',
+  '[data-theme="dark"] .builder-treatment-arm',
+  '[data-theme="dark"] .builder-preview',
+  '[data-theme="dark"] .builder-preview canvas'
+].forEach(requiredDarkRule => {
+  assert(
+    appCss.includes(requiredDarkRule),
+    `Dark mode should keep builder controls readable: ${requiredDarkRule}`
+  );
+});
 assert(
   appHtml.includes("params.get('mode') === 'demo'"),
   '/app/?mode=demo should preserve loginless demo mode'
