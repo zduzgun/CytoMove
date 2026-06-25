@@ -28,6 +28,11 @@ assert(
   '/app/ should own its JavaScript and CSS assets'
 );
 assert(
+  appHtml.includes('../desktop/renderer/vendor/supabase.js') &&
+    accessHtml.includes('../desktop/renderer/vendor/supabase.js'),
+  'Web entry points should load the bundled Supabase client before falling back to any CDN import'
+);
+assert(
   fs.existsSync(path.join(root, 'app/app.js')) &&
     fs.existsSync(path.join(root, 'app/styles.css')),
   'Canonical application assets should live under app/'

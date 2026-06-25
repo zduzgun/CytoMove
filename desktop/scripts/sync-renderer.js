@@ -41,6 +41,7 @@ function transformHtml(source) {
     .replace(/<title>[\s\S]*?<\/title>/, '<title>Cytomove Desktop</title>')
     .replace(/href="\.\.\/"/g, 'href="https://cytomove.com/" target="_blank" rel="noopener"')
     .replace(/href="\.\.\/access\/[^"]*"/g, 'href="https://cytomove.com/access/?stay=1" target="_blank" rel="noopener"')
+    .replace(/\s*<script src="\.\.\/desktop\/renderer\/vendor\/supabase\.js"><\/script>/, '')
     .replace(/src="\.\.\/auth\//g, 'src="auth/')
     .replace(
       '<script src="auth/supabase-config.js"></script>',

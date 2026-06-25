@@ -25,6 +25,26 @@ test('desktop runtime has no time-limited trial bridge', () => {
   assert.doesNotMatch(preload, /getTrialState|get-trial-state/i);
 });
 
+test('desktop window keeps Electron security defaults hardened', () => {
+  assert.match(main, /contextIsolation:\s*true/);
+  assert.match(main, /nodeIntegration:\s*false/);
+  assert.match(main, /sandbox:\s*true/);
+  assert.match(main, /webSecurity:\s*true/);
+});
+
+test('desktop external links are allowlisted and HTTPS-only', () => {
+  assert.match(main, /function parseSafeExternalUrl/);
+  assert.match(main, /ALLOWED_EXTERNAL_HOSTS/);
+  assert.match(main, /parsed\.protocol !== 'https:'/);
+  assert.doesNotMatch(main, /if \(\['https:', 'http:'\]\.includes\(parsed\.protocol\)\)/);
+});
+
+test('desktop local image import has bounded batch size', () => {
+  assert.match(main, /MAX_LOCAL_IMAGE_BYTES/);
+  assert.match(main, /MAX_LOCAL_IMAGE_TOTAL_BYTES/);
+  assert.match(main, /fs\.promises\.stat/);
+});
+
 test('preload exposes only explicit desktop capabilities', () => {
   assert.match(preload, /validateAcademicAccess/);
   assert.match(preload, /getDesktopPolicy/);

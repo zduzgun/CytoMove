@@ -16,6 +16,14 @@ const DESKTOP_MANIFEST_URL = process.env.CYTOMOVE_MANIFEST_URL
 const GOOGLE_LOOPBACK_PORT = 54545;
 const ACCESS_CACHE_FILE = 'academic-access.json';
 const POLICY_CACHE_FILE = 'desktop-policy.json';
+const MAX_LOCAL_IMAGE_BYTES = 75 * 1024 * 1024;
+const MAX_LOCAL_IMAGE_TOTAL_BYTES = 750 * 1024 * 1024;
+const ALLOWED_EXTERNAL_HOSTS = new Set([
+  'cytomove.com',
+  'www.cytomove.com',
+  'github.com',
+  'pvxfjaqathfonophaakg.supabase.co'
+]);
 
 let mainWindow = null;
 let updateManager = null;
@@ -27,6 +35,20 @@ function cachePath(filename) {
 function nowMs() {
   const testNow = !app.isPackaged && Number(process.env.CYTOMOVE_TEST_NOW);
   return Number.isFinite(testNow) && testNow > 0 ? testNow : Date.now();
+}
+
+function parseSafeExternalUrl(url) {
+  const parsed = new URL(String(url));
+  if (parsed.protocol !== 'https:') throw new Error('Only HTTPS links can be opened.');
+  if (!ALLOWED_EXTERNAL_HOSTS.has(parsed.hostname.toLowerCase())) {
+    throw new Error('This external link is not allowed by Cytomove Desktop.');
+  }
+  return parsed;
+}
+
+async function openSafeExternalUrl(url) {
+  const parsed = parseSafeExternalUrl(url);
+  await shell.openExternal(parsed.toString());
 }
 
 function accessDecisionFromCache() {
@@ -158,13 +180,17 @@ function createMainWindow() {
     mainWindow.show();
   });
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (/^https?:\/\//i.test(url)) shell.openExternal(url);
+    openSafeExternalUrl(url).catch(error => {
+      console.warn(`Blocked external link: ${error.message}`);
+    });
     return { action: 'deny' };
   });
   mainWindow.webContents.on('will-navigate', event => {
     if (/^https?:\/\//i.test(event.url || '')) {
       event.preventDefault();
-      shell.openExternal(event.url);
+      openSafeExternalUrl(event.url).catch(error => {
+        console.warn(`Blocked external navigation: ${error.message}`);
+      });
     }
   });
   mainWindow.webContents.on('did-fail-load', (_event, code, description) => {
@@ -194,9 +220,7 @@ ipcMain.handle('cytomove:close-app', () => {
   return true;
 });
 ipcMain.handle('cytomove:open-external', async (_event, url) => {
-  const parsed = new URL(String(url));
-  if (!['https:', 'http:'].includes(parsed.protocol)) throw new Error('Only web links can be opened.');
-  await shell.openExternal(parsed.toString());
+  await openSafeExternalUrl(url);
   return true;
 });
 ipcMain.handle('cytomove:choose-local-images', async () => {
@@ -208,7 +232,20 @@ ipcMain.handle('cytomove:choose-local-images', async () => {
     ]
   });
   if (result.canceled) return [];
-  return Promise.all(result.filePaths.slice(0, 48).map(async filePath => {
+  const selected = result.filePaths.slice(0, 48);
+  let totalBytes = 0;
+  const fileStats = await Promise.all(selected.map(async filePath => {
+    const stats = await fs.promises.stat(filePath);
+    if (stats.size > MAX_LOCAL_IMAGE_BYTES) {
+      throw new Error(`${path.basename(filePath)} is too large for safe local import.`);
+    }
+    totalBytes += stats.size;
+    if (totalBytes > MAX_LOCAL_IMAGE_TOTAL_BYTES) {
+      throw new Error('Selected images are too large to import safely in one batch.');
+    }
+    return { filePath, size: stats.size };
+  }));
+  return Promise.all(fileStats.map(async ({ filePath }) => {
     const extension = path.extname(filePath).toLowerCase();
     const mime = extension === '.png' ? 'image/png'
       : extension === '.gif' ? 'image/gif'

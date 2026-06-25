@@ -2162,7 +2162,7 @@ const CALIBRATION = [
       const fileHint=isFileProtocol()
         ? ' Windows double-click opens this as <code>file://</code>, which can block canvas pixel reads from linked calibration images. Use the Open button/drag-drop for local files, or run a local server from the repo root: <code>py -3 -m http.server 8765</code>.'
         : '';
-      setLog(`<strong>Segmentation failed.</strong>${fileHint} ${err.name||'Error'}: ${err.message||err}`);
+      setLog(`<strong>Segmentation failed.</strong>${fileHint} ${escHtml(err.name||'Error')}: ${escHtml(err.message||String(err))}`);
     } finally {
       setSpinner(false);
     }
@@ -3576,7 +3576,7 @@ const CALIBRATION = [
       const sizes=[...new Set(rendered.map(item=>`${item.overlay.width}x${item.overlay.height}`))].join(', ');
       setLog(`<strong>Group PNG export complete:</strong> ${files.length} full-resolution contour overlay PNG${files.length>1?'s were':' was'} packed into one ZIP (${sizes} px).`);
     } catch(err) {
-      setLog(`<strong>Group PNG export failed.</strong> ${err.message||err}`);
+      setLog(`<strong>Group PNG export failed.</strong> ${escHtml(err.message||String(err))}`);
     } finally {
       el.exportGroupPng.disabled=false;
       setSpinner(false);
@@ -7543,7 +7543,7 @@ const CALIBRATION = [
         scheduleAutoApply(`<strong>Auto detect microscope:</strong> selected ${microscopeModeLabel(next)} (${confidence}% vote). Auto-applying in 1 second...`);
       }
     } catch(err) {
-      setLog(`<strong>Auto detect failed.</strong> ${err.message||err}`);
+      setLog(`<strong>Auto detect failed.</strong> ${escHtml(err.message||String(err))}`);
     } finally {
       if(seq===state.autoMicroscopeDetectSeq) setSpinner(false);
     }
@@ -7604,7 +7604,7 @@ const CALIBRATION = [
       setMode('group');
       const first=samples[0];
       if(first) loadImage(sampleUrl(first),first,first.path,true);
-      setLog(`<strong>${escHtml(groupLabel)} loaded:</strong> image-type detection failed, so Brightfield small cells was used. ${err.message||err}`);
+      setLog(`<strong>${escHtml(groupLabel)} loaded:</strong> image-type detection failed, so Brightfield small cells was used. ${escHtml(err.message||String(err))}`);
     } finally {
       if(seq===state.autoMicroscopeDetectSeq) setSpinner(false);
     }
@@ -8286,7 +8286,7 @@ const CALIBRATION = [
     el.applySettingsGroup.disabled=true;
     setSpinner(true);
     setMode('group');
-    setLog(`<strong>Auto calibration:</strong> testing ${grid.length} setting combinations on ${group.label}...`);
+    setLog(`<strong>Auto calibration:</strong> testing ${grid.length} setting combinations on ${escHtml(group.label)}...`);
     try {
       const originals=[];
       for(const sample of samples) {
@@ -8313,9 +8313,9 @@ const CALIBRATION = [
       applySegmentationSettings(best.settings);
       state.calibrationReport=buildCalibrationReport(best.rows,samples);
       renderGroupView({force:true});
-      setLog(`<strong>Auto calibration selected:</strong> ${currentGroupSettingsSummary()}. Group mean area error ${fmt(best.fit.meanAreaErrorPct,2)}%, max ${fmt(best.fit.maxAreaErrorPct,2)}%. Review contours before export.`);
+      setLog(`<strong>Auto calibration selected:</strong> ${escHtml(currentGroupSettingsSummary())}. Group mean area error ${fmt(best.fit.meanAreaErrorPct,2)}%, max ${fmt(best.fit.maxAreaErrorPct,2)}%. Review contours before export.`);
     } catch(err) {
-      setLog(`<strong>Auto calibration failed.</strong> ${err.message||err}`);
+      setLog(`<strong>Auto calibration failed.</strong> ${escHtml(err.message||String(err))}`);
     } finally {
       if(el.autoCalibrateGroup) el.autoCalibrateGroup.disabled=false;
       el.applySettingsGroup.disabled=false;
