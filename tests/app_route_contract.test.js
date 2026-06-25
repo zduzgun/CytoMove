@@ -11,6 +11,7 @@ const landingHtml = read('index.html');
 const legacyHtml = read('prototype_refactor/index.html');
 const olderLegacyHtml = read('prototype/index.html');
 const guideHtml = read('wound-healing-scratch-assay-analysis/index.html');
+const downloadHtml = read('download/index.html');
 const sitemapXml = read('sitemap.xml');
 const localServerPath = path.join(root, 'scripts/serve_local.py');
 const userGuidePath = path.join(root, 'user-guide', 'index.html');
@@ -171,6 +172,15 @@ assert(
 assert(
   sitemapXml.includes('https://cytomove.com/user-guide/'),
   'Sitemap should include the detailed user guide route'
+);
+assert(
+  downloadHtml.includes('../user-guide/') &&
+    downloadHtml.includes('Cytomove Desktop 1.0.0') &&
+    downloadHtml.includes('72-hour offline') &&
+    downloadHtml.includes('Cytomove-Desktop-1.0.0-setup.exe') &&
+    downloadHtml.includes('Cytomove-Desktop-1.0.0-portable.exe') &&
+    downloadHtml.includes('https://github.com/zduzgun/CytoMove/releases/tag/v1.0'),
+  'Download page should document the 1.0.0 release assets, User Guide, offline window, and release notes'
 );
 assert(
   fs.existsSync(localServerPath) &&

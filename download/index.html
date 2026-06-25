@@ -76,6 +76,7 @@
       </a>
       <nav class="header-links" aria-label="Links">
         <a href="../access/">Access</a>
+        <a href="../user-guide/">User Guide</a>
         <a href="../privacy/">Privacy</a>
         <a href="../beta-terms/">Access terms</a>
       </nav>
@@ -83,7 +84,7 @@
 
     <main>
       <h1>Download Cytomove Desktop</h1>
-      <p class="lead">The desktop app gives faster local group analysis and full exports. Available to verified academic access accounts.</p>
+      <p class="lead">Cytomove Desktop 1.0.0 gives faster local group analysis, validated tutorial data, and full publication export packages. Available to verified academic access accounts.</p>
 
       <!-- Signed out: sign in -->
       <section class="card state" id="signedOutState" hidden>
@@ -125,19 +126,34 @@
           <div class="dl-card">
             <div class="dl-kicker">Recommended</div>
             <h3>Installer</h3>
-            <p>Installs once and launches fast every time. Adds a Start-menu shortcut. Best if you'll use Cytomove regularly.</p>
+            <p>Installs once and launches fast every time. Adds a Start-menu shortcut and supports in-app update flow. Best if you'll use Cytomove regularly.</p>
             <div class="dl-meta" id="installerMeta">Windows - ~100 MB</div>
             <a class="btn full" id="installerBtn" href="#" rel="noopener">Download installer</a>
           </div>
           <div class="dl-card">
             <div class="dl-kicker">No install</div>
             <h3>Portable</h3>
-            <p>A single .exe - download and run, nothing to install. First launch is a little slower as it unpacks.</p>
+            <p>A single .exe - download and run, nothing to install. First launch is a little slower as it unpacks. Portable builds use manual update downloads.</p>
             <div class="dl-meta" id="portableMeta">Windows - ~100 MB</div>
             <a class="btn secondary full" id="portableBtn" href="#" rel="noopener">Download portable</a>
           </div>
         </div>
-        <p class="muted" style="margin-top:16px">On first run Windows may show a SmartScreen notice (unsigned app): choose <strong>More info - Run anyway</strong>. The app requires an internet connection and sign-in.</p>
+        <div class="card" style="margin-top:16px">
+          <h3 style="font-size:18px">Release notes</h3>
+          <p class="muted" style="margin-top:8px">
+            Version 1.0.0 includes Image QC, group analysis, Manual correction, Publication Figure Builder,
+            600 DPI PNG/TIFF exports, PowerPoint output, CSV summaries, and full-size contour-overlay assets.
+          </p>
+          <p class="muted" style="margin-top:8px">
+            After a successful online sign-in, Desktop can allow a <strong>72-hour offline</strong> access window.
+            Recommended updates may be postponed; required updates must be installed before continuing.
+          </p>
+          <div class="row" style="margin-top:14px">
+            <a class="btn secondary" href="https://github.com/zduzgun/CytoMove/releases/tag/v1.0" target="_blank" rel="noopener">View GitHub release</a>
+            <a class="btn secondary" href="../user-guide/">Read User Guide</a>
+          </div>
+        </div>
+        <p class="muted" style="margin-top:16px">On first run Windows may show a SmartScreen notice: choose <strong>More info - Run anyway</strong> if you trust this Cytomove release. Full export access requires sign-in.</p>
       </section>
 
       <div class="status" id="statusGlobal" hidden></div>
@@ -149,6 +165,7 @@
       // ----- Release config: fill these after publishing a GitHub release -----
       var RELEASE = {
         version: '1.0.0',
+        releaseNotes: 'https://github.com/zduzgun/CytoMove/releases/tag/v1.0',
         installer: 'https://github.com/zduzgun/CytoMove/releases/download/v1.0/Cytomove-Desktop-1.0.0-setup.exe',
         portable: 'https://github.com/zduzgun/CytoMove/releases/download/v1.0/Cytomove-Desktop-1.0.0-portable.exe'
       };
