@@ -3,25 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cytomove User Guide - Image QC, Analysis, Figures, and Export</title>
-  <meta name="description" content="Detailed Cytomove user guide for Image QC, analysis parameters, manual correction, Publication Figure Builder, export packages, and troubleshooting.">
+  <title>Cytomove Technical User Guide - Image QC, Analysis, Figures, and Export</title>
+  <meta name="description" content="Full technical Cytomove user guide for supported inputs, access, Image QC, analysis parameters, manual correction, Publication Figure Builder, export packages, and troubleshooting.">
   <link rel="canonical" href="https://cytomove.com/user-guide/">
-  <meta property="og:title" content="Cytomove User Guide">
-  <meta property="og:description" content="A practical text guide for using Cytomove from image loading to publication figure export.">
+  <meta property="og:title" content="Cytomove Technical User Guide">
+  <meta property="og:description" content="Full technical text guide for using Cytomove from local image loading to publication figure export.">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://cytomove.com/user-guide/">
   <meta property="og:image" content="https://cytomove.com/assets/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Cytomove User Guide">
-  <meta name="twitter:description" content="Step-by-step Cytomove documentation for Image QC, analysis, manual correction, Builder, and export.">
+  <meta name="twitter:title" content="Cytomove Technical User Guide">
+  <meta name="twitter:description" content="Full step-by-step Cytomove documentation for Image QC, analysis, manual correction, Builder, and export.">
   <meta name="twitter:image" content="https://cytomove.com/assets/og-image.png">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' stroke='%230f9f8f' stroke-width='2' fill='white'/><circle cx='10' cy='16' r='4' fill='%23bdeee8' stroke='%230f9f8f' stroke-width='1.4'/><circle cx='22' cy='16' r='4' fill='%23bdeee8' stroke='%230f9f8f' stroke-width='1.4'/><path d='M14 12.7L18.5 16 14 19.3' stroke='%2308766c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "TechArticle",
-      "headline": "Cytomove User Guide",
-      "description": "Detailed text documentation for using Cytomove to review wound healing scratch assay images, analyze contours, correct masks, build publication figures, and export results.",
+      "headline": "Cytomove Technical User Guide",
+      "description": "Full technical text documentation for using Cytomove to review wound healing scratch assay images, analyze contours, correct masks, build publication figures, and export results.",
       "author": {
         "@type": "Person",
         "name": "Zekeriya Duzgun"
@@ -200,6 +200,55 @@
       background: rgba(255, 255, 255, 0.72);
       padding: 12px 14px;
     }
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .mini-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.78);
+      padding: 14px;
+    }
+    .mini-card strong {
+      display: block;
+      color: var(--ink);
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+    .mini-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--paper);
+      font-size: 14px;
+    }
+    .data-table th, .data-table td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .data-table th {
+      background: var(--soft);
+      color: var(--ink);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .data-table td { color: var(--muted); }
+    .data-table tr:last-child td { border-bottom: 0; }
     .toc {
       position: sticky;
       top: 18px;
@@ -249,6 +298,7 @@
     footer a:hover { color: var(--ink); }
     @media (max-width: 880px) {
       .hero, .content { grid-template-columns: 1fr; }
+      .mini-grid { grid-template-columns: 1fr; }
       .toc { position: static; }
       .inline-cta { display: block; }
       .inline-cta .button { width: 100%; margin-top: 14px; }
@@ -289,8 +339,8 @@
     <main>
       <section class="hero">
         <div>
-          <div class="eyebrow">Detailed documentation</div>
-          <h1>Cytomove User Guide.</h1>
+          <div class="eyebrow">Full technical documentation</div>
+          <h1>Cytomove Technical User Guide.</h1>
           <p>
             This guide explains the practical Cytomove 1.0 workflow for wound healing
             scratch assay analysis: loading local images, reviewing Image QC, tuning
@@ -308,156 +358,348 @@
       <div class="content">
         <article>
           <h2 id="quick-start">Quick start</h2>
+          <p>
+            Cytomove is organized around a reviewable scratch-assay workflow:
+            <strong>Image QC</strong>, <strong>Analysis</strong>, <strong>Manual correction</strong>,
+            <strong>Publication Figure Builder</strong>, and <strong>Export package</strong>.
+            The safest habit is to move through those stages in order and to export only
+            after the contour overlay matches the image you intend to report.
+          </p>
           <ol>
             <li>Open the Cytomove web app or desktop app.</li>
-            <li>Use <strong>Open images</strong> or drag-and-drop to load a time-series group.</li>
-            <li>Name the group clearly, for example <code>HUVEC control r1</code> or <code>FDI r2</code>.</li>
-            <li>Review the first image in Image QC, then crop and orient the image series.</li>
-            <li>Continue to Analysis, apply settings, and inspect the calculated contour overlay.</li>
-            <li>Open Publication Figure Builder to create a single-group figure, Control vs Treatment figure, or multi-treatment figure.</li>
-            <li>Export the figure and supporting files when the preview reflects the reviewed analysis.</li>
+            <li>Use <strong>Open images</strong>, <strong>Open image group</strong>, drag-and-drop, or <strong>+ Add another image group</strong> to load one or more local images.</li>
+            <li>Name each group clearly, for example <code>HUVEC control r1</code>, <code>HUVEC FDI r2</code>, or <code>Drug B dose 3</code>.</li>
+            <li>Review the first image in Image QC, then set crop, orientation, fine rotation, and exclusion status.</li>
+            <li>Continue to Analysis, choose a microscope preset, click Apply, and inspect the calculated contour overlay.</li>
+            <li>Use Manual correction only when a visible local mask error remains after tuning the main settings.</li>
+            <li>Open Publication Figure Builder, choose single-group figure, Control vs Treatment, or multi-treatment, then update the preview.</li>
+            <li>Export the figure, CSV data, PowerPoint assets, and full-size contour overlays when the preview reflects the reviewed analysis.</li>
           </ol>
 
           <div class="note">
             <p>
-              Cytomove is intentionally reviewable. If the preview looks wrong, return to
-              Image QC or Analysis before exporting. A clean export should be the result of
-              a visible review path, not a hidden automatic measurement.
+              Cytomove is intentionally review-first. It should not be treated as a hidden
+              automatic measurement engine. Each scientific output should be traceable to a
+              visible crop, a visible mask or contour, and an explicit export action.
             </p>
           </div>
 
+          <h2 id="inputs">Supported inputs</h2>
+          <p>
+            Cytomove currently focuses on local microscopy image files for wound healing
+            scratch assays. Use ordinary image formats such as JPG and PNG. A single file
+            can be reviewed alone, while multiple files can be imported together as a
+            time-series group. When multiple files are selected, Cytomove asks for a group
+            name before creating the group.
+          </p>
+          <div class="mini-grid">
+            <div class="mini-card">
+              <strong>Single image</strong>
+              <span>Useful for checking one microscopy field, validating settings, or testing the contour overlay before importing a full group.</span>
+            </div>
+            <div class="mini-card">
+              <strong>Image group</strong>
+              <span>Use this for a time series such as 0h, 24h, and 48h. Cytomove will open the first image in Image QC.</span>
+            </div>
+            <div class="mini-card">
+              <strong>Multiple replicate groups</strong>
+              <span>Import control and treatment replicates as separate named groups so the Builder can calculate n, mean, and SD.</span>
+            </div>
+            <div class="mini-card">
+              <strong>Validation set</strong>
+              <span>The bundled HUVEC Control vs FDI validation set contains 18 images: 3 Control and 3 FDI replicates across 0h, 24h, and 48h.</span>
+            </div>
+          </div>
+
+          <h2 id="platforms">Web app and Desktop</h2>
+          <p>
+            The web app is the canonical browser workflow and is available from
+            <a href="../app/">Open Web App</a>. The desktop app packages the same renderer
+            for local file handling, desktop authentication, update checks, and heavier
+            export use. The core workflow is the same: Image QC, Analysis, Builder, and
+            export.
+          </p>
+          <table class="data-table">
+            <thead>
+              <tr><th>Surface</th><th>Use when</th><th>Important behavior</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Web app</td>
+                <td>Quick review, public tutorial, validation set, browser-local analysis.</td>
+                <td>Images are opened locally in the browser. Full export access may require sign-in.</td>
+              </tr>
+              <tr>
+                <td>Desktop</td>
+                <td>Routine local analysis, large groups, Windows file picker, update-managed academic distribution.</td>
+                <td>Uses email/password or Google sign-in, supports 72-hour offline access after successful approval, and can enforce a required update.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h2 id="access">Access and export permissions</h2>
+          <p>
+            Cytomove allows basic review in the browser, but full CSV, figure data, PNG,
+            and ZIP exports may require a verified sign-in session. The access banner says
+            what is missing: sign-in, email verification, or full access.
+          </p>
+          <p>
+            Desktop sign-in supports email/password and Google. If an account was created
+            with Google, use <strong>Continue with Google</strong> rather than the password
+            form. After a successful online approval, desktop can allow a <strong>72-hour offline</strong>
+            grace window. If the update policy says the current build is obsolete, a
+            <strong>required update</strong> gate can block the app until the user downloads
+            or installs the current version.
+          </p>
+
           <h2 id="image-qc">Image QC</h2>
           <p>
-            Image QC is the first checkpoint. It prevents avoidable measurement errors
-            before segmentation starts. Use it to create a group, review every time point,
-            crop the field of view, correct scratch orientation, fine-rotate tilted images,
-            and exclude images that should not contribute to the group analysis.
+            Image QC is the first scientific checkpoint. It defines the image geometry that
+            analysis will use. Use it to choose Single or Group review mode, name groups,
+            switch loaded groups, inspect each time point, set crop, set scratch orientation,
+            rotate images, and exclude unusable images.
           </p>
-          <h3>Loading a group</h3>
+          <h3>Review mode</h3>
           <p>
-            When several images are selected together, Cytomove asks for a group name before
-            creating the reviewable image group. Keep the group name meaningful because it
-            will later appear in replicate lists, Builder controls, and exported files.
+            <strong>Review mode</strong> has Single and Group modes. Single mode is useful
+            for one image. Group mode is the normal path for a scratch assay series because
+            it displays all time points in the loaded group and makes it easier to check
+            whether 0h, 24h, and 48h are consistent.
           </p>
-          <h3>Crop and orientation</h3>
+          <h3>Crop, orientation, and rotation</h3>
           <p>
-            Use <strong>Adjust crop</strong> to reveal the crop rectangle, drag the rectangle
-            or its handles until the wound field is centered, then use <strong>Save crop</strong>.
-            If later images share the same field of view, the saved crop can be carried
-            forward so the series stays consistent.
+            <strong>Adjust crop</strong> reveals the crop rectangle. Drag the rectangle or
+            its handles until the full wound field is centered, then click <strong>Save crop</strong>.
+            <strong>Reset crop</strong> returns to the uncropped image, while Undo returns to
+            the previous crop state when available. A saved crop can carry forward to the
+            next unsaved image so repeated time points stay aligned.
           </p>
           <p>
-            The scratch orientation should describe the wound geometry, not the camera
-            frame. Vertical scratch is the usual left-to-right wound gap. If the wound gap
-            is top-to-bottom, use horizontal scratch and rotate if needed before analysis.
+            <strong>Scratch orientation</strong> describes the wound gap direction for
+            analysis. Use vertical scratch for the common left-to-right wound gap and
+            horizontal scratch for top-to-bottom gaps. <strong>Fine rotation</strong> is for
+            small tilt correction in degrees. Use <strong>Rotate left</strong> or
+            <strong>Rotate right</strong> for 90-degree image orientation changes.
+          </p>
+          <h3>Auto crop FOV and exclusion</h3>
+          <p>
+            <strong>Auto crop FOV</strong> helps remove circular microscope borders or black
+            camera edges from the analysis field. It is useful for brightfield microscope
+            images with a strong field-of-view boundary, but it should still be visually
+            checked. Use <strong>Exclude from analysis</strong> for blurred images, wrong
+            time points, wrong wells, or fields that should not contribute to group metrics.
           </p>
 
           <h2 id="analysis">Analysis parameters</h2>
           <p>
-            The Analysis step converts the reviewed image into a wound mask and contour.
-            Start with the preset that best matches the microscopy mode, usually brightfield
-            normal cells for typical scratch assay images. Then click <strong>Apply</strong>
-            and inspect the contour lines.
+            Analysis converts the reviewed image into a wound mask, contour overlay, and
+            numeric metrics. Start with a microscope preset, click <strong>Apply</strong>,
+            then evaluate whether the contour follows the biological wound edge. If the
+            settings are good for the whole group, use <strong>Apply to group</strong>.
           </p>
-          <h3>Threshold and variance radius</h3>
+          <table class="data-table">
+            <thead>
+              <tr><th>Control</th><th>What it changes</th><th>When to adjust</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Auto detect microscope</td>
+                <td>Attempts to choose a suitable microscope/preset family for the selected group.</td>
+                <td>Use it after importing a group if the initial preset clearly mismatches the image type.</td>
+              </tr>
+              <tr>
+                <td>Threshold level</td>
+                <td>Controls the wound/cell separation decision.</td>
+                <td>Adjust when the contour is consistently inside or outside the true wound edge.</td>
+              </tr>
+              <tr>
+                <td>Variance radius</td>
+                <td>Changes how local texture is smoothed or emphasized before segmentation.</td>
+                <td>Increase modestly when brightfield texture creates jagged or fragmented wound boundaries.</td>
+              </tr>
+              <tr>
+                <td>Ignore tiny islands</td>
+                <td>Controls whether tiny internal components are traced, ignored, or treated as islands.</td>
+                <td>Use trace or ignore modes when speckles, debris, or isolated cells create noisy components.</td>
+              </tr>
+              <tr>
+                <td>Contour thickness</td>
+                <td>Changes preview contour line width.</td>
+                <td>Use thin contours for publication-style review and thicker contours for screen inspection.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h2 id="metrics">Result metrics</h2>
           <p>
-            Threshold controls the separation between wound and cell-covered regions.
-            Variance radius changes how local texture is interpreted. Moving the radius can
-            improve brightfield images where cell texture, illumination, or microscope field
-            artifacts confuse a simple intensity threshold.
+            Cytomove reports area- and width-based measurements so the wound can be
+            interpreted from more than one angle. Area is intuitive for wound closure,
+            while width is helpful when crop or field-of-view differences make area
+            fractions harder to compare.
           </p>
-          <h3>Islands and small regions</h3>
-          <p>
-            The island handling controls decide how tiny internal components are treated.
-            Use trace or ignore tiny islands when speckles or debris are being counted as
-            biologically meaningful wound fragments. After each change, click
-            <strong>Apply</strong> again and compare the contour overlay.
-          </p>
-          <h3>Apply to group</h3>
-          <p>
-            Use <strong>Apply to group</strong> only when the current analysis settings are
-            appropriate for the full image series. This keeps replicate analysis faster
-            while still leaving a visible result for review.
-          </p>
+          <ul>
+            <li><strong>Wound area:</strong> open wound pixels after QC crop and segmentation.</li>
+            <li><strong>Area fraction:</strong> wound area normalized to the usable field of view.</li>
+            <li><strong>Wound closure:</strong> reduction of wound area relative to baseline.</li>
+            <li><strong>Mean gap width:</strong> horizontal or vertical gap width summary depending on scratch orientation.</li>
+            <li><strong>Normalized area:</strong> panel-ready expression of wound area relative to baseline.</li>
+            <li><strong>QC warnings:</strong> indications such as questionable orientation, missing crop, noisy islands, or incomplete group analysis.</li>
+          </ul>
 
           <h2 id="manual-correction">Manual correction</h2>
           <p>
-            Manual correction is for local segmentation problems that remain after the main
-            settings are tuned. It is useful for a missed wound pocket, a false-positive
-            debris region, or a small artifact that should not drive the biological result.
+            Manual correction is for visible local mask errors after the global analysis
+            settings are already close. It should not replace proper threshold and variance
+            tuning. The correction is strongest when it fixes a small, defensible region
+            that a reviewer could also identify from the image.
           </p>
           <ul class="checklist">
+            <li><strong>Contour view:</strong> preferred for checking whether the calculated wound edge follows the microscopy image.</li>
+            <li><strong>Mask view:</strong> useful for seeing exactly which pixels are classified as wound.</li>
             <li><strong>Fill area:</strong> add a missed wound region when the automatic mask is too conservative.</li>
-            <li><strong>Erase area:</strong> remove a false-positive wound region when debris or texture was misclassified.</li>
+            <li><strong>Erase scan:</strong> remove a false-positive wound region when debris, texture, or cell clusters were misclassified.</li>
             <li><strong>Undo:</strong> step back from the most recent correction if the edit was too broad.</li>
-            <li><strong>Reset correction:</strong> return to the uncorrected analysis result and start the correction again.</li>
+            <li><strong>Reset correction:</strong> return to the uncorrected analysis result and start correction again.</li>
           </ul>
           <div class="warning">
             <p>
-              Manual correction should be documented by the exported overlay. Do not use it
-              to force a preferred result; use it to fix a visible local mask error.
+              Manual correction must remain scientifically conservative. Export the contour
+              overlay after correction so the final result documents what was changed.
             </p>
           </div>
 
           <h2 id="builder">Publication Figure Builder</h2>
           <p>
-            Publication Figure Builder assembles reviewed image groups and analysis results
-            into a figure layout. It is designed for the last review step before export,
-            where the user checks representative images, calculated contour overlays,
-            summary charts, labels, and typography.
+            Publication Figure Builder creates figure-ready summaries from reviewed groups.
+            It uses stored analysis contours rather than inventing a new contour in the
+            Builder. If a selected group is missing stored contours, the Builder shows
+            <strong>Analyze missing groups</strong> so those images can be analyzed before
+            export.
           </p>
-          <h3>Single group</h3>
+          <h3>Single-group figure</h3>
           <p>
-            When only one image group exists, Cytomove creates a single-group figure. This
-            avoids a fake Control or Treatment comparison and is useful for method checks,
-            pilot experiments, and one-condition examples.
+            If only one group exists, Cytomove builds a <strong>single-group figure</strong>.
+            This is useful for a method check, a pilot image series, or a one-condition
+            demonstration. It does not force a Control or Treatment label.
           </p>
           <h3>Control vs Treatment</h3>
           <p>
-            With two groups, choose the control representative group, the treatment
-            representative group, and the replicate groups that belong to each condition.
-            The Control vs Treatment layout summarizes representative contours, wound
-            closure, and normalized area.
+            Use <strong>Control vs Treatment</strong> for a two-condition experiment. Select
+            the Control representative group, Treatment representative group, Control
+            replicates, and Treatment replicates. Panel A shows representative contour
+            overlays, Panel B shows wound closure, and Panel C can show normalized area or
+            another metric.
           </p>
           <h3>Multi-treatment</h3>
           <p>
-            For FDI, drug B, drug C, dose groups, or any condition beyond the first
-            treatment, use the multi-treatment template and add extra treatment groups.
-            Each added treatment has its own representative group and replicate selection.
-          </p>
-          <h3>Panel layout and typography</h3>
-          <p>
-            Builder panels can be adjusted so the figure better fits publication space.
-            Use the title fields, font family, title size, weight, labels, and snap-to-grid
-            panel dragging to refine the layout while keeping the scientific content intact.
+            Use <strong>multi-treatment</strong> when there are more than two conditions:
+            FDI plus another drug, multiple doses, multiple cell treatments, or any condition
+            beyond the first treatment. Each added treatment arm has its own representative
+            group and replicate IDs. Builder plots use dynamic legends so 4+ conditions
+            have reserved x-axis space rather than overlapping labels.
           </p>
           <h3>Analyze missing groups</h3>
           <p>
-            If a selected group does not yet have stored contours, the Builder shows
-            <strong>Analyze missing groups</strong>. Click it to complete the missing group
-            analysis before exporting the figure. This keeps Builder previews tied to the
+            <strong>Analyze missing groups</strong> appears when Builder selections include
+            groups without complete stored analysis. Click it, wait for analysis to finish,
+            then update the figure. This keeps the Builder preview synchronized with the
             current Image QC crop and analysis settings.
           </p>
 
-          <h2 id="export">Export package</h2>
+          <h2 id="builder-layout">Builder layout and typography</h2>
           <p>
-            Cytomove exports both compact publication figures and supporting files for
-            independent review. The Builder export can include 600 DPI PNG output, TIFF
-            output when supported, CSV data, chart assets, and a ZIP package for manuscript
-            preparation.
+            Builder layout controls are intended for final scientific presentation, not
+            cosmetic screenshot editing. Keep the labels scientifically meaningful and
+            avoid moving panels in a way that hides context.
           </p>
+          <table class="data-table">
+            <thead>
+              <tr><th>Control</th><th>Purpose</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Selected panel</td><td>Choose Panel A, B, or C before editing title, typography, or placement.</td></tr>
+              <tr><td>Scientific title</td><td>Use titles such as Representative wound-edge morphology, Wound closure, or Normalized wound area.</td></tr>
+              <tr><td>Font family</td><td>Choose constrained scientific fonts such as Arial, Helvetica, Times New Roman, Georgia, or Calibri.</td></tr>
+              <tr><td>Title size and Weight</td><td>Keep panel title sizes consistent across A, B, and C.</td></tr>
+              <tr><td>Apply typography to all panel titles</td><td>Use when the whole figure should share the same font and title style.</td></tr>
+              <tr><td>Snap-to-grid dragging</td><td>Move panels with the mouse while keeping them aligned to the layout grid.</td></tr>
+              <tr><td>Scale bar</td><td>Enter calibration in um / pixel to draw a 100 um scale bar on Panel A when calibration is known.</td></tr>
+              <tr><td>p-value label and Stars</td><td>Add compact statistical labels such as a p-value label or Stars notation when justified by external statistics.</td></tr>
+            </tbody>
+          </table>
+
+          <h2 id="validation">Validation data and tutorials</h2>
           <p>
-            For manual figure assembly, the export package can also include full-size
-            original images and full-size contour-overlay images. The full-size
-            contour-overlay files are useful when a journal, collaborator, or reviewer
-            wants to inspect segmentation on the original-resolution field rather than the
-            Builder preview.
+            Cytomove includes bundled tutorial and validation data so users can test the
+            workflow without uploading their own images first. The full HUVEC tutorial uses
+            the 18-image Control vs FDI validation set, starts in Image QC, teaches crop
+            review, moves to Analysis, adjusts Variance radius, uses Apply and Apply to
+            group, then opens the Builder.
           </p>
           <ul>
-            <li><strong>CSV metrics:</strong> wound area, closure, width, and supporting values.</li>
-            <li><strong>Figure images:</strong> publication-style figure previews and 600 DPI outputs.</li>
-            <li><strong>TIFF:</strong> high-resolution figure export where browser support allows it.</li>
-            <li><strong>Builder ZIP:</strong> combined figure, data, and full-size contour-overlay assets.</li>
+            <li><strong>Full HUVEC validation tutorial:</strong> guided 18-image path from Image QC to Builder.</li>
+            <li><strong>Manual correction tutorial:</strong> teaches reversible fill, erase, undo, and reset correction actions.</li>
+            <li><strong>Publication quality figure tutorial:</strong> opens the validation set directly in Builder to teach replicate selection, typography, Update Figure, and export.</li>
+            <li><strong>Load validation set:</strong> available in the Builder controls for testing Control vs FDI with n=3 replicates.</li>
+          </ul>
+
+          <h2 id="export">Export package</h2>
+          <p>
+            Cytomove exports both the compact figure and the supporting scientific record.
+            The Builder ZIP is the main publication-oriented package. It can include 600 DPI
+            PNG, TIFF, PowerPoint, CSV tables, figure assets, and full-resolution images.
+          </p>
+          <table class="data-table">
+            <thead>
+              <tr><th>Asset</th><th>Purpose</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>single_column_85mm_600dpi.png</code></td><td>600 DPI PNG sized for a typical single-column journal figure.</td></tr>
+              <tr><td><code>single_column_85mm_600dpi.tiff</code></td><td>TIFF counterpart for high-resolution submission workflows.</td></tr>
+              <tr><td><code>double_column_180mm_600dpi.png</code></td><td>600 DPI PNG sized for double-column layouts.</td></tr>
+              <tr><td><code>double_column_180mm_600dpi.tiff</code></td><td>Double-column TIFF export when the environment supports it.</td></tr>
+              <tr><td>PowerPoint</td><td>Editable slide-style figure output for manual layout adjustment outside Cytomove.</td></tr>
+              <tr><td><code>full_images/original</code></td><td>Original-size reviewed source images for manual figure assembly or audit.</td></tr>
+              <tr><td><code>full_images/contour_overlay</code></td><td>Original-size full-size contour-overlay images rendered from stored analysis contours.</td></tr>
+              <tr><td>CSV</td><td>Per-image metrics and Builder summary fields such as <code>summary_mean</code>, <code>summary_sd</code>, and <code>summary_n</code>.</td></tr>
+            </tbody>
+          </table>
+          <p>
+            The full-size contour-overlay files are deliberately separate from the Builder
+            preview. They allow a collaborator, reviewer, or journal workflow to inspect
+            segmentation at the original analysis dimensions.
+          </p>
+
+          <h2 id="glossary">Parameter glossary</h2>
+          <table class="data-table">
+            <thead>
+              <tr><th>Term</th><th>Meaning</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Area MVP metric</td><td>Main wound area metric used for closure and normalized area summaries.</td></tr>
+              <tr><td>Width secondary</td><td>Secondary gap-width metric used as a complement to wound area.</td></tr>
+              <tr><td>Images local only</td><td>Reminder that local images are opened and processed on the device/browser surface.</td></tr>
+              <tr><td>Threshold level</td><td>Segmentation sensitivity control for separating wound and cell-covered regions.</td></tr>
+              <tr><td>Variance radius</td><td>Local texture radius used to stabilize brightfield wound-edge detection.</td></tr>
+              <tr><td>Ignore tiny islands</td><td>Island/noise behavior for small connected components inside the segmentation.</td></tr>
+              <tr><td>Contour thickness</td><td>Visual thickness of the contour overlay in review/export contexts.</td></tr>
+              <tr><td>Scale bar</td><td>Calibration-driven 100 um reference bar drawn when um / pixel is provided.</td></tr>
+              <tr><td>p-value label</td><td>Optional statistical annotation label supplied by the user.</td></tr>
+              <tr><td>Stars</td><td>Optional compact significance notation such as *, **, or *** supplied by the user.</td></tr>
+            </tbody>
+          </table>
+
+          <h2 id="qc-checklist">Quality-control checklist</h2>
+          <ul class="checklist">
+            <li>All images in the group have the correct time point order and group name.</li>
+            <li>The crop excludes black borders, labels, and irrelevant microscope field edges.</li>
+            <li>Scratch orientation matches the wound geometry before Analysis.</li>
+            <li>The first contour is checked visually before Apply to group.</li>
+            <li>Manual correction is used only for local visible mask errors.</li>
+            <li>Excluded images are intentionally excluded and not accidentally skipped.</li>
+            <li>Builder replicate selections match the experimental design and reported n.</li>
+            <li>Figure labels, scale bar, p-value label, and Stars annotations are scientifically justified.</li>
+            <li>Exported full_images/original and full_images/contour_overlay files are kept with the CSV or Builder ZIP.</li>
           </ul>
 
           <h2 id="troubleshooting">Troubleshooting</h2>
@@ -467,11 +709,17 @@
             a stale browser cache may keep an older script active. The local development
             server disables stale caching, but public browsers can still hold old files.
           </p>
+          <h3>Only one image loads from a group selection</h3>
+          <p>
+            Make sure the group picker is being used and that multiple files were selected
+            before confirming the group name. In desktop, the Windows file picker bridges
+            selected files into the same local group loader.
+          </p>
           <h3>The contour does not match the wound</h3>
           <p>
-            Return to Analysis, adjust the preset, threshold, variance radius, and island
-            handling, then click Apply again. Use Manual correction only after the global
-            settings are close.
+            Return to Analysis, adjust the microscope preset, Threshold level, Variance
+            radius, and Ignore tiny islands mode, then click Apply again. Use Manual
+            correction only after the global settings are close.
           </p>
           <h3>The Builder preview says groups need analysis</h3>
           <p>
@@ -483,6 +731,18 @@
             Sign in when full export access is required, verify that selected groups have
             analysis results, and confirm the Builder preview is available before exporting.
           </p>
+          <h3>Desktop sign-in does not return from Google</h3>
+          <p>
+            Close the browser tab and try again. The desktop helper waits for the local
+            Google callback on localhost; if another process blocks it, fully close Cytomove
+            and reopen the app.
+          </p>
+          <h3>Desktop asks for an update even after a recent install</h3>
+          <p>
+            Check whether the banner says recommended or required. A recommended update can
+            usually be postponed. A required update means the update policy demands a newer
+            build before analysis can continue.
+          </p>
 
           <div class="inline-cta">
             <p><strong>Need the scientific overview?</strong><br>Read the shorter scratch assay guide, or open the app and try the workflow directly.</p>
@@ -493,11 +753,19 @@
         <aside class="toc" aria-label="User guide contents">
           <strong>User Guide</strong>
           <a href="#quick-start">Quick start</a>
+          <a href="#inputs">Supported inputs</a>
+          <a href="#platforms">Web app and Desktop</a>
+          <a href="#access">Access and export permissions</a>
           <a href="#image-qc">Image QC</a>
           <a href="#analysis">Analysis parameters</a>
+          <a href="#metrics">Result metrics</a>
           <a href="#manual-correction">Manual correction</a>
           <a href="#builder">Publication Figure Builder</a>
+          <a href="#builder-layout">Builder layout and typography</a>
+          <a href="#validation">Validation data and tutorials</a>
           <a href="#export">Export package</a>
+          <a href="#glossary">Parameter glossary</a>
+          <a href="#qc-checklist">Quality-control checklist</a>
           <a href="#troubleshooting">Troubleshooting</a>
         </aside>
       </div>
