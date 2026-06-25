@@ -16,6 +16,9 @@ test('desktop update restart observes canonical app busy state', () => {
 test('desktop update banner does not offer downloads when already current', () => {
   assert.match(updateUi, /function updateAvailableByPolicy\(\)/);
   assert.match(updateUi, /function bannerAllowed\(\)/);
+  assert.match(updateUi, /function primaryAllowed\(\)/);
+  assert.match(updateUi, /primary\.hidden = !primaryAllowed\(\)/);
+  assert.match(updateUi, /later\.textContent = primaryAllowed\(\) \? 'Later' : 'Close'/);
   assert.match(updateUi, /updateState\.status === 'manual'\) return updateAvailableByPolicy\(\)/);
   assert.match(updateUi, /if \(!bannerAllowed\(\)\) \{ banner\.hidden = true; return; \}/);
   assert.doesNotMatch(

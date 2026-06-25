@@ -26,6 +26,12 @@
     if (updateState.status === 'manual') return updateAvailableByPolicy();
     return false;
   }
+  function primaryAllowed() {
+    if (required()) return false;
+    if (['available','downloaded','error'].includes(updateState.status)) return true;
+    if (updateState.status === 'manual') return updateAvailableByPolicy();
+    return false;
+  }
   function setWorkspaceLocked(locked) {
     appShell?.classList.toggle('desktop-policy-locked', locked);
     gate.hidden = !locked;
@@ -44,6 +50,11 @@
     title.textContent = label;
     message.textContent = policy?.manifest?.message || updateState.error || '';
     later.hidden = mustUpdate;
+    later.textContent = primaryAllowed() ? 'Later' : 'Close';
+    primary.hidden = !primaryAllowed();
+    primary.textContent = updateState.status === 'downloaded' ? 'Restart and update'
+      : updateState.status === 'error' ? 'Check again'
+      : updateState.isPortable ? 'Download current version' : 'Download update';
     progress.hidden = updateState.status !== 'downloading';
     progress.value = updateState.progress || 0;
     requiredProgress.hidden = updateState.status !== 'downloading';
@@ -61,6 +72,7 @@
   }
   async function primaryAction() {
     if (updateState.status === 'downloaded') return restartAndInstall();
+    if (updateState.status === 'error') return window.cytomoveDesktop.checkForUpdates();
     if (updateState.isPortable || updateState.status === 'manual') {
       return window.cytomoveDesktop.openExternal(policy?.manifest?.portableUrl || policy?.manifest?.releaseNotesUrl);
     }
