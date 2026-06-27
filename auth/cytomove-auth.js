@@ -88,7 +88,7 @@
     var client = await getClient();
     return client.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: redirectTo() }
+      options: { redirectTo: redirectTo(), queryParams: { prompt: "select_account" } }
     });
   }
 
@@ -113,11 +113,34 @@
     });
   }
 
+  function clearLocalAuthStorage() {
+    try {
+      var stores = [window.localStorage, window.sessionStorage].filter(Boolean);
+      stores.forEach(function (store) {
+        for (var i = store.length - 1; i >= 0; i -= 1) {
+          var key = store.key(i) || "";
+          if (
+            key.indexOf("supabase") !== -1 ||
+            key.indexOf("gotrue") !== -1 ||
+            /^sb-[^-]+-auth-token$/.test(key) ||
+            /^sb-[^-]+-code-verifier$/.test(key)
+          ) {
+            store.removeItem(key);
+          }
+        }
+      });
+    } catch (_error) {}
+    cachedSnapshot = null;
+  }
+
   async function signOut() {
     var client = await getClient();
-    var result = await client.auth.signOut();
-    if (result.error) throw result.error;
-    cachedSnapshot = null;
+    try {
+      var result = await client.auth.signOut({ scope: "local" });
+      if (result.error) throw result.error;
+    } finally {
+      clearLocalAuthStorage();
+    }
     return true;
   }
 
@@ -225,6 +248,7 @@
     signUpWithPassword: signUpWithPassword,
     signInWithPassword: signInWithPassword,
     signOut: signOut,
+    clearLocalAuthStorage: clearLocalAuthStorage,
     normalizeEmailDomain: normalizeEmailDomain,
     academicSignalFromEmail: academicSignalFromEmail
   };

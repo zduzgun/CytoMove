@@ -25,6 +25,7 @@ test('desktop distinguishes failed authentication from pending academic approval
 test('desktop Google sign-in waits for the localhost helper before opening the browser', () => {
   assert.match(authUi, /waitForGoogleLoopbackReady/);
   assert.match(authUi, /http:\/\/localhost:54545/);
+  assert.match(authUi, /prompt:\s*'select_account'/);
   assert.match(authUi, /Supabase Redirect URLs include http:\/\/localhost:54545/);
   assert.ok(
     authUi.indexOf('var callbackPromise = window.cytomoveDesktop.awaitGoogleCallback();') <
@@ -38,6 +39,7 @@ test('desktop Google sign-in waits for the localhost helper before opening the b
 test('desktop auth gate notifies the app shell when account state changes', () => {
   assert.match(authUi, /cytomove:auth-state-changed/);
   assert.match(authUi, /notifyAuthState/);
+  assert.match(authUi, /clearLocalAuthStorage/);
   assert.match(authUi, /email:\s*session && session\.user && session\.user\.email/);
   assert.match(authUi, /detail:\s*\{\s*signedIn:\s*false/);
 });

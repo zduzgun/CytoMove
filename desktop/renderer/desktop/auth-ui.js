@@ -141,7 +141,11 @@
       var client = await window.CytomoveAuth.getClient();
       var response = await client.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: 'http://localhost:54545', skipBrowserRedirect: true }
+        options: {
+          redirectTo: 'http://localhost:54545',
+          skipBrowserRedirect: true,
+          queryParams: { prompt: 'select_account' }
+        }
       });
       if (response.error) throw response.error;
       var callbackPromise = window.cytomoveDesktop.awaitGoogleCallback();
@@ -166,6 +170,7 @@
   google.addEventListener('click', googleSignIn);
   window.addEventListener('cytomove:desktop-signout', async function () {
     try { await window.CytomoveAuth.signOut(); } catch (_) {}
+    try { window.CytomoveAuth.clearLocalAuthStorage(); } catch (_) {}
     await window.cytomoveDesktop.clearAcademicAccess();
     window.dispatchEvent(new CustomEvent('cytomove:auth-state-changed', {
       detail: { signedIn: false, approved: false, email: '', label: 'Not signed in' }

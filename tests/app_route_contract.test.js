@@ -14,6 +14,7 @@ const guideHtml = read('wound-healing-scratch-assay-analysis/index.html');
 const downloadHtml = read('download/index.html');
 const sitemapXml = read('sitemap.xml');
 const appCss = read('app/styles.css');
+const authJs = read('auth/cytomove-auth.js');
 const localServerPath = path.join(root, 'scripts/serve_local.py');
 const userGuidePath = path.join(root, 'user-guide', 'index.html');
 
@@ -78,6 +79,13 @@ assert(
     appHtml.includes('if (!detail.signedIn)') &&
     appHtml.includes('hideAccount();'),
   'Account menu should refresh after desktop sign-in/sign-out instead of keeping a stale email'
+);
+assert(
+  authJs.includes('function clearLocalAuthStorage()') &&
+    authJs.includes('client.auth.signOut({ scope: "local" })') &&
+    authJs.includes('queryParams: { prompt: "select_account" }') &&
+    authJs.includes('clearLocalAuthStorage: clearLocalAuthStorage'),
+  'Auth helper should force account selection and clear local Supabase session storage on sign-out'
 );
 assert(
   !appHtml.includes('isLocalReview') &&
@@ -204,12 +212,12 @@ assert(
 );
 assert(
   downloadHtml.includes('../user-guide/') &&
-    downloadHtml.includes('Cytomove Desktop 1.0.0') &&
+    downloadHtml.includes('Cytomove Desktop 1.0.1') &&
     downloadHtml.includes('72-hour offline') &&
-    downloadHtml.includes('Cytomove-Desktop-1.0.0-setup.exe') &&
-    downloadHtml.includes('Cytomove-Desktop-1.0.0-portable.exe') &&
-    downloadHtml.includes('https://github.com/zduzgun/CytoMove/releases/tag/v1.0'),
-  'Download page should document the 1.0.0 release assets, User Guide, offline window, and release notes'
+    downloadHtml.includes('Cytomove-Desktop-1.0.1-setup.exe') &&
+    downloadHtml.includes('Cytomove-Desktop-1.0.1-portable.exe') &&
+    downloadHtml.includes('https://github.com/zduzgun/CytoMove/releases/tag/v1.0.1'),
+  'Download page should document the 1.0.1 release assets, User Guide, offline window, and release notes'
 );
 assert(
   fs.existsSync(localServerPath) &&

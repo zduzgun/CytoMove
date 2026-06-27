@@ -1,6 +1,6 @@
 {
   "name": "cytomove-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Cytomove Desktop - local-first wound healing analysis app.",
   "main": "main.js",
