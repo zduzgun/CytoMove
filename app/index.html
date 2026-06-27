@@ -667,24 +667,7 @@
         showGateBanner('Demo mode', 'Load local images and review overlays without signing in. Full CSV, figure data, PNG, and ZIP exports require registered academic access.');
       } else if (window.CytomoveAuth && window.CytomoveAuth.isConfigured()) {
         document.documentElement.dataset.accessMode = 'checking';
-        window.CytomoveAuth.getAccessSnapshot().then(function (snapshot) {
-          if (snapshot.signedIn) showAccount(snapshot);
-          if (snapshot.approved) {
-            document.documentElement.dataset.accessMode = 'full';
-            return;
-          }
-          exportsRequireAccess = true;
-          document.documentElement.dataset.accessMode = snapshot.signedIn ? 'pending' : 'signed-out';
-          exportGateMessage = snapshot.signedIn
-            ? 'Your account is signed in but email verification is not complete. Full CSV, figure data, PNG, and ZIP exports require a verified academic account.'
-            : 'Sign in from Cytomove Access with a verified account to use full CSV, figure data, PNG, and ZIP exports.';
-          showGateBanner(snapshot.signedIn ? 'Email verification required' : 'Sign in required', exportGateMessage);
-        }).catch(function (error) {
-          exportsRequireAccess = true;
-          document.documentElement.dataset.accessMode = 'auth-error';
-          exportGateMessage = error.message || String(error);
-          showGateBanner('Auth check failed', exportGateMessage);
-        });
+        refreshAccessSnapshot();
       }
 
       document.addEventListener('click', function (event) {
@@ -717,6 +700,7 @@
       function showAccount(snapshot) {
         var email = (snapshot.profile && snapshot.profile.email)
           || (snapshot.session && snapshot.session.user && snapshot.session.user.email)
+          || snapshot.email
           || '';
         if (!accountMenu) return;
         accountMenu.hidden = false;
@@ -724,6 +708,44 @@
         accountBtnEmail.textContent = email;
         ddEmail.textContent = email;
         ddStatus.textContent = 'Status: ' + (snapshot.label || (snapshot.approved ? 'Verified' : 'Pending verification'));
+      }
+
+      function hideAccount() {
+        closeDropdown();
+        if (!accountMenu) return;
+        accountMenu.hidden = true;
+        accountAvatar.textContent = '?';
+        accountBtnEmail.textContent = '';
+        ddEmail.textContent = '';
+        ddStatus.textContent = '';
+      }
+
+      function applyAccessSnapshot(snapshot) {
+        if (snapshot.signedIn) showAccount(snapshot);
+        else hideAccount();
+        if (snapshot.approved) {
+          exportsRequireAccess = false;
+          document.documentElement.dataset.accessMode = 'full';
+          if (banner) banner.hidden = true;
+          return;
+        }
+        exportsRequireAccess = true;
+        document.documentElement.dataset.accessMode = snapshot.signedIn ? 'pending' : 'signed-out';
+        exportGateMessage = snapshot.signedIn
+          ? 'Your account is signed in but email verification is not complete. Full CSV, figure data, PNG, and ZIP exports require a verified academic account.'
+          : 'Sign in from Cytomove Access with a verified account to use full CSV, figure data, PNG, and ZIP exports.';
+        showGateBanner(snapshot.signedIn ? 'Email verification required' : 'Sign in required', exportGateMessage);
+      }
+
+      function refreshAccessSnapshot() {
+        if (!window.CytomoveAuth || !window.CytomoveAuth.isConfigured()) return Promise.resolve();
+        return window.CytomoveAuth.getAccessSnapshot().then(applyAccessSnapshot).catch(function (error) {
+          exportsRequireAccess = true;
+          hideAccount();
+          document.documentElement.dataset.accessMode = 'auth-error';
+          exportGateMessage = error.message || String(error);
+          showGateBanner('Auth check failed', exportGateMessage);
+        });
       }
 
       function closeDropdown() {
@@ -790,12 +812,28 @@
       if (signOutBtn) {
         signOutBtn.addEventListener('click', async function () {
           signOutBtn.disabled = true;
+          hideAccount();
+          exportsRequireAccess = true;
+          document.documentElement.dataset.accessMode = 'signed-out';
+          exportGateMessage = 'Sign in from Cytomove Access with a verified account to use full CSV, figure data, PNG, and ZIP exports.';
           try {
             if (window.CytomoveAuth) await window.CytomoveAuth.signOut();
           } catch (error) { /* ignore and redirect anyway */ }
           window.location.href = '../access/?stay=1';
         });
       }
+      window.addEventListener('cytomove:auth-state-changed', function (event) {
+        var detail = event.detail || {};
+        if (!detail.signedIn) {
+          hideAccount();
+          exportsRequireAccess = true;
+          document.documentElement.dataset.accessMode = 'signed-out';
+          exportGateMessage = 'Sign in from Cytomove Access with a verified account to use full CSV, figure data, PNG, and ZIP exports.';
+          showGateBanner('Sign in required', exportGateMessage);
+          return;
+        }
+        refreshAccessSnapshot();
+      });
     }());
   </script>
   <div class="group-name-dialog" id="groupNameDialog" hidden role="dialog" aria-modal="true" aria-labelledby="groupNameTitle">

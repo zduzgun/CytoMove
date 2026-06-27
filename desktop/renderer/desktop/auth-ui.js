@@ -58,6 +58,16 @@
       email: session && session.user && session.user.email || ''
     };
   }
+  function notifyAuthState(session, decision) {
+    window.dispatchEvent(new CustomEvent('cytomove:auth-state-changed', {
+      detail: {
+        signedIn: Boolean(session && session.user),
+        approved: Boolean(decision && decision.allowed),
+        email: session && session.user && session.user.email || '',
+        label: decision && decision.allowed ? 'Academic access' : 'Sign in required'
+      }
+    }));
+  }
   function renderDecision(decision) {
     if (decision.allowed) {
       setLocked(false);
@@ -84,6 +94,7 @@
     var session = await window.CytomoveAuth.getSession();
     var decision = await window.cytomoveDesktop.validateAcademicAccess(payloadFromSession(session));
     renderDecision(decision);
+    notifyAuthState(session, decision);
     return decision;
   }
   async function submitAuth() {
@@ -156,6 +167,9 @@
   window.addEventListener('cytomove:desktop-signout', async function () {
     try { await window.CytomoveAuth.signOut(); } catch (_) {}
     await window.cytomoveDesktop.clearAcademicAccess();
+    window.dispatchEvent(new CustomEvent('cytomove:auth-state-changed', {
+      detail: { signedIn: false, approved: false, email: '', label: 'Not signed in' }
+    }));
     setLocked(true);
   });
   setMode('signin');

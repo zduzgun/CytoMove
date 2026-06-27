@@ -35,6 +35,13 @@ test('desktop Google sign-in waits for the localhost helper before opening the b
   );
 });
 
+test('desktop auth gate notifies the app shell when account state changes', () => {
+  assert.match(authUi, /cytomove:auth-state-changed/);
+  assert.match(authUi, /notifyAuthState/);
+  assert.match(authUi, /email:\s*session && session\.user && session\.user\.email/);
+  assert.match(authUi, /detail:\s*\{\s*signedIn:\s*false/);
+});
+
 test('packaged renderer auth UI is synced from the active desktop source', () => {
   assert.equal(rendererAuthUi, authUi);
 });

@@ -72,6 +72,14 @@ assert(
   'Cytomove Access should open the app for any signed-in session and stay for signed-out users'
 );
 assert(
+  appHtml.includes("window.addEventListener('cytomove:auth-state-changed'") &&
+    appHtml.includes('function hideAccount()') &&
+    appHtml.includes('function refreshAccessSnapshot()') &&
+    appHtml.includes('if (!detail.signedIn)') &&
+    appHtml.includes('hideAccount();'),
+  'Account menu should refresh after desktop sign-in/sign-out instead of keeping a stale email'
+);
+assert(
   !appHtml.includes('isLocalReview') &&
     !appHtml.includes("dataset.accessMode = 'local-review'"),
   '/app/ should not bypass access state on localhost'
