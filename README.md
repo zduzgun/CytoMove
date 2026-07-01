@@ -9,6 +9,7 @@ Cytomove turns scratch assay / wound healing measurement into a reviewable, repr
 _As of June 2026 - soft-deployed and in controlled academic access._
 
 - Live site: [cytomove.com](https://cytomove.com)
+- Tutorial video: [Cytomove Tutorial: AI-Powered Wound Healing Image Analysis and Publication Figures](https://youtu.be/dX_c4j1tDiE)
 - **Working web app** is live (no installation): local image analysis with single-image and group review.
 - **Cytomove Access:** a loginless demo plus registered full access. Free for academic use.
 - **Desktop app:** an Electron build for faster local group analysis and heavier exports.
@@ -45,7 +46,7 @@ In cell biology labs, wound healing analysis is still often manual, hard to repr
 
 ## For Researchers
 
-Try the web app or request academic access at [cytomove.com](https://cytomove.com). For feedback, dataset suggestions, or academic collaboration ideas, use GitHub Issues or email.
+Try the web app or request academic access at [cytomove.com](https://cytomove.com). Watch the short [Cytomove tutorial video](https://youtu.be/dX_c4j1tDiE) for the Image QC, segmentation review, metrics, and publication-figure export workflow. For feedback, dataset suggestions, or academic collaboration ideas, use GitHub Issues or email.
 
 ## Founder
 
