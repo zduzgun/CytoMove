@@ -1,0 +1,112 @@
+1
+00:00:00,050 --> 00:00:03,076
+Welcome to this Cytomove walkthrough.
+
+2
+00:00:03,076 --> 00:00:16,778
+In this tutorial, we will move through the complete scratch assay workflow: image quality control, analysis, result review, and publication-ready figure export.
+
+3
+00:00:16,778 --> 00:00:26,089
+The goal is to keep each decision visible, reproducible, and easy to audit before the data leaves the browser.
+
+4
+00:00:26,089 --> 00:00:29,583
+The workflow begins in Image QC.
+
+5
+00:00:29,583 --> 00:00:34,519
+Here, each image can be reviewed before analysis starts.
+
+6
+00:00:34,519 --> 00:00:46,153
+Cytomove lets you inspect the field of view, confirm the scratch orientation, and define a clean crop region around the biologically relevant area.
+
+7
+00:00:46,153 --> 00:00:56,105
+These checks are important because small framing or orientation problems can influence downstream segmentation and wound measurements.
+
+8
+00:00:56,105 --> 00:01:01,169
+As the crop box is adjusted, the preview updates immediately.
+
+9
+00:01:01,169 --> 00:01:09,278
+The original image is preserved, while the reviewed QC state becomes the input for analysis.
+
+10
+00:01:09,278 --> 00:01:16,826
+This makes the correction step reversible and keeps the analysis based on an explicit image review.
+
+11
+00:01:16,826 --> 00:01:22,900
+After QC is confirmed, the workflow moves into Analysis.
+
+12
+00:01:22,900 --> 00:01:35,673
+Cytomove detects the wound region and overlays contours on the microscopy image, so the segmentation can be reviewed directly against the cells and the scratch boundary.
+
+13
+00:01:35,673 --> 00:01:40,064
+The control panel supports practical review of the mask.
+
+14
+00:01:40,064 --> 00:01:47,115
+Threshold and contour settings can be adjusted while watching the overlay respond on the image.
+
+15
+00:01:47,115 --> 00:01:58,990
+This is especially useful when the scratch edge is irregular, when debris is present in the wound area, or when local contrast varies across the field.
+
+16
+00:01:58,990 --> 00:02:03,092
+The purpose is not to hide the segmentation step.
+
+17
+00:02:03,092 --> 00:02:14,471
+Instead, Cytomove keeps it visible, so the user can judge whether the contour follows the biologically meaningful wound boundary before accepting the measurement.
+
+18
+00:02:14,471 --> 00:02:21,153
+Once the contour is accepted, Cytomove summarizes the quantitative outputs.
+
+19
+00:02:21,153 --> 00:02:29,743
+The interface reports wound area, wound width, and closure-related measurements for the selected image and group.
+
+20
+00:02:29,743 --> 00:02:36,907
+This makes it possible to move from visual review to numerical interpretation without changing tools.
+
+21
+00:02:36,907 --> 00:02:45,176
+Across time points and experimental groups, Cytomove organizes the measurements into plots and tables.
+
+22
+00:02:45,176 --> 00:02:55,512
+The user can compare control and treatment behavior, inspect the time course, and check whether the measurements agree with the image-level evidence.
+
+23
+00:02:55,512 --> 00:02:59,983
+The final part of the workflow is the Publication Figure Builder.
+
+24
+00:02:59,983 --> 00:03:07,708
+Here, reviewed images, contours, group summaries, and plots can be assembled into a figure layout.
+
+25
+00:03:07,708 --> 00:03:17,307
+The builder is designed for manuscript preparation, so the visual elements remain connected to the reviewed analysis outputs.
+
+26
+00:03:17,307 --> 00:03:25,897
+The figure can include representative microscopy panels, quantitative charts, and a short interpretation panel.
+
+27
+00:03:25,897 --> 00:03:37,467
+Export options are prepared for publication workflows, including high-resolution image output and bundled files for review or downstream editing.
+
+28
+00:03:37,467 --> 00:03:50,512
+This completes the Cytomove workflow: review images first, run transparent analysis, inspect the measurements, and export figures from the same reproducible session.
+

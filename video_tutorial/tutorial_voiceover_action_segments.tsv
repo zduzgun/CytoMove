@@ -1,0 +1,23 @@
+00:00	The walkthrough starts in the Publication Figure Builder with an empty canvas and the guided tutorial ready.
+00:10	Cytomove analyzes the validation set and loads the bundled HUVEC figure with image panels and plots.
+00:18	The tutorial switches to Image QC, showing the raw circular microscope capture before cropping.
+00:25	A crop box is placed over the field to choose the region that will be sent to analysis.
+00:38	The crop is centered on the vertical scratch while preserving the surrounding cell monolayer.
+00:51	The rectangular preview shows the analysis-ready crop. A second QC pass then repeats the same crop review.
+01:11	The corrected field opens in Analysis, ready for boundary review.
+01:20	The contour overlay turns on, marking the detected wound boundary on the microscopy image.
+01:31	The view zooms in so the detected edge can be checked against the visible scratch boundary.
+01:46	The contour is checked again after adjustment, keeping the boundary on the real wound edge.
+01:58	The overlay is cleared briefly, making the raw image easier to compare with the segmentation.
+02:09	The contour returns, and Cytomove evaluates the mask again on the image.
+02:16	A shaded cleanup selection appears while the mask refinement tools are tested.
+02:35	Measurement cards appear, reporting area, width, quality, and contour metrics for the selected image.
+02:46	Another reviewed image opens, showing a different contour result before figure preparation resumes.
+02:55	The workflow returns to the Publication Figure Builder, where image panels and quantitative plots are assembled into a manuscript-style figure.
+03:25	The builder controls refine the layout while the figure canvas stays visible.
+03:36	The normalized area plot is selected and repositioned on the figure grid.
+03:57	The export dialog opens, then closes after the publication figure package is generated.
+04:08	The browser download panel confirms that the ZIP export has been created.
+04:17	The view switches back to the Analysis export area with group image ZIP and publication ZIP options.
+04:31	The area plot preview opens, then returns to analysis.
+04:35	Thank you for using Cytomove.
