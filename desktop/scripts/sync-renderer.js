@@ -61,6 +61,7 @@ function transformSupabaseConfig(source) {
 const outputs = new Map([
   ['index.html', transformHtml(read(path.join(appDir, 'index.html')))],
   ['app.js', read(path.join(appDir, 'app.js'))],
+  ['analysis-worker.js', read(path.join(appDir, 'analysis-worker.js'))],
   ['styles.css', read(path.join(appDir, 'styles.css'))],
   ['vendor/supabase.js', read(supabaseBrowser)],
   ['auth/cytomove-auth.js', read(path.join(authDir, 'cytomove-auth.js'))],

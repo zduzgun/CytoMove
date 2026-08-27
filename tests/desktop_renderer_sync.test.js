@@ -27,6 +27,7 @@ for (const pattern of [
 assert.doesNotMatch(html, /id="trialGate"/);
 assert.doesNotMatch(html, /\.\.\/access\/\?stay=1/);
 for (const file of [
+  'analysis-worker.js',
   'styles.css',
   'vendor/pptxgen.bundle.js',
   'auth/cytomove-auth.js',

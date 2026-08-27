@@ -661,7 +661,8 @@
     analysisGeometry:{orientation:'vertical',fineRotation:0},
     rulerOffsetX:0, rulerOffsetY:0, rulerDragging:false, rulerDragStart:null,
     zoom:1, panX:0, panY:0, panning:false, panStart:null,
-    autoApplyTimer:null
+    autoApplyTimer:null,
+    analysisRunSeq:0
   };
 
   const el = {
@@ -2062,7 +2063,7 @@
   }
 
   // Main segmentation runner
-  function runSegmentation(options={}) {
+  function runSegmentationOnMainThread(options={}) {
     if (!state.image) return;
     setSpinner(true);
     try {
@@ -2165,6 +2166,90 @@
       setLog(`<strong>Segmentation failed.</strong>${fileHint} ${escHtml(err.name||'Error')}: ${escHtml(err.message||String(err))}`);
     } finally {
       setSpinner(false);
+    }
+  }
+
+  async function runSegmentation(options={}) {
+    if(!state.image) return;
+    const runSeq=++state.analysisRunSeq;
+    const image=state.image;
+    const sample=state.sample;
+    setSpinner(true);
+    try {
+      if(!options.restoreManual&&sample?.id) delete state.manualOverrides[sample.id];
+      rememberCurrentSampleSettings();
+      const crop=clampCrop({...currentCrop()});
+      state.crop=crop;
+      const settings={
+        ...currentSegmentationSettings(),
+        cropRatio:normalizedCropRatio(crop,image),
+        autoCrop:false
+      };
+      const analysis=await analyzeImageWithSettings(image,sample,settings,0);
+      if(runSeq!==state.analysisRunSeq||state.image!==image||state.sample?.id!==sample?.id) return;
+      const W=analysis.analysisW;
+      const H=analysis.analysisH;
+      const gt=sample;
+      const gtComparable=!!(gt?.area&&gt.area<=analysis.fieldArea);
+      const areaErr=gt?.areaPct?Math.abs(analysis.areaPct-gt.areaPct)*100/gt.areaPct:null;
+      const areaErrS=gt?.areaPct?(analysis.areaPct-gt.areaPct)*100/gt.areaPct:null;
+      const resultMetrics={...analysis,gtComparable,areaErr,areaErrS,cropManual:state.cropManual};
+      const qc=buildQc(resultMetrics,analysis.crop,W,H,state.cropManual);
+
+      el.canvas.width=W;
+      el.canvas.height=H;
+      state.varMap=analysis.varMap;
+      state.grayData=analysis.gray;
+      state.darkGuideThreshold=analysis.darkGuideThreshold;
+      state.autoMaskData=new Uint8Array(analysis.mask);
+      state.maskData=new Uint8Array(analysis.mask);
+      state.fieldData=analysis.field;
+      state.sourceData=analysis.src;
+      resetBrushStats(false);
+      state.brushHistory=[];
+      const boundary=analysis.boundary||boundaryPixels(state.maskData,W,H);
+      drawCanvas(state.sourceData,state.maskData,state.fieldData,state.varMap,W,H,analysis.maxV,boundary);
+      state.result={...resultMetrics,segmentationQualityScore:qc.score,warnings:qc.warnings,recommendedPrimaryMetric:qc.recommendedPrimaryMetric};
+      renderMetrics();
+
+      const cropNote=analysis.crop.active?` &middot; crop ${analysis.crop.w}x${analysis.crop.h}`:'';
+      const thNote=analysis.thresholdFallbackUsed?`fallback ${analysis.fallbackThreshold}`:`Otsu ${analysis.otsuThreshold}`;
+      const gtNote=gt?` &middot; GT ${fmt(gt.areaPct,2)}% area fraction`:'';
+      const warningNote=state.result.warnings.length?` &middot; ${state.result.warnings.length} QC warning${state.result.warnings.length>1?'s':''}`:'';
+      const internalIslandTotal=analysis.internalIslandCount+analysis.filledSmallIslandCount;
+      const priorNote=analysis.groupPriorApplied?` &middot; group prior r${analysis.groupPriorRadius}`:'';
+      const slitNote=analysis.phaseSlitFilledPx?` &middot; phase slit fill ${fmt(analysis.phaseSlitFilledPx)} px/${analysis.phaseSlitCount}`:'';
+      const smoothNote=analysis.phaseSmoothChangedPx?` &middot; phase smooth r${analysis.phaseSmoothRadius} (${fmt(analysis.phaseSmoothChangedPx)} px)`:'';
+      const bridgeNote=analysis.bridgeFilledPx?` &middot; bridged ${fmt(analysis.bridgeFilledPx)} px/${analysis.bridgeGapCount} gaps`:'';
+      const edgeNote=analysis.edgeExtendedPx?` &middot; edge extended ${fmt(analysis.edgeExtendedPx)} px/${analysis.edgeExtendedCount} edges`:'';
+      const finalHoleNote=analysis.finalHoleFilledCount?` &middot; final islands filled ${fmt(analysis.finalHoleFilledCount)}`:'';
+      const thDisplay=analysis.thresholdMode==='wide'?`offset ${fmt(analysis.thresholdOffset,1)}`:`level ${analysis.thresholdLevel}, offset ${fmt(analysis.thresholdOffset,1)}`;
+      setLog(`<strong>Threshold ${analysis.threshold}</strong> (${thNote}, ${thDisplay}) &middot; radius ${analysis.varianceRadius}${cropNote}${priorNote}${slitNote}${smoothNote}${bridgeNote}${edgeNote}${finalHoleNote} &middot; microscope ${microscopeModeLabel(analysis.fieldMaskMode)} (${fmt(analysis.fieldArea)} px) &middot; wound comps ${analysis.keptComponents}/${analysis.totalComponents} &middot; internal islands ${internalIslandTotal} &middot; mask ${fmt(analysis.area)} px &middot; width ${fmt(analysis.wMean,1)} px &middot; contour ${fmt(analysis.boundaryCount)} px${warningNote}${gtNote}`, `${analysis.runtimeMs} ms`);
+      el.rerun.disabled=false;
+      el.exportPng.disabled=false;
+      el.exportGroupPng.disabled=state.mode!=='group';
+      el.exportPlots.disabled=state.mode!=='group';
+      el.showAreaPlot.disabled=state.mode!=='group';
+      el.showWidthPlot.disabled=state.mode!=='group';
+      el.exportCsv.disabled=false;
+      el.exportExcel.disabled=false;
+      const deskew=Number(state.analysisGeometry.fineRotation)||0;
+      const orientation=state.analysisGeometry.orientation==='horizontal'?'horizontal scratch -> 90deg':'vertical scratch';
+      el.canvasMeta.textContent=`${W}x${H} px ${orientation}${state.rotation?` + manual rotate ${state.rotation}deg`:''}${deskew?` fine rotation ${deskew}deg`:''}${analysis.crop.active?` cropped from ${image.naturalWidth}x${image.naturalHeight}`:''}  variance radius ${analysis.varianceRadius}  Otsu ${analysis.threshold}`;
+      const restored=options.restoreManual&&applyManualOverrideToCurrentSample();
+      if(!restored) syncDisplayedResultToGroup();
+      updateGroupNavButtons();
+    } catch(err) {
+      if(runSeq!==state.analysisRunSeq) return;
+      console.error(err);
+      state.result=null;
+      renderMetrics();
+      const fileHint=isFileProtocol()
+        ? ' Windows double-click opens this as <code>file://</code>, which can block canvas pixel reads from linked calibration images. Use the Open button/drag-drop for local files, or run a local server from the repo root: <code>py -3 -m http.server 8765</code>.'
+        : '';
+      setLog(`<strong>Segmentation failed.</strong>${fileHint} ${escHtml(err.name||'Error')}: ${escHtml(err.message||String(err))}`);
+    } finally {
+      if(runSeq===state.analysisRunSeq) setSpinner(false);
     }
   }
 
@@ -2857,14 +2942,7 @@
     return true;
   }
 
-  function updateGroupCardPreview(sample, override) {
-    const canvas=el.groupView?.querySelector(`canvas[data-sample-id="${sample.id}"]`);
-    const source=override?.sourceData||override?.src;
-    const field=override?.fieldData||override?.field;
-    const mask=override?.mask;
-    const W=override?.width||override?.analysisW||source?.width;
-    const H=override?.height||override?.analysisH||source?.height;
-    if(!canvas||!source||!mask||!W||!H) return;
+  function renderGroupCardPreviewSync(canvas, source, field, mask, W, H) {
     const full=document.createElement('canvas');
     full.width=W;
     full.height=H;
@@ -2881,15 +2959,82 @@
     }
     drawContour(d,mask,W,H);
     fullCtx.putImageData(out,0,0);
+    const maxSide=420;
+    const scale=Math.min(1,maxSide/Math.max(W,H));
+    canvas.width=Math.max(1,Math.round(W*scale));
+    canvas.height=Math.max(1,Math.round(H*scale));
+    canvas.getContext('2d').drawImage(full,0,0,W,H,0,0,canvas.width,canvas.height);
+  }
 
-    const maxSide=520;
+  async function updateGroupCardPreview(sample, override) {
+    if(el.groupView?.hidden) return;
+    const canvas=el.groupView?.querySelector(`canvas[data-sample-id="${sample.id}"]`);
+    const source=override?.sourceData||override?.src;
+    const field=override?.fieldData||override?.field;
+    const mask=override?.mask;
+    const boundary=override?.boundary;
+    const W=override?.width||override?.analysisW||source?.width;
+    const H=override?.height||override?.analysisH||source?.height;
+    if(!canvas||!source||!mask||!W||!H) return;
+    const maxSide=420;
     const scale=Math.min(1,maxSide/Math.max(W,H));
     const outW=Math.max(1,Math.round(W*scale));
     const outH=Math.max(1,Math.round(H*scale));
-    canvas.width=outW;
-    canvas.height=outH;
-    const ctx=canvas.getContext('2d',{willReadFrequently:true});
-    ctx.drawImage(full,0,0,W,H,0,0,outW,outH);
+    if(typeof createImageBitmap!=='function') {
+      renderGroupCardPreviewSync(canvas,source,field,mask,W,H);
+      return;
+    }
+    try {
+      const bitmap=await createImageBitmap(source);
+      if(!canvas.isConnected||el.groupView?.querySelector(`canvas[data-sample-id="${sample.id}"]`)!==canvas) {
+        bitmap.close?.();
+        return;
+      }
+      canvas.width=outW;
+      canvas.height=outH;
+      const ctx=canvas.getContext('2d',{willReadFrequently:true});
+      ctx.drawImage(bitmap,0,0,W,H,0,0,outW,outH);
+      bitmap.close?.();
+      const out=ctx.getImageData(0,0,outW,outH);
+      const data=out.data;
+      if(field) {
+        for(let y=0;y<outH;y++) {
+          const sourceY=Math.min(H-1,Math.floor(y/scale));
+          for(let x=0;x<outW;x++) {
+            const sourceX=Math.min(W-1,Math.floor(x/scale));
+            if(field[sourceY*W+sourceX]) continue;
+            const i=(y*outW+x)*4;
+            data[i]=data[i]*0.35|0;
+            data[i+1]=data[i+1]*0.35|0;
+            data[i+2]=data[i+2]*0.35|0;
+          }
+        }
+      }
+      const points=boundary||boundaryPixels(mask,W,H);
+      const [r,g,b]=hexToRgb(el.contourColor.value);
+      const [hr,hg,hb]=[16,32,39];
+      const radius=Math.max(0,Math.floor((Math.max(1,Number(el.contourThickness.value)*scale)-1)/2));
+      const haloRadius=radius+1;
+      const dashed=el.contourStyle.value==='dashed';
+      const paintScaled=(red,green,blue,paintRadius)=>{
+        for(const p of points) {
+          const sourceX=p%W;
+          const sourceY=(p/W)|0;
+          if(dashed&&((sourceX+sourceY)%34)>20) continue;
+          const x=Math.min(outW-1,Math.round(sourceX*scale));
+          const y=Math.min(outH-1,Math.round(sourceY*scale));
+          for(let oy=-paintRadius;oy<=paintRadius;oy++) for(let ox=-paintRadius;ox<=paintRadius;ox++) {
+            if(Math.abs(ox)+Math.abs(oy)>paintRadius) continue;
+            paintPixel(data,outW,outH,x+ox,y+oy,red,green,blue);
+          }
+        }
+      };
+      paintScaled(hr,hg,hb,haloRadius);
+      paintScaled(r,g,b,radius);
+      ctx.putImageData(out,0,0);
+    } catch(_) {
+      renderGroupCardPreviewSync(canvas,source,field,mask,W,H);
+    }
   }
 
   function drawAngleRuler(ctx,W,H) {
@@ -8176,12 +8321,62 @@
     pointer.classList.add('moving');
   }
 
+  let analysisWorker=null;
+  let analysisWorkerRequestId=0;
+  let analysisWorkerWarningShown=false;
+  const analysisWorkerPending=new Map();
+
+  function rejectPendingWorkerAnalyses(error) {
+    for(const pending of analysisWorkerPending.values()) pending.reject(error);
+    analysisWorkerPending.clear();
+  }
+
+  function ensureAnalysisWorker() {
+    if(analysisWorker) return analysisWorker;
+    if(typeof Worker==='undefined') throw new Error('Web Worker is unavailable');
+    const worker=new Worker(new URL('analysis-worker.js?v=20260827-worker-analysis',document.baseURI));
+    worker.addEventListener('message',event=>{
+      const pending=analysisWorkerPending.get(event.data?.id);
+      if(!pending) return;
+      analysisWorkerPending.delete(event.data.id);
+      if(event.data.ok) pending.resolve(event.data);
+      else pending.reject(new Error(event.data.error||'Analysis worker failed'));
+    });
+    worker.addEventListener('error',event=>{
+      const error=new Error(event.message||'Analysis worker failed to load');
+      rejectPendingWorkerAnalyses(error);
+      worker.terminate();
+      if(analysisWorker===worker) analysisWorker=null;
+    });
+    analysisWorker=worker;
+    return worker;
+  }
+
+  function analyzePixelsInWorker(src, W, H, settings, priorMask=null) {
+    return new Promise((resolve,reject)=>{
+      const worker=ensureAnalysisWorker();
+      const id=++analysisWorkerRequestId;
+      const prior=priorMask?new Uint8Array(priorMask):null;
+      analysisWorkerPending.set(id,{resolve,reject});
+      const transfer=[src.data.buffer];
+      if(prior) transfer.push(prior.buffer);
+      worker.postMessage({
+        id,
+        rgbaBuffer:src.data.buffer,
+        priorBuffer:prior?.buffer||null,
+        width:W,
+        height:H,
+        settings
+      },transfer);
+    });
+  }
+
   function transformImageElement(img, settings) {
     if(!settings.rotation&&!settings.deskew) return Promise.resolve(img);
     return loadImageElement(transformImage(img,settings.rotation,settings.deskew));
   }
 
-  async function analyzeImageWithSettings(workImg, sample, settings, maxSide=420) {
+  async function analyzeImageOnMainThread(workImg, sample, settings, maxSide=420) {
     const scratch=document.createElement('canvas');
     const ctx=scratch.getContext('2d',{willReadFrequently:true});
     const crop=settings.cropRatio
@@ -8235,7 +8430,8 @@
       for(let p=0;p<len;p++){fieldArea+=field[p];area+=finalMask[p];}
     const areaPct=fieldArea?area*100/fieldArea:0;
       const width=estimateWidth(finalMask,W,H);
-      const boundaryCount=boundaryPixels(finalMask,W,H).length;
+      const boundary=Int32Array.from(boundaryPixels(finalMask,W,H));
+      const boundaryCount=boundary.length;
     const areaPerValidRow=width.validRows?area/width.validRows:0;
     const areaWidthFillRatio=width.mean&&width.validRows?area/(width.mean*width.validRows):0;
     const partialResult={
@@ -8266,10 +8462,103 @@
       internalIslandCount:finalHoleResult.holeCount,internalIslandArea:finalHoleResult.holeArea,
       largestInternalIslandArea:finalHoleResult.largestHoleArea,filledSmallIslandCount:holeResult.filledHoleCount+finalHoleResult.filledHoleCount,
       filledSmallIslandArea:holeResult.filledHoleArea+finalHoleResult.filledHoleArea,holeFillMaxArea:holeResult.maxHoleArea,tinyIslandMode:settings.tinyIslandMode||'medium',crop,
-      src,field,varMap,mask:finalMask
+      src,field,varMap,mask:finalMask,boundary
     };
     const qc=buildQc(partialResult,crop,W,H,false);
     return {...partialResult,segmentationQualityScore:qc.score,warnings:qc.warnings,recommendedPrimaryMetric:qc.recommendedPrimaryMetric};
+  }
+
+  async function analyzeImageWithSettings(workImg, sample, settings, maxSide=420) {
+    const started=performance.now();
+    const scratch=document.createElement('canvas');
+    const ctx=scratch.getContext('2d',{willReadFrequently:true});
+    const crop=settings.cropRatio
+      ? cropFromRatio(workImg,settings.cropRatio)
+      : settings.autoCrop
+        ? autoCropForImage(workImg,true,settings.fovCutoff)
+        : {x:0,y:0,w:workImg.naturalWidth,h:workImg.naturalHeight,active:false};
+    const scale=maxSide?Math.min(1,maxSide/Math.max(crop.w,crop.h)):1;
+    const W=Math.max(1,Math.round(crop.w*scale));
+    const H=Math.max(1,Math.round(crop.h*scale));
+    scratch.width=W;
+    scratch.height=H;
+    ctx.drawImage(workImg,crop.x,crop.y,crop.w,crop.h,0,0,W,H);
+    const src=ctx.getImageData(0,0,W,H);
+    const areaScale=(W*H)/(crop.w*crop.h);
+    const radius=Math.max(1,Math.round(settings.varianceRadius*Math.sqrt(areaScale)));
+    const minC=Math.max(25,Math.round(settings.minComponent*areaScale));
+    const priorMask=groupPriorMaskForSample(sample,W,H);
+    try {
+      const response=await analyzePixelsInWorker(src,W,H,{
+        varianceRadius:radius,
+        thresholdOffset:settings.thresholdOffset,
+        minComponent:minC,
+        tinyIslandMode:settings.tinyIslandMode||'medium',
+        fovCutoff:settings.fovCutoff,
+        fovMode:settings.fovMode||'full',
+        scratchOrientation:settings.scratchOrientation||'vertical'
+      },priorMask);
+      const workerResult=response.result;
+      if(workerResult.algorithmVersion!==CYTOMOVE_ALGORITHM_VERSION) throw new Error('Analysis worker version mismatch');
+      const source=new ImageData(new Uint8ClampedArray(response.rgbaBuffer),W,H);
+      const gray=new Uint8Array(response.grayBuffer);
+      const field=new Uint8Array(response.fieldBuffer);
+      const varMap=new Float32Array(response.varianceBuffer);
+      const finalMask=new Uint8Array(response.maskBuffer);
+      const boundary=new Int32Array(response.boundaryBuffer);
+      const width=workerResult.width;
+      const areaPerValidRow=width.validRows?workerResult.area/width.validRows:0;
+      const areaWidthFillRatio=width.mean&&width.validRows?workerResult.area/(width.mean*width.validRows):0;
+      const partialResult={
+        sampleId:sample?.id,time:sample?.time,timeHours:parseTimeHours(sample?.time),
+        sourceW:workImg.naturalWidth,sourceH:workImg.naturalHeight,
+        cropW:crop.w,cropH:crop.h,analysisW:W,analysisH:H,
+        qcFingerprint:qcFingerprintForSample(sample?.id),
+        varianceRadius:radius,thresholdLevel:settings.thresholdLevel,thresholdOffset:settings.thresholdOffset,
+        minComponentPx:minC,fovCutoff:settings.fovCutoff,autoCropFov:!!settings.autoCrop,cropManual:false,
+        scratchOrientation:settings.scratchOrientation||'vertical',
+        manualRotationDeg:settings.manualRotation||0,
+        orientationRotationDeg:settings.orientationRotation||0,
+        effectiveRotationDeg:settings.rotation||0,
+        fineRotationDeg:settings.deskew||0,
+        area:workerResult.area,areaPct:workerResult.areaPct,
+        wMean:width.mean,wMedian:width.median,wSd:width.sd,widthCv:width.cv,
+        wMin:width.min,wMax:width.max,validRows:width.validRows,validRowFraction:width.validRowFraction,
+        areaPerValidRow,areaWidthFillRatio,minValidWidth:width.minValidWidth,
+        threshold:workerResult.threshold,otsuThreshold:workerResult.otsuThreshold,
+        baseThreshold:workerResult.baseThreshold,fallbackThreshold:workerResult.fallbackThreshold,
+        thresholdFallbackUsed:workerResult.thresholdFallbackUsed,
+        fieldArea:workerResult.fieldArea,boundaryCount:workerResult.boundaryCount,maxV:workerResult.maxV,
+        fieldMaskMode:settings.fovMode||'full',thresholdMode:settings.thresholdMode||'small',
+        totalComponents:workerResult.totalComponents,keptComponents:workerResult.keptComponents,
+        largestArea:workerResult.largestArea,finalComponents:workerResult.finalComponents,
+        groupPriorApplied:workerResult.groupPriorApplied,groupPriorArea:workerResult.groupPriorArea,
+        groupPriorRadius:workerResult.groupPriorRadius,
+        continuityKeptComponents:workerResult.continuityKeptComponents,
+        continuityTotalComponents:workerResult.continuityTotalComponents,
+        phaseSlitFilledPx:workerResult.phaseSlitFilledPx,phaseSlitCount:workerResult.phaseSlitCount,
+        phaseSmoothChangedPx:workerResult.phaseSmoothChangedPx,phaseSmoothRadius:workerResult.phaseSmoothRadius,
+        bridgeFilledPx:workerResult.bridgeFilledPx,bridgeGapCount:workerResult.bridgeGapCount,
+        edgeExtendedPx:workerResult.edgeExtendedPx,edgeExtendedCount:workerResult.edgeExtendedCount,
+        finalHoleFilledCount:workerResult.finalHoleFilledCount,finalHoleFilledArea:workerResult.finalHoleFilledArea,
+        internalIslandCount:workerResult.internalIslandCount,internalIslandArea:workerResult.internalIslandArea,
+        largestInternalIslandArea:workerResult.largestInternalIslandArea,
+        filledSmallIslandCount:workerResult.filledSmallIslandCount,
+        filledSmallIslandArea:workerResult.filledSmallIslandArea,holeFillMaxArea:workerResult.holeFillMaxArea,
+        tinyIslandMode:settings.tinyIslandMode||'medium',crop,
+        runtimeMs:Math.round(performance.now()-started),workerRuntimeMs:workerResult.workerRuntimeMs,
+        darkGuideThreshold:workerResult.darkGuideThreshold,
+        src:source,gray,field,varMap,mask:finalMask,boundary
+      };
+      const qc=buildQc(partialResult,crop,W,H,false);
+      return {...partialResult,segmentationQualityScore:qc.score,warnings:qc.warnings,recommendedPrimaryMetric:qc.recommendedPrimaryMetric};
+    } catch(error) {
+      if(!analysisWorkerWarningShown) {
+        analysisWorkerWarningShown=true;
+        console.warn('Analysis worker unavailable; using cooperative main-thread fallback.',error);
+      }
+      return analyzeImageOnMainThread(workImg,sample,settings,maxSide);
+    }
   }
 
   function candidateValues(center, values) {
@@ -8470,7 +8759,7 @@
     const renderSeq=++state.groupRenderSeq;
     const previewMaxSide=Number.isFinite(options.maxSide)
       ? Math.max(0,Math.round(options.maxSide))
-      : force?0:900;
+      : force?0:720;
     for(const sample of samples) {
       if(renderSeq!==state.groupRenderSeq) return;
       if(state.manualOverrides[sample.id]) {

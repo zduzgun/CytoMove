@@ -13,7 +13,7 @@ const specPath = path.join(root, 'docs/superpowers/specs/2026-06-16-publication-
 
 assert(fs.existsSync(specPath), 'Publication Figure Builder design spec should be saved as markdown');
 assert(
-  html.includes('app.js?v=20260827-responsive-analysis'),
+  html.includes('app.js?v=20260827-worker-analysis'),
   'index.html should cache-bust the canonical app.js asset'
 );
 
