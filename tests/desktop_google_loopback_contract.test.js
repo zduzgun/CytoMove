@@ -17,7 +17,7 @@ test('Google loopback accepts IPv4 and IPv6 localhost and times out promptly', (
 });
 
 test('desktop package and update manifest expose the current product version', () => {
-  assert.equal(pkg.version, '1.0.1');
-  assert.equal(manifest.latestVersion, '1.0.1');
+  assert.equal(pkg.version, '1.0.2');
+  assert.equal(manifest.latestVersion, '1.0.2');
   assert.equal(manifest.minimumRequiredVersion, '1.0.0');
 });

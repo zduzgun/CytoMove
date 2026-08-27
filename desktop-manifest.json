@@ -1,11 +1,11 @@
 ﻿{
   "schemaVersion": 2,
-  "latestVersion": "1.0.1",
+  "latestVersion": "1.0.2",
   "minimumRequiredVersion": "1.0.0",
   "updateMode": "recommended",
   "channel": "release",
   "status": "active",
-  "message": "Desktop is the recommended path for faster local group analysis and heavier exports. Academic access is free; please send feedback from the Cytomove website after testing real image groups.",
+  "message": "Version 1.0.2 improves startup responsiveness and keeps long-running pixel analysis off the main interface thread. Academic access is free; please send feedback from the Cytomove website after testing real image groups.",
   "updateUrl": "https://cytomove.com/download/",
   "releaseNotesUrl": "https://cytomove.com/download/",
   "installerUrl": "https://github.com/zduzgun/CytoMove/releases/latest",

@@ -84,7 +84,7 @@
 
     <main>
       <h1>Download Cytomove Desktop</h1>
-      <p class="lead">Cytomove Desktop 1.0.1 gives faster local group analysis, validated tutorial data, and full publication export packages. Available to verified academic access accounts.</p>
+      <p class="lead">Cytomove Desktop 1.0.2 keeps the interface responsive during pixel analysis and starts group workflows faster. Available to verified academic access accounts.</p>
 
       <!-- Signed out: sign in -->
       <section class="card state" id="signedOutState" hidden>
@@ -141,16 +141,17 @@
         <div class="card" style="margin-top:16px">
           <h3 style="font-size:18px">Release notes</h3>
           <p class="muted" style="margin-top:8px">
-            Version 1.0.1 includes Image QC, group analysis, Manual correction, Publication Figure Builder,
-            600 DPI PNG/TIFF exports, PowerPoint output, CSV summaries, and full-size contour-overlay assets.
-            This patch also improves Desktop sign-out and account switching.
+            Version 1.0.2 moves pixel segmentation to a background worker, reduces interface stalls during
+            long analyses, and improves analysis startup responsiveness. It retains Image QC, group analysis,
+            Manual correction, Publication Figure Builder, 600 DPI PNG/TIFF exports, PowerPoint output,
+            CSV summaries, and full-size contour-overlay assets.
           </p>
           <p class="muted" style="margin-top:8px">
             After a successful online sign-in, Desktop can allow a <strong>72-hour offline</strong> access window.
             Recommended updates may be postponed; required updates must be installed before continuing.
           </p>
           <div class="row" style="margin-top:14px">
-            <a class="btn secondary" href="https://github.com/zduzgun/CytoMove/releases/tag/v1.0.1" target="_blank" rel="noopener">View GitHub release</a>
+            <a class="btn secondary" href="https://github.com/zduzgun/CytoMove/releases/tag/v1.0.2" target="_blank" rel="noopener">View GitHub release</a>
             <a class="btn secondary" href="../user-guide/">Read User Guide</a>
           </div>
         </div>
@@ -165,10 +166,10 @@
     (function () {
       // ----- Release config: fill these after publishing a GitHub release -----
       var RELEASE = {
-        version: '1.0.1',
-        releaseNotes: 'https://github.com/zduzgun/CytoMove/releases/tag/v1.0.1',
-        installer: 'https://github.com/zduzgun/CytoMove/releases/download/v1.0.1/Cytomove-Desktop-1.0.1-setup.exe',
-        portable: 'https://github.com/zduzgun/CytoMove/releases/download/v1.0.1/Cytomove-Desktop-1.0.1-portable.exe'
+        version: '1.0.2',
+        releaseNotes: 'https://github.com/zduzgun/CytoMove/releases/tag/v1.0.2',
+        installer: 'https://github.com/zduzgun/CytoMove/releases/download/v1.0.2/Cytomove-Desktop-1.0.2-setup.exe',
+        portable: 'https://github.com/zduzgun/CytoMove/releases/download/v1.0.2/Cytomove-Desktop-1.0.2-portable.exe'
       };
       // ----------------------------------------------------------------------
 
