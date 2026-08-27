@@ -33,8 +33,8 @@ test('full HUVEC tutorial starts from the bundled validation image set', () => {
   assert.doesNotMatch(appJs, /loadValidationSet\(config\.validationSetId\)/);
   assert.doesNotMatch(appJs, /switchModule\('qc'\)/);
   assert.match(appJs, /setAppModule\('qc'\)/);
-  assert.match(appHtml, /styles\.css\?v=20260624-single-group-figure/);
-  assert.match(appHtml, /app\.js\?v=20260624-single-group-figure/);
+  assert.match(appHtml, /styles\.css\?v=20260625-dark-builder-fix/);
+  assert.match(appHtml, /app\.js\?v=20260827-responsive-analysis/);
 });
 
 test('full HUVEC validation assets are tracked for the web tutorial', () => {

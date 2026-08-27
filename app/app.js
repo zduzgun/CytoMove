@@ -5246,8 +5246,30 @@
     return figureDataCsv([...data,...summaries]);
   }
 
+  let pptxGenLoadPromise=null;
+
+  function ensurePptxGenJS() {
+    if(window.PptxGenJS) return Promise.resolve(window.PptxGenJS);
+    if(pptxGenLoadPromise) return pptxGenLoadPromise;
+    pptxGenLoadPromise=new Promise((resolve,reject)=>{
+      const script=document.createElement('script');
+      script.src='vendor/pptxgen.bundle.js?v=4.0.1';
+      script.async=true;
+      script.addEventListener('load',()=>{
+        if(window.PptxGenJS) resolve(window.PptxGenJS);
+        else reject(new Error('PptxGenJS loaded without exposing its browser API.'));
+      },{once:true});
+      script.addEventListener('error',()=>reject(new Error('PptxGenJS could not be loaded.')),{once:true});
+      document.head.appendChild(script);
+    }).catch(error=>{
+      pptxGenLoadPromise=null;
+      throw error;
+    });
+    return pptxGenLoadPromise;
+  }
+
   async function buildBuilderPptxBlob(canvas, settings, style='color', caption='') {
-    if(!window.PptxGenJS) throw new Error('PptxGenJS is not available.');
+    await ensurePptxGenJS();
     const pptx=new window.PptxGenJS();
     pptx.layout='LAYOUT_WIDE';
     pptx.author='Cytomove';
@@ -5428,7 +5450,7 @@
         const sampleAnalysisSettings=settingsWithCurrentQc(base,sample);
         const img=await loadImageElement(analysisImageUrl(sample));
         const workImg=await transformImageElement(img,sampleAnalysisSettings);
-        const analysis=analyzeImageWithSettings(workImg,sample,sampleAnalysisSettings,900);
+        const analysis=await analyzeImageWithSettings(workImg,sample,sampleAnalysisSettings,900);
         analysis.previewOnly=true;
         state.sampleSettings[sample.id]=settingsFromSegmentationSettings(sampleAnalysisSettings);
         state.groupResults[sample.id]=analysis;
@@ -8159,7 +8181,7 @@
     return loadImageElement(transformImage(img,settings.rotation,settings.deskew));
   }
 
-  function analyzeImageWithSettings(workImg, sample, settings, maxSide=420) {
+  async function analyzeImageWithSettings(workImg, sample, settings, maxSide=420) {
     const scratch=document.createElement('canvas');
     const ctx=scratch.getContext('2d',{willReadFrequently:true});
     const crop=settings.cropRatio
@@ -8173,6 +8195,7 @@
     scratch.width=W; scratch.height=H;
     ctx.drawImage(workImg,crop.x,crop.y,crop.w,crop.h,0,0,W,H);
     const src=ctx.getImageData(0,0,W,H);
+    await yieldToBrowser();
     const len=W*H;
     const areaScale=(W*H)/(crop.w*crop.h);
     const radius=Math.max(1,Math.round(settings.varianceRadius*Math.sqrt(areaScale)));
@@ -8180,7 +8203,9 @@
     const gray=toGray(src.data,len);
     const field=fovMask(gray,len,settings.fovCutoff,settings.fovMode);
     const normed=enhanceContrast(gray,field,len);
+    await yieldToBrowser();
     const varMap=varianceFilter(normed,field,W,H,radius);
+    await yieldToBrowser();
     const {threshold:otsuTh,maxV}=otsuOnMap(varMap,field,len);
     const fallbackTh=percentileThresholdOnMap(varMap,field,len,maxV,0.38);
     const baseTh=otsuTh<3?fallbackTh:otsuTh;
@@ -8188,17 +8213,22 @@
     const raw=applyThreshold(varMap,field,len,finalTh,maxV,gray,settings.fovMode);
     const priorResult=constrainToPrior(raw,W,H,groupPriorMaskForSample(sample,W,H));
     const filtered=filterComponents(priorResult.mask,W,H,minC);
+    await yieldToBrowser();
     const holeFillLimit=tinyIslandMaxArea(W,H,settings.tinyIslandMode||'medium');
     const holeResult=fillSmallHoles(filtered.mask,W,H,holeFillLimit);
+    await yieldToBrowser();
       const mask=holeResult.mask;
       for(let p=0;p<len;p++) if(!field[p]) mask[p]=0;
       const scratchOri=settings.scratchOrientation||'vertical';
       const continuity=enforceWoundContinuity(mask,W,H,scratchOri,settings.fovMode);
+      await yieldToBrowser();
       const slitClose=closePhaseContrastSlits(continuity.mask,W,H,settings.fovMode);
       const smooth=smoothPhaseContrastMask(slitClose.mask,W,H,settings.fovMode);
       const bridge=bridgeWoundGaps(smooth.mask,W,H,scratchOri);
       const edgeExtend=extendWoundToFrameEdges(bridge.mask,W,H,scratchOri,settings.fovMode);
+      await yieldToBrowser();
       const finalHoleResult=fillSmallHoles(edgeExtend.mask,W,H,holeFillLimit);
+      await yieldToBrowser();
       const finalMask=finalHoleResult.mask;
       const finalComponents=componentStats(finalMask,W,H);
     let area=0,fieldArea=0;
@@ -8299,7 +8329,7 @@
         const rows=[];
         for(const item of originals) {
           const workImg=await transformImageElement(item.img,settings);
-          rows.push(analyzeImageWithSettings(workImg,item.sample,settings,0));
+          rows.push(await analyzeImageWithSettings(workImg,item.sample,settings,0));
         }
         const fit=scoreCandidate(rows,samples);
         if(!best||fit.meanAreaErrorPct<best.fit.meanAreaErrorPct||(fit.meanAreaErrorPct===best.fit.meanAreaErrorPct&&fit.maxAreaErrorPct<best.fit.maxAreaErrorPct)) best={settings,rows,fit};
@@ -8431,6 +8461,7 @@
   }
 
   function yieldToBrowser() {
+    if(globalThis.scheduler?.yield) return globalThis.scheduler.yield();
     return new Promise(resolve=>setTimeout(resolve,0));
   }
 
@@ -8489,7 +8520,7 @@
           renderSeriesSummary(samples);
           continue;
         }
-        const analysis=analyzeImageWithSettings(workImg,sample,settings,previewMaxSide);
+        const analysis=await analyzeImageWithSettings(workImg,sample,settings,previewMaxSide);
         analysis.previewOnly=previewMaxSide>0;
         state.sampleSettings[sample.id]=settingsFromSegmentationSettings(settings);
         if(state.manualOverrides[sample.id]) {

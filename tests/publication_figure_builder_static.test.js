@@ -13,7 +13,7 @@ const specPath = path.join(root, 'docs/superpowers/specs/2026-06-16-publication-
 
 assert(fs.existsSync(specPath), 'Publication Figure Builder design spec should be saved as markdown');
 assert(
-  html.includes('app.js?v=20260624-single-group-figure'),
+  html.includes('app.js?v=20260827-responsive-analysis'),
   'index.html should cache-bust the canonical app.js asset'
 );
 
@@ -1761,8 +1761,10 @@ assert(
 assert(js.includes('caption/cytomove_'), 'Builder ZIP should include a caption draft file');
 assert(js.includes('scale_bar'), 'Builder CSV should include scale bar metadata');
 assert(
-  html.includes('vendor/pptxgen.bundle.js'),
-  'The app should load the local PptxGenJS browser bundle'
+  !html.includes('vendor/pptxgen.bundle.js') &&
+    js.includes("script.src='vendor/pptxgen.bundle.js?v=4.0.1'") &&
+    js.includes('await ensurePptxGenJS()'),
+  'The app should load the local PptxGenJS browser bundle only when a PowerPoint export needs it'
 );
 assert(
   html.includes('id="refreshBuilderFigure" type="button" disabled>Update Figure</button>'),
