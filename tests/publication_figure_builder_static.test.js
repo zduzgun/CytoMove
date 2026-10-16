@@ -13,7 +13,7 @@ const specPath = path.join(root, 'docs/superpowers/specs/2026-06-16-publication-
 
 assert(fs.existsSync(specPath), 'Publication Figure Builder design spec should be saved as markdown');
 assert(
-  html.includes('app.js?v=20261016-qc-fov-anchor'),
+  html.includes('app.js?v=20261016-qc-crop-mask'),
   'index.html should cache-bust the canonical app.js asset'
 );
 
@@ -1195,6 +1195,8 @@ assert(promoteSingleSource && singleLabelSource && openSingleSource, 'app.js sho
 }
 const renderImageQcPanelSource = js.match(/function renderImageQcPanel\(\)\s*\{[\s\S]*?\n  \}/);
 assert(renderImageQcPanelSource[0].includes('promoteSingleImageForQc()'), 'Image QC should offer controls for a single loaded image');
+const updateQcOverlayDragSource = js.match(/function updateQcOverlayDrag\(event\)\s*\{[\s\S]*?\n  \}/);
+assert(updateQcOverlayDragSource && updateQcOverlayDragSource[0].includes('scheduleQcCanvasDraw()'), 'Dragging the crop should redraw the dimmed area around it');
 const transformImageElementSource = js.match(/function transformImageElement\(img, settings\)\s*\{[\s\S]*?\n  \}/);
 assert(
   transformImageElementSource && transformImageElementSource[0].includes('if(settings.preparedQcInput) return Promise.resolve(img);'),

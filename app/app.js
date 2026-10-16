@@ -6672,6 +6672,8 @@
     );
     setQcCropOverlayRect(rect);
     state.crop=qcOverlayRectToCrop(rect,drag.metrics);
+    // Keep the dimmed area outside the crop in step with the rectangle being dragged.
+    scheduleQcCanvasDraw();
   }
 
   function finishQcOverlayDrag(event) {
