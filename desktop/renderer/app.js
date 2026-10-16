@@ -11,7 +11,7 @@ const CALIBRATION = [
   ];
 
   const PRESETS = {
-    rough:    { varianceRadius:22, thresholdMode:'wide', thresholdValue:-32, minComponent:55000, tinyIslandMode:'medium', fovCutoff:36, fovMode:'cutoff' },
+    rough:    { varianceRadius:1, thresholdMode:'wide', thresholdValue:-100, minComponent:55000, tinyIslandMode:'very-low', fovCutoff:36, fovMode:'cutoff' },
     standard: { varianceRadius:3, thresholdMode:'small', thresholdValue:1, minComponent:0, tinyIslandMode:'trace', fovCutoff:18, fovMode:'cutoff' },
     fine:     { varianceRadius:18, thresholdMode:'wide', thresholdValue:-25, minComponent:20000, tinyIslandMode:'low', fovCutoff:0, fovMode:'full' },
     phase2:   { varianceRadius:1, thresholdMode:'small', thresholdValue:1, minComponent:0, tinyIslandMode:'trace', fovCutoff:18, fovMode:'cutoff' }
