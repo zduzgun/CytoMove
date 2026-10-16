@@ -1,11 +1,11 @@
 ﻿{
   "schemaVersion": 2,
-  "latestVersion": "1.0.2",
+  "latestVersion": "1.0.3",
   "minimumRequiredVersion": "1.0.0",
   "updateMode": "recommended",
   "channel": "release",
   "status": "active",
-  "message": "Version 1.0.2 improves startup responsiveness and keeps long-running pixel analysis off the main interface thread. Academic access is free; please send feedback from the Cytomove website after testing real image groups.",
+  "message": "Version 1.0.3 improves Image QC: rotation is applied before cropping, fine rotation covers -90 to 90 degrees, and the crop carries over to the next image on the same microscope field. The Brightfield normal cells preset is updated. Academic access is free; please send feedback from the Cytomove website after testing real image groups.",
   "updateUrl": "https://cytomove.com/download/",
   "releaseNotesUrl": "https://cytomove.com/download/",
   "installerUrl": "https://github.com/zduzgun/CytoMove/releases/latest",

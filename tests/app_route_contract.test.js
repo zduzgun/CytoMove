@@ -212,12 +212,12 @@ assert(
 );
 assert(
   downloadHtml.includes('../user-guide/') &&
-    downloadHtml.includes('Cytomove Desktop 1.0.2') &&
+    downloadHtml.includes('Cytomove Desktop 1.0.3') &&
     downloadHtml.includes('72-hour offline') &&
-    downloadHtml.includes('Cytomove-Desktop-1.0.2-setup.exe') &&
-    downloadHtml.includes('Cytomove-Desktop-1.0.2-portable.exe') &&
-    downloadHtml.includes('https://github.com/zduzgun/CytoMove/releases/tag/v1.0.2'),
-  'Download page should document the 1.0.2 release assets, User Guide, offline window, and release notes'
+    downloadHtml.includes('Cytomove-Desktop-1.0.3-setup.exe') &&
+    downloadHtml.includes('Cytomove-Desktop-1.0.3-portable.exe') &&
+    downloadHtml.includes('https://github.com/zduzgun/CytoMove/releases/tag/v1.0.3'),
+  'Download page should document the 1.0.3 release assets, User Guide, offline window, and release notes'
 );
 assert(
   fs.existsSync(localServerPath) &&
