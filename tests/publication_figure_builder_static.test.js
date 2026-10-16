@@ -13,7 +13,7 @@ const specPath = path.join(root, 'docs/superpowers/specs/2026-06-16-publication-
 
 assert(fs.existsSync(specPath), 'Publication Figure Builder design spec should be saved as markdown');
 assert(
-  html.includes('app.js?v=20261016-qc-single-image'),
+  html.includes('app.js?v=20261016-qc-crop-template'),
   'index.html should cache-bust the canonical app.js asset'
 );
 
@@ -1019,6 +1019,29 @@ assert.deepStrictEqual(
   templateSandbox.state.lastQcCropTemplateByGroup['group-b'],
   'A group-specific crop template should take priority over the session template'
 );
+const templateHelperNames=['transformedImageSize','qcGeometryAngles','qcGeometrySize','qcTemplateBase','qcCropTemplateFromCrop','qcCropRatioFromTemplate'];
+const templateGeometrySandbox={};
+vm.runInNewContext(
+  templateHelperNames.map(name=>{
+    const source=js.match(new RegExp(`function ${name}\\([^)]*\\)\\s*\\{[\\s\\S]*?\\n  \\}`));
+    assert(source, `app.js should expose ${name}`);
+    return source[0];
+  }).join('\n')+templateHelperNames.map(name=>`; this.${name} = ${name};`).join(''),
+  templateGeometrySandbox
+);
+{
+  const raw={naturalWidth:1000,naturalHeight:800};
+  const rotated=templateGeometrySandbox.qcGeometrySize(raw,{fineRotation:12});
+  const plain=templateGeometrySandbox.qcGeometrySize(raw,{fineRotation:0});
+  const crop={x:rotated.w/2+50,y:rotated.h/2-200,w:300,h:250};
+  const template=templateGeometrySandbox.qcCropTemplateFromCrop(crop,rotated,raw);
+  const ratio=templateGeometrySandbox.qcCropRatioFromTemplate(template,plain,raw);
+  const px={x:ratio.x*plain.w,y:ratio.y*plain.h,w:ratio.w*plain.w,h:ratio.h*plain.h};
+  ['x','y','w','h'].forEach(key=>assert(Math.abs(px[key]-{x:plain.w/2+50,y:plain.h/2-200,w:300,h:250}[key])<1e-6,
+    `A crop template should keep its size and centre offset across rotated frames (${key})`));
+  const legacy={x:0.1,y:0.2,w:0.3,h:0.4};
+  assert.strictEqual(templateGeometrySandbox.qcCropRatioFromTemplate(legacy,plain,raw),legacy,'Legacy ratio templates should still apply');
+}
 const shouldOpenTemplateSource = js.match(/function shouldOpenQcCropTemplate\(qc, template\)\s*\{[\s\S]*?\n  \}/);
 assert(shouldOpenTemplateSource, 'app.js should decide whether an inherited crop opens in Adjust mode');
 vm.runInNewContext(
@@ -1161,7 +1184,7 @@ assert(
   'Saving a crop should not overwrite every image crop state'
 );
 assert(
-  applyQcCropSource[0].includes('state.lastQcCropTemplate={...cropRatio}'),
+  applyQcCropSource[0].includes('state.lastQcCropTemplate={...cropTemplate}'),
   'Saving a crop should update the session-wide crop template'
 );
 assert(
@@ -1547,8 +1570,8 @@ vm.runInNewContext(
   normalizeQcFineRotationSandbox
 );
 assert.strictEqual(normalizeQcFineRotationSandbox.normalizeQcFineRotation('2.5'),2.5);
-assert.strictEqual(normalizeQcFineRotationSandbox.normalizeQcFineRotation(50),20);
-assert.strictEqual(normalizeQcFineRotationSandbox.normalizeQcFineRotation(-50),-20);
+assert.strictEqual(normalizeQcFineRotationSandbox.normalizeQcFineRotation(120),90);
+assert.strictEqual(normalizeQcFineRotationSandbox.normalizeQcFineRotation(-120),-90);
 assert.strictEqual(normalizeQcFineRotationSandbox.normalizeQcFineRotation('bad'),0);
 
 const normalizeQcFovCutoffSource = js.match(/function normalizeQcFovCutoff\(value\)\s*\{[\s\S]*?\n  \}/);

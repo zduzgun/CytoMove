@@ -4440,6 +4440,41 @@ const CALIBRATION = [
     return currentIndex>=0&&currentIndex<sampleCount-1?currentIndex+1:null;
   }
 
+  // Group crop templates are stored relative to the image centre in raw-image units, so the
+  // rectangle lands on the same content when the next image has a different rotated frame.
+  function qcTemplateBase(geometry, rawImage) {
+    if(!geometry||!rawImage?.naturalWidth||!rawImage?.naturalHeight) return null;
+    const swap=geometry.quarter===90||geometry.quarter===270;
+    return {
+      w:swap?rawImage.naturalHeight:rawImage.naturalWidth,
+      h:swap?rawImage.naturalWidth:rawImage.naturalHeight
+    };
+  }
+
+  function qcCropTemplateFromCrop(crop, geometry, rawImage) {
+    const base=qcTemplateBase(geometry,rawImage);
+    if(!crop||!base) return null;
+    return {
+      centered:true,
+      dx:(crop.x+crop.w/2-geometry.w/2)/base.w,
+      dy:(crop.y+crop.h/2-geometry.h/2)/base.h,
+      w:crop.w/base.w,
+      h:crop.h/base.h
+    };
+  }
+
+  function qcCropRatioFromTemplate(template, geometry, rawImage) {
+    if(!template) return null;
+    if(!template.centered) return template;
+    const base=qcTemplateBase(geometry,rawImage);
+    if(!base) return null;
+    const w=Math.min(geometry.w,template.w*base.w);
+    const h=Math.min(geometry.h,template.h*base.h);
+    const x=Math.max(0,Math.min(geometry.w-w,geometry.w/2+template.dx*base.w-w/2));
+    const y=Math.max(0,Math.min(geometry.h-h,geometry.h/2+template.dy*base.h-h/2));
+    return {x:x/geometry.w,y:y/geometry.h,w:w/geometry.w,h:h/geometry.h};
+  }
+
   function currentGroupCropTemplate() {
     const group=selectedGroup();
     return (group?.id&&state.lastQcCropTemplateByGroup[group.id])||state.lastQcCropTemplate||null;
@@ -6595,8 +6630,10 @@ const CALIBRATION = [
     state.analysisGeometry.orientation=qc.orientation||'vertical';
     state.analysisGeometry.fineRotation=Number(qc.fineRotation)||0;
     applyQcGeometryControls(qc,el);
-    const cropRatio=options.preparedInput?null:cropForQcSample(qc,currentGroupCropTemplate());
-    state.crop=cropRatio?cropFromRatio(qcGeometrySize(state.imageOriginal,qc),cropRatio):null;
+    const geometry=qcGeometrySize(state.imageOriginal,qc);
+    const template=qcCropRatioFromTemplate(currentGroupCropTemplate(),geometry,state.imageOriginal);
+    const cropRatio=options.preparedInput?null:cropForQcSample(qc,template);
+    state.crop=cropRatio?cropFromRatio(geometry,cropRatio):null;
     state.cropManual=!!cropRatio;
     state.cropEditing=!!options.openAdjust;
     state.cropDragging=false;
@@ -6816,7 +6853,7 @@ const CALIBRATION = [
   }
 
   function normalizeQcFineRotation(value) {
-    return Math.max(-20,Math.min(20,Number(value)||0));
+    return Math.max(-90,Math.min(90,Number(value)||0));
   }
 
   function normalizeQcFovCutoff(value) {
@@ -7164,8 +7201,9 @@ const CALIBRATION = [
         fovCutoff:null
       });
       recordQcCropHistory(sample.id,historyBefore);
-      if(group?.id) state.lastQcCropTemplateByGroup[group.id]={...cropRatio};
-      state.lastQcCropTemplate={...cropRatio};
+      const cropTemplate=qcCropTemplateFromCrop(savedCrop,geometry,rawImage)||cropRatio;
+      if(group?.id) state.lastQcCropTemplateByGroup[group.id]={...cropTemplate};
+      state.lastQcCropTemplate={...cropTemplate};
       state.crop={...savedCrop};
       state.cropEditing=false;
       state.cropDragging=false;
