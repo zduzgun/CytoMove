@@ -1194,22 +1194,71 @@
     el.zoomBadge.classList.remove('visible');
   }
 
-  function transformImage(src, rotationDeg, deskewDeg) {
-    const c=document.createElement('canvas');
-    const quarter=((rotationDeg%360)+360)%360;
+  // Geometry convention: rotate first (quarter turn + scratch orientation + fine rotation),
+  // crop second. Image QC crop rectangles are therefore defined in the rotated frame.
+  function transformedImageSize(srcW, srcH, rotationDeg, deskewDeg) {
+    const quarter=(((Number(rotationDeg)||0)%360)+360)%360;
     const swap=quarter===90||quarter===270;
-    const baseW=swap?src.naturalHeight:src.naturalWidth;
-    const baseH=swap?src.naturalWidth:src.naturalHeight;
-    const rad=deskewDeg*Math.PI/180;
+    const baseW=swap?srcH:srcW;
+    const baseH=swap?srcW:srcH;
+    const rad=(Number(deskewDeg)||0)*Math.PI/180;
     const cos=Math.abs(Math.cos(rad)), sin=Math.abs(Math.sin(rad));
-    c.width=Math.max(1,Math.ceil(baseW*cos+baseH*sin));
-    c.height=Math.max(1,Math.ceil(baseW*sin+baseH*cos));
-    const ctx=c.getContext('2d');
-    ctx.translate(c.width/2,c.height/2);
-    ctx.rotate(rad);
-    ctx.rotate(quarter*Math.PI/180);
+    return {
+      quarter,
+      rad,
+      w:Math.max(1,Math.ceil(baseW*cos+baseH*sin)),
+      h:Math.max(1,Math.ceil(baseW*sin+baseH*cos))
+    };
+  }
+
+  function drawTransformedImage(ctx, src, size) {
+    ctx.translate(size.w/2,size.h/2);
+    ctx.rotate(size.rad);
+    ctx.rotate(size.quarter*Math.PI/180);
     ctx.drawImage(src,-src.naturalWidth/2,-src.naturalHeight/2);
-    return c.toDataURL('image/png');
+  }
+
+  function transformCanvas(src, rotationDeg, deskewDeg) {
+    const size=transformedImageSize(src.naturalWidth,src.naturalHeight,rotationDeg,deskewDeg);
+    const c=document.createElement('canvas');
+    c.width=size.w;
+    c.height=size.h;
+    drawTransformedImage(c.getContext('2d'),src,size);
+    c.naturalWidth=c.width;
+    c.naturalHeight=c.height;
+    return c;
+  }
+
+  function transformImage(src, rotationDeg, deskewDeg) {
+    return transformCanvas(src,rotationDeg,deskewDeg).toDataURL('image/png');
+  }
+
+  function qcGeometryAngles(qc) {
+    const rotation=Number(qc?.rotation)||0;
+    return {
+      rotation:(((rotation+(qc?.orientation==='horizontal'?90:0))%360)+360)%360,
+      fineRotation:Number(qc?.fineRotation)||0
+    };
+  }
+
+  function qcGeometrySize(rawImage, qc) {
+    if(!rawImage) return null;
+    const angles=qcGeometryAngles(qc);
+    const size=transformedImageSize(rawImage.naturalWidth,rawImage.naturalHeight,angles.rotation,angles.fineRotation);
+    return {...size,naturalWidth:size.w,naturalHeight:size.h};
+  }
+
+  function qcGeometrySource(rawImage, qc) {
+    if(!rawImage) return null;
+    const angles=qcGeometryAngles(qc);
+    if(!angles.rotation&&!angles.fineRotation) return rawImage;
+    return transformCanvas(rawImage,angles.rotation,angles.fineRotation);
+  }
+
+  function currentQcGeometrySize(sample=state.sample) {
+    const rawImage=state.imageOriginal||state.image;
+    if(!rawImage) return null;
+    return qcGeometrySize(rawImage,sample?qcStateForSample(sample.id):null);
   }
 
   function orientationRotationDeg(orientation=state.analysisGeometry.orientation) {
@@ -1227,6 +1276,10 @@
     transformed.onload=()=>{
       state.image=transformed;
       resetCropAndZoom();
+      if(options.reapplyQc&&state.sample) {
+        applyQcStateToCurrentImage(state.sample,{preparedInput:state.imageIsPreparedQc,openAdjust:!!options.openAdjust});
+        if(state.appModule==='qc') renderImageQcPanel();
+      }
       if(options.analyze) runSegmentation({restoreManual:!!options.restoreManual});
       else if(options.restoreGroupResult&&restoreGroupResultToMainCanvas(state.sample)) return;
       else previewLoadedImageAndMaybeAutoApply(options.logMessage,!!options.autoApplyAfterLoad,options.autoApplyMessage);
@@ -1454,6 +1507,15 @@
     target.innerHTML=message?seriesCard('Orientation check','Horizontal?',message,'danger'):'';
   }
 
+  // Prepared QC images already include the quarter-turn rotation; map the vote back to
+  // the raw frame so it can be compared with the selected scratch orientation.
+  function rawFrameOrientationVote(vote, prepared) {
+    const quarter=Number(prepared?.geometry?.rotation)||0;
+    if(!vote||!(quarter===90||quarter===270)) return vote;
+    const flipped={horizontal:'vertical',vertical:'horizontal'}[vote.orientation];
+    return flipped?{...vote,orientation:flipped}:vote;
+  }
+
   async function warnIfHorizontalScratchDetected(samples=selectedGroupSamples()) {
     if((state.lockedQcSnapshot||[]).length&&samples.some(sample=>qcSnapshotForSample(sample.id))) {
       showOrientationHint('');
@@ -1483,7 +1545,7 @@
       const votes=[];
       for(const sample of samples.slice(0,Math.min(samples.length,3))) {
         const img=await loadImageElement(analysisImageUrl(sample));
-        votes.push(classifyScratchOrientation(img));
+        votes.push(rawFrameOrientationVote(classifyScratchOrientation(img),preparedQcImage(sample.id)));
       }
       const horizontal=votes.filter(v=>v.orientation==='horizontal').length;
       const vertical=votes.filter(v=>v.orientation==='vertical').length;
@@ -6213,8 +6275,8 @@
     if(!sample) return 'Ready';
     const qc=qcStateForSample(sample.id);
     if(qc.excluded) return 'Excluded';
-    if(qc.cropRatio||qc.rotation||qc.orientation!=='vertical') return 'Edited';
-    if(qc.needsCrop) return 'Needs Crop';
+    if(qc.needsCrop&&!qc.cropSaved&&!qc.autoCropFov&&!qc.cropReset) return 'Needs Crop';
+    if(qc.cropRatio||qc.rotation||qc.fineRotation||qc.orientation!=='vertical') return 'Edited';
     return 'Ready';
   }
 
@@ -6251,23 +6313,17 @@
       return;
     }
 
-    const displayImg=originalImg;
     const qc=sample?qcStateForSample(sample.id):null;
+    const geometry=qcGeometrySize(originalImg,qc);
     const previewCrop=!state.cropEditing?qcPreviewCrop(qc,state.crop):null;
     const sourceX=previewCrop?.x||0;
     const sourceY=previewCrop?.y||0;
-    const sourceW=previewCrop?.w||displayImg.naturalWidth;
-    const sourceH=previewCrop?.h||displayImg.naturalHeight;
-    const previewRotation=state.cropEditing
-      ? 0
-      : (Number(qc?.rotation)||0)+(qc?.orientation==='horizontal'?90:0)+(Number(qc?.fineRotation)||0);
-    const radians=previewRotation*Math.PI/180;
-    const rotatedW=Math.abs(sourceW*Math.cos(radians))+Math.abs(sourceH*Math.sin(radians));
-    const rotatedH=Math.abs(sourceW*Math.sin(radians))+Math.abs(sourceH*Math.cos(radians));
+    const sourceW=previewCrop?.w||geometry.w;
+    const sourceH=previewCrop?.h||geometry.h;
     const maxW=1100, maxH=760;
-    const scale=Math.min(1,maxW/rotatedW,maxH/rotatedH);
-    const w=Math.max(1,Math.round(rotatedW*scale));
-    const h=Math.max(1,Math.round(rotatedH*scale));
+    const scale=Math.min(1,maxW/sourceW,maxH/sourceH);
+    const w=Math.max(1,Math.round(sourceW*scale));
+    const h=Math.max(1,Math.round(sourceH*scale));
 
     if(el.qcCanvas.width!==w) el.qcCanvas.width=w;
     if(el.qcCanvas.height!==h) el.qcCanvas.height=h;
@@ -6275,20 +6331,17 @@
     const ctx=el.qcCanvas.getContext('2d');
     ctx.clearRect(0,0,w,h);
 
+    // Rotation stays visible while the crop is edited: the crop lives in the rotated frame.
     ctx.save();
-    ctx.translate(w/2,h/2);
-    ctx.rotate(radians);
-    ctx.drawImage(
-      displayImg,
-      sourceX,sourceY,sourceW,sourceH,
-      -sourceW*scale/2,-sourceH*scale/2,sourceW*scale,sourceH*scale
-    );
+    ctx.scale(w/sourceW,h/sourceH);
+    ctx.translate(-sourceX,-sourceY);
+    drawTransformedImage(ctx,originalImg,geometry);
     ctx.restore();
 
     if(state.cropEditing) {
-      const crop=state.crop||currentCrop();
+      const crop=state.crop;
       if(crop&&crop.active) {
-        const sx=w/originalImg.naturalWidth, sy=h/originalImg.naturalHeight;
+        const sx=w/geometry.w, sy=h/geometry.h;
         ctx.save();
         ctx.fillStyle='rgba(11,31,36,0.38)';
         ctx.fillRect(0,0,w,crop.y*sy);
@@ -6359,7 +6412,7 @@
   }
 
   function qcOverlayMetrics() {
-    const img=state.imageOriginal||state.image;
+    const img=currentQcGeometrySize();
     if(!img||!el.qcPreview||!el.qcCanvas) return null;
     const previewRect=el.qcPreview.getBoundingClientRect();
     const canvasRect=el.qcCanvas.getBoundingClientRect();
@@ -6542,7 +6595,7 @@
     state.analysisGeometry.fineRotation=Number(qc.fineRotation)||0;
     applyQcGeometryControls(qc,el);
     const cropRatio=options.preparedInput?null:cropForQcSample(qc,currentGroupCropTemplate());
-    state.crop=cropRatio?cropFromRatio(state.imageOriginal,cropRatio):null;
+    state.crop=cropRatio?cropFromRatio(qcGeometrySize(state.imageOriginal,qc),cropRatio):null;
     state.cropManual=!!cropRatio;
     state.cropEditing=!!options.openAdjust;
     state.cropDragging=false;
@@ -6668,15 +6721,16 @@
   function beginQcCropEdit() {
     if(qcMutationBlocked()) return;
     if(!state.sample||!state.imageOriginal) return;
-    state.crop=state.crop||currentCrop();
+    const geometry=currentQcGeometrySize();
+    if(state.crop?.active) state.crop=clampCrop({...state.crop},geometry);
     if(!state.crop?.active) {
-      const marginX=Math.round(state.imageOriginal.naturalWidth*0.08);
-      const marginY=Math.round(state.imageOriginal.naturalHeight*0.08);
+      const marginX=Math.round(geometry.w*0.08);
+      const marginY=Math.round(geometry.h*0.08);
       state.crop={
         x:marginX,
         y:marginY,
-        w:state.imageOriginal.naturalWidth-marginX*2,
-        h:state.imageOriginal.naturalHeight-marginY*2,
+        w:geometry.w-marginX*2,
+        h:geometry.h-marginY*2,
         active:true
       };
     }
@@ -6687,10 +6741,47 @@
     drawQcCanvas();
   }
 
+  function qcGeometryChanged(before, after) {
+    const a=qcGeometryAngles(before), b=qcGeometryAngles(after);
+    return a.rotation!==b.rotation||Math.abs(a.fineRotation-b.fineRotation)>1e-9;
+  }
+
+  // A saved crop and its prepared Analysis image belong to one rotated frame. When the
+  // rotation changes, discard the prepared image and ask for the crop to be saved again.
+  function invalidateQcCropForGeometryChange(sampleId, before) {
+    const after=qcStateForSample(sampleId);
+    if(!qcGeometryChanged(before,after)) return false;
+    const quarterChanged=qcGeometryAngles(before).rotation!==qcGeometryAngles(after).rotation;
+    const hadCrop=!!(before.cropSaved||before.autoCropFov||preparedQcImage(sampleId));
+    invalidateQcCropOperation(sampleId);
+    releasePreparedQcImage(sampleId);
+    state.qcCropCache.delete(sampleId);
+    invalidateCropCache(sampleId);
+    if(hadCrop) {
+      updateQcState(sampleId,{
+        cropRatio:quarterChanged||!before.cropRatio?null:{...before.cropRatio},
+        cropSaved:false,
+        cropReset:false,
+        autoCropFov:false,
+        fovCutoff:null,
+        needsCrop:true
+      });
+    }
+    if(state.sample?.id===sampleId) {
+      const geometry=currentQcGeometrySize();
+      if(quarterChanged) state.crop=null;
+      else if(state.crop?.active&&geometry) state.crop=clampCrop({...state.crop},geometry);
+    }
+    if(hadCrop) setLog('<strong>Rotation changed.</strong> The previous crop was drawn in another rotated frame. Adjust and save the crop again.');
+    return hadCrop;
+  }
+
   function applyQcOrientation(value) {
     if(qcMutationBlocked()) return;
     if(!state.sample) return;
+    const before=qcStateForSample(state.sample.id);
     updateQcState(state.sample.id,{orientation:value==='horizontal'?'horizontal':'vertical'});
+    invalidateQcCropForGeometryChange(state.sample.id,before);
     renderImageQcPanel();
   }
 
@@ -6699,6 +6790,7 @@
     if(!state.sample) return;
     const qc=qcStateForSample(state.sample.id);
     updateQcState(state.sample.id,{rotation:(Number(qc.rotation||0)+delta+360)%360});
+    invalidateQcCropForGeometryChange(state.sample.id,qc);
     renderImageQcPanel();
   }
 
@@ -6713,9 +6805,12 @@
   function applyQcFineRotation(value) {
     if(qcMutationBlocked()) return;
     if(!state.sample) return;
+    const before=qcStateForSample(state.sample.id);
     const next=normalizeQcFineRotation(value);
     updateQcState(state.sample.id,{fineRotation:next});
+    const cropInvalidated=invalidateQcCropForGeometryChange(state.sample.id,before);
     applyQcGeometryControls(qcStateForSample(state.sample.id),el);
+    if(cropInvalidated) renderQcImageList();
     drawQcCanvas();
   }
 
@@ -6761,9 +6856,10 @@
       const sample=state.sample;
       const historyBefore=qcCropHistorySnapshot(sample.id);
       const rawImage=state.imageOriginal;
+      const geometrySource=qcGeometrySource(rawImage,qcStateForSample(sample.id));
       const fovCutoff=normalizeQcFovCutoff(el.fovCutoff?.value);
-      const crop=autoCropForImage(rawImage,true,fovCutoff);
-      const patch=qcAutoCropPatch(crop,rawImage,fovCutoff);
+      const crop=autoCropForImage(geometrySource,true,fovCutoff);
+      const patch=qcAutoCropPatch(crop,geometrySource,fovCutoff);
       const operationId=beginQcCropOperation(sample.id);
       try {
         if(crop.active) await prepareQcAnalysisInput(sample,rawImage,crop,operationId);
@@ -6923,12 +7019,14 @@
 
   async function prepareQcAnalysisInput(sample, rawImage, crop, operationId=null) {
     if(!sample||!rawImage||!crop) return null;
-    const safeCrop=clampCrop({...crop},rawImage);
+    const angles=qcGeometryAngles(qcStateForSample(sample.id));
+    const source=qcGeometrySource(rawImage,qcStateForSample(sample.id));
+    const safeCrop=clampCrop({...crop},source);
     const canvas=document.createElement('canvas');
     canvas.width=safeCrop.w;
     canvas.height=safeCrop.h;
     canvas.getContext('2d').drawImage(
-      rawImage,
+      source,
       safeCrop.x,safeCrop.y,safeCrop.w,safeCrop.h,
       0,0,safeCrop.w,safeCrop.h
     );
@@ -6942,7 +7040,8 @@
       width:safeCrop.w,
       height:safeCrop.h,
       crop:{...safeCrop},
-      cropRatio:normalizedCropRatio(safeCrop,rawImage),
+      cropRatio:normalizedCropRatio(safeCrop,source),
+      geometry:{rotation:angles.rotation,fineRotation:angles.fineRotation},
       createdAt:Date.now()
     };
     state.preparedQcImages.set(sample.id,prepared);
@@ -6990,7 +7089,8 @@
       updateQcState(sample.id,snapshot);
       const isActive=state.sample?.id===sample.id;
       const rawImage=isActive?(state.imageOriginal||state.image):null;
-      const crop=snapshot.cropRatio&&rawImage?cropFromRatio(rawImage,snapshot.cropRatio):null;
+      const geometry=rawImage?qcGeometrySize(rawImage,qcStateForSample(sample.id)):null;
+      const crop=snapshot.cropRatio&&geometry?cropFromRatio(geometry,snapshot.cropRatio):null;
       if(isActive) {
         state.crop=crop;
         state.cropManual=!!state.crop;
@@ -7024,8 +7124,9 @@
     const sample=state.sample;
     const historyBefore=qcCropHistorySnapshot(sample.id);
     const rawImage=state.imageOriginal||state.image;
-    const savedCrop=clampCrop({...state.crop},rawImage);
-    const cropRatio=normalizedCropRatio(savedCrop,rawImage);
+    const geometry=qcGeometrySize(rawImage,qcStateForSample(sample.id));
+    const savedCrop=clampCrop({...state.crop},geometry);
+    const cropRatio=normalizedCropRatio(savedCrop,geometry);
     const samples=selectedGroupSamples();
     const currentIndex=samples.findIndex(item=>item.id===sample.id);
     const group=selectedGroup();
@@ -8372,6 +8473,8 @@
   }
 
   function transformImageElement(img, settings) {
+    // Prepared QC images are rotated before cropping; do not rotate them twice.
+    if(settings.preparedQcInput) return Promise.resolve(img);
     if(!settings.rotation&&!settings.deskew) return Promise.resolve(img);
     return loadImageElement(transformImage(img,settings.rotation,settings.deskew));
   }
@@ -9047,7 +9150,8 @@
         if(sample) warnIfHorizontalScratchDetected([sample]);
         if(options.fromQc||state.appModule==='qc') renderImageQcPanel();
       };
-      if(effectiveRotationDeg()||(Number(state.analysisGeometry.fineRotation)||0)) applyImageTransform({restoreManual:true,analyze:false,restoreGroupResult:!!options.restoreGroupResult,autoApplyAfterLoad:!!options.autoApplyAfterLoad,logMessage:readyMessage});
+      const needsTransform=!state.imageIsPreparedQc&&(effectiveRotationDeg()||(Number(state.analysisGeometry.fineRotation)||0));
+      if(needsTransform) applyImageTransform({restoreManual:true,analyze:false,restoreGroupResult:!!options.restoreGroupResult,autoApplyAfterLoad:!!options.autoApplyAfterLoad,logMessage:readyMessage,reapplyQc:!!((options.fromQc||state.lockedQcSnapshot)&&sample),openAdjust:!!options.openAdjust});
       else showReadyPreview();
     };
     img.onerror=()=>{

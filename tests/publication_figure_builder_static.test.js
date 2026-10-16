@@ -13,7 +13,7 @@ const specPath = path.join(root, 'docs/superpowers/specs/2026-06-16-publication-
 
 assert(fs.existsSync(specPath), 'Publication Figure Builder design spec should be saved as markdown');
 assert(
-  html.includes('app.js?v=20260827-worker-analysis'),
+  html.includes('app.js?v=20261016-qc-rotate-crop'),
   'index.html should cache-bust the canonical app.js asset'
 );
 
@@ -1077,8 +1077,59 @@ assert(
   'QC canvas should select a saved crop for normal preview'
 );
 assert(
-  drawQcCanvasSource[0].includes('sourceX,sourceY,sourceW,sourceH'),
-  'QC canvas should draw only the selected saved-crop source bounds'
+  drawQcCanvasSource[0].includes('ctx.translate(-sourceX,-sourceY)') &&
+  drawQcCanvasSource[0].includes('drawTransformedImage(ctx,originalImg,geometry)'),
+  'QC canvas should draw only the selected saved-crop bounds of the rotated frame'
+);
+assert(
+  !drawQcCanvasSource[0].includes('previewRotation') &&
+  drawQcCanvasSource[0].includes('const sx=w/geometry.w, sy=h/geometry.h'),
+  'QC crop editing should keep the rotation visible and map the crop in the rotated frame'
+);
+
+const qcGeometryHelperNames = ['transformedImageSize','qcGeometryAngles','qcGeometrySize','qcGeometryChanged','rawFrameOrientationVote','qcStatusLabel'];
+const qcGeometrySandbox = {qcStateForSample:()=>qcGeometrySandbox.qc};
+vm.runInNewContext(
+  qcGeometryHelperNames.map(name => {
+    const source = js.match(new RegExp(`function ${name}\\([^)]*\\)\\s*\\{[\\s\\S]*?\\n  \\}`));
+    assert(source, `app.js should expose ${name}`);
+    return source[0];
+  }).join('\n') + qcGeometryHelperNames.map(name => `; this.${name} = ${name};`).join(''),
+  qcGeometrySandbox
+);
+{
+  const size = qcGeometrySandbox.qcGeometrySize({naturalWidth:1161,naturalHeight:664},{rotation:0,orientation:'vertical',fineRotation:2});
+  const rad = 2*Math.PI/180;
+  assert.strictEqual(size.w, Math.ceil(1161*Math.cos(rad)+664*Math.sin(rad)), 'Fine rotation should expand the rotated frame width');
+  assert.strictEqual(size.h, Math.ceil(1161*Math.sin(rad)+664*Math.cos(rad)), 'Fine rotation should expand the rotated frame height');
+  assert.strictEqual(size.naturalWidth, size.w, 'Rotated frame size should be usable as crop geometry');
+  const quarter = qcGeometrySandbox.qcGeometrySize({naturalWidth:1161,naturalHeight:664},{rotation:0,orientation:'horizontal',fineRotation:0});
+  assert.deepStrictEqual([quarter.w,quarter.h],[664,1161], 'Horizontal orientation should swap the crop frame');
+  assert.deepStrictEqual(
+    JSON.parse(JSON.stringify(qcGeometrySandbox.qcGeometryAngles({rotation:270,orientation:'horizontal',fineRotation:'-1.5'}))),
+    {rotation:0,fineRotation:-1.5},
+    'QC geometry should combine manual and orientation quarter turns'
+  );
+  assert.strictEqual(qcGeometrySandbox.qcGeometryChanged({fineRotation:0},{fineRotation:2}), true);
+  assert.strictEqual(qcGeometrySandbox.qcGeometryChanged({rotation:90},{orientation:'horizontal'}), false, 'Equivalent quarter turns should not invalidate a crop');
+  assert.strictEqual(qcGeometrySandbox.rawFrameOrientationVote({orientation:'vertical'},{geometry:{rotation:90}}).orientation, 'horizontal');
+  assert.strictEqual(qcGeometrySandbox.rawFrameOrientationVote({orientation:'vertical'},{geometry:{rotation:0}}).orientation, 'vertical');
+  assert.strictEqual(qcGeometrySandbox.rawFrameOrientationVote({orientation:'vertical'},null).orientation, 'vertical');
+  qcGeometrySandbox.qc = {orientation:'vertical',cropRatio:{x:0.1,y:0.1,w:0.8,h:0.8},cropSaved:false,needsCrop:true,fineRotation:2};
+  assert.strictEqual(qcGeometrySandbox.qcStatusLabel({id:'a'}), 'Needs Crop', 'A crop invalidated by rotation should ask for a new crop');
+  qcGeometrySandbox.qc = {...qcGeometrySandbox.qc,cropSaved:true};
+  assert.strictEqual(qcGeometrySandbox.qcStatusLabel({id:'a'}), 'Edited');
+  qcGeometrySandbox.qc = {orientation:'vertical',fineRotation:2};
+  assert.strictEqual(qcGeometrySandbox.qcStatusLabel({id:'a'}), 'Edited', 'Fine rotation alone is a QC edit');
+}
+for (const name of ['applyQcOrientation','applyQcRotation','applyQcFineRotation']) {
+  const source = js.match(new RegExp(`function ${name}\\([^)]*\\)\\s*\\{[\\s\\S]*?\\n  \\}`));
+  assert(source && source[0].includes('invalidateQcCropForGeometryChange(state.sample.id,'), `${name} should invalidate a crop drawn in another rotated frame`);
+}
+const transformImageElementSource = js.match(/function transformImageElement\(img, settings\)\s*\{[\s\S]*?\n  \}/);
+assert(
+  transformImageElementSource && transformImageElementSource[0].includes('if(settings.preparedQcInput) return Promise.resolve(img);'),
+  'Prepared QC inputs are already rotated and must not be rotated twice'
 );
 
 const applyQcCropSource = js.match(/function applyQcCrop\(\)\s*\{[\s\S]*?\n  \}/);
@@ -1650,7 +1701,7 @@ const restoreQcCropHistorySource = js.match(/async function restoreQcCropHistory
 assert(restoreQcCropHistorySource, 'QC crop history restore should rebuild prepared input asynchronously');
 [
   'beginQcCropOperation(sample.id)',
-  'cropFromRatio(rawImage,snapshot.cropRatio)',
+  'cropFromRatio(geometry,snapshot.cropRatio)',
   'await prepareQcAnalysisInput(sample,rawImage,crop,operationId)',
   'isCurrentQcCropOperation(sample.id,operationId)'
 ].forEach(fragment => {
@@ -1661,7 +1712,7 @@ assert(restoreQcCropHistorySource, 'QC crop history restore should rebuild prepa
 });
 assert(
   !restoreQcCropHistorySource[0].includes('prepareQcAnalysisInput(sample,rawImage,state.crop'),
-  'QC crop restore should prepare the raw-image ROI once instead of cropping an already cropped preview'
+  'QC crop restore should prepare the rotated-frame ROI from the raw image once instead of cropping an already cropped preview'
 );
 assert(
   restoreQcCropHistorySource[0].includes('trackQcOperation(restorePromise)'),
