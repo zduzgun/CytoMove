@@ -13,7 +13,7 @@ const specPath = path.join(root, 'docs/superpowers/specs/2026-06-16-publication-
 
 assert(fs.existsSync(specPath), 'Publication Figure Builder design spec should be saved as markdown');
 assert(
-  html.includes('app.js?v=20261016-qc-crop-template'),
+  html.includes('app.js?v=20261016-qc-template-geometry'),
   'index.html should cache-bust the canonical app.js asset'
 );
 
@@ -1042,6 +1042,20 @@ vm.runInNewContext(
   const legacy={x:0.1,y:0.2,w:0.3,h:0.4};
   assert.strictEqual(templateGeometrySandbox.qcCropRatioFromTemplate(legacy,plain,raw),legacy,'Legacy ratio templates should still apply');
 }
+{
+  const geometryPatchSource=js.match(/function qcTemplateGeometryPatch\(qc, template\)\s*\{[\s\S]*?\n  \}/);
+  const shouldOpenSource=js.match(/function shouldOpenQcCropTemplate\(qc, template\)\s*\{[\s\S]*?\n  \}/);
+  assert(geometryPatchSource&&shouldOpenSource,'app.js should inherit the template rotation for unsaved images');
+  const sb={};
+  vm.runInNewContext(`${shouldOpenSource[0]}; ${geometryPatchSource[0]}; this.patch=qcTemplateGeometryPatch;`,sb);
+  const template={centered:true,dx:0,dy:0,w:0.5,h:0.5,geometry:{orientation:'vertical',rotation:0,fineRotation:-33}};
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(sb.patch({},template))),{orientation:'vertical',rotation:0,fineRotation:-33},'An unsaved image should start in the template rotation');
+  assert.strictEqual(sb.patch({geometryEdited:true},template),null,'A hand-set rotation should be kept');
+  assert.strictEqual(sb.patch({cropSaved:true,cropRatio:{x:0,y:0,w:1,h:1}},template),null,'A saved image should keep its own geometry');
+  assert.strictEqual(sb.patch({fineRotation:-33},template),null);
+  const loadQcSource=js.match(/function loadQcSampleAt\(index, options=\{\}\)\s*\{[\s\S]*?\n  \}/);
+  assert(loadQcSource[0].includes('qcTemplateGeometryPatch(qcStateForSample(sample.id),currentGroupCropTemplate())'),'QC navigation should apply the inherited template rotation before loading');
+}
 const shouldOpenTemplateSource = js.match(/function shouldOpenQcCropTemplate\(qc, template\)\s*\{[\s\S]*?\n  \}/);
 assert(shouldOpenTemplateSource, 'app.js should decide whether an inherited crop opens in Adjust mode');
 vm.runInNewContext(
@@ -1642,7 +1656,7 @@ assert.deepStrictEqual(
 const applyQcFineRotationSource = js.match(/function applyQcFineRotation\(value\)\s*\{[\s\S]*?\n  \}/);
 assert(applyQcFineRotationSource, 'app.js should expose applyQcFineRotation');
 assert(
-  applyQcFineRotationSource[0].includes('updateQcState(state.sample.id,{fineRotation:next})'),
+  applyQcFineRotationSource[0].includes('updateQcState(state.sample.id,{fineRotation:next,geometryEdited:true})'),
   'Fine rotation should update image-level QC state'
 );
 assert(

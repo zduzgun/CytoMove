@@ -4480,6 +4480,23 @@
     return (group?.id&&state.lastQcCropTemplateByGroup[group.id])||state.lastQcCropTemplate||null;
   }
 
+  // An image that still starts from the group crop template also starts from the rotation the
+  // template was drawn in, unless its own rotation was set by hand. Without this the template
+  // rectangle lands on different content in an unrotated image.
+  function qcTemplateGeometryPatch(qc, template) {
+    const geometry=template?.geometry;
+    if(!geometry||qc?.geometryEdited||!shouldOpenQcCropTemplate(qc,template)) return null;
+    const patch={
+      orientation:geometry.orientation==='horizontal'?'horizontal':'vertical',
+      rotation:Number(geometry.rotation)||0,
+      fineRotation:Number(geometry.fineRotation)||0
+    };
+    const same=(qc?.orientation==='horizontal'?'horizontal':'vertical')===patch.orientation&&
+      (Number(qc?.rotation)||0)===patch.rotation&&
+      (Number(qc?.fineRotation)||0)===patch.fineRotation;
+    return same?null:patch;
+  }
+
   function shouldOpenQcCropTemplate(qc, template) {
     return !!template&&!qc?.cropSaved&&!qc?.cropReset&&!qc?.autoCropFov;
   }
@@ -6750,6 +6767,8 @@
       renderImageQcPanel();
       return;
     }
+    const inheritedGeometry=qcTemplateGeometryPatch(qcStateForSample(sample.id),currentGroupCropTemplate());
+    if(inheritedGeometry) updateQcState(sample.id,inheritedGeometry);
     loadImage(sampleUrl(sample),sample,sample.path,true,{
       fromQc:true,
       autoApplyAfterLoad:false,
@@ -6838,7 +6857,7 @@
     if(qcMutationBlocked()) return;
     if(!state.sample) return;
     const before=qcStateForSample(state.sample.id);
-    updateQcState(state.sample.id,{orientation:value==='horizontal'?'horizontal':'vertical'});
+    updateQcState(state.sample.id,{orientation:value==='horizontal'?'horizontal':'vertical',geometryEdited:true});
     invalidateQcCropForGeometryChange(state.sample.id,before);
     renderImageQcPanel();
   }
@@ -6847,7 +6866,7 @@
     if(qcMutationBlocked()) return;
     if(!state.sample) return;
     const qc=qcStateForSample(state.sample.id);
-    updateQcState(state.sample.id,{rotation:(Number(qc.rotation||0)+delta+360)%360});
+    updateQcState(state.sample.id,{rotation:(Number(qc.rotation||0)+delta+360)%360,geometryEdited:true});
     invalidateQcCropForGeometryChange(state.sample.id,qc);
     renderImageQcPanel();
   }
@@ -6865,7 +6884,7 @@
     if(!state.sample) return;
     const before=qcStateForSample(state.sample.id);
     const next=normalizeQcFineRotation(value);
-    updateQcState(state.sample.id,{fineRotation:next});
+    updateQcState(state.sample.id,{fineRotation:next,geometryEdited:true});
     const cropInvalidated=invalidateQcCropForGeometryChange(state.sample.id,before);
     applyQcGeometryControls(qcStateForSample(state.sample.id),el);
     if(cropInvalidated) renderQcImageList();
@@ -7201,7 +7220,15 @@
         fovCutoff:null
       });
       recordQcCropHistory(sample.id,historyBefore);
-      const cropTemplate=qcCropTemplateFromCrop(savedCrop,geometry,rawImage)||cropRatio;
+      const templateQc=qcStateForSample(sample.id);
+      const cropTemplate={
+        ...(qcCropTemplateFromCrop(savedCrop,geometry,rawImage)||cropRatio),
+        geometry:{
+          orientation:templateQc.orientation==='horizontal'?'horizontal':'vertical',
+          rotation:Number(templateQc.rotation)||0,
+          fineRotation:Number(templateQc.fineRotation)||0
+        }
+      };
       if(group?.id) state.lastQcCropTemplateByGroup[group.id]={...cropTemplate};
       state.lastQcCropTemplate={...cropTemplate};
       state.crop={...savedCrop};
