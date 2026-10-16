@@ -609,6 +609,7 @@ const CALIBRATION = [
 
   const state = {
     appModule:'qc',
+    singleLocalFile:null,
     pendingPublicationExport:'group',
     mode:'single',
     image:null, imageOriginal:null, imageName:'', sample:null, rotation:0,
@@ -6602,7 +6603,27 @@ const CALIBRATION = [
     state.qcOverlayDrag=null;
   }
 
+  // Image QC works on a series. A single local image opened outside a group becomes a
+  // one-image series so its rotation and crop controls are available.
+  function singleImageQcSeriesLabel(file) {
+    return String(file?.name||'').replace(/\.[^.]+$/,'')||'Single image';
+  }
+
+  function openSingleImageAsQcSeries(file) {
+    state.singleLocalFile=null;
+    return createCustomGroupFromFiles([file],singleImageQcSeriesLabel(file));
+  }
+
+  function promoteSingleImageForQc() {
+    const file=state.singleLocalFile;
+    if(!file||state.appModule!=='qc'||state.sample||!state.image||state.imageName!==file.name) return false;
+    if(selectedGroupSamples().length) return false;
+    openSingleImageAsQcSeries(file);
+    return true;
+  }
+
   function renderImageQcPanel() {
+    if(!qcMutationBlocked()&&promoteSingleImageForQc()) return;
     const samples=selectedGroupSamples();
     renderQcImageList(samples);
     const sample=state.sample&&samples.some(s=>s.id===state.sample.id)?state.sample:samples[0]||null;
@@ -9265,6 +9286,7 @@ const CALIBRATION = [
   function createCustomGroupFromFiles(images, groupLabel, options={}) {
     const groupId=`custom-${Date.now()}-${state.customGroups.length+1}`;
     const samples=images.map((file,index)=>makeCustomSample(file,index,groupId,groupLabel));
+    state.singleLocalFile=null;
     state.customSamples.push(...samples);
     state.customGroups.push({
       id:groupId,
@@ -9700,9 +9722,15 @@ const CALIBRATION = [
       ? ` <strong>Image limit:</strong> ${allImages.length} files were selected; the first 48 sorted images were loaded.`
       : '';
     if(images.length===1) {
+      if(state.appModule==='qc') {
+        openSingleImageAsQcSeries(images[0]);
+        if(limitNote) setLog(limitNote);
+        return;
+      }
       const singleUrl=URL.createObjectURL(images[0]);
       state.objectUrls.push(singleUrl);
       loadImage(singleUrl,null,images[0].name,false,{autoApplyAfterLoad:true});
+      state.singleLocalFile=images[0];
       if(limitNote) setLog(limitNote);
       return;
     }

@@ -13,7 +13,7 @@ const specPath = path.join(root, 'docs/superpowers/specs/2026-06-16-publication-
 
 assert(fs.existsSync(specPath), 'Publication Figure Builder design spec should be saved as markdown');
 assert(
-  html.includes('app.js?v=20261016-qc-rotate-crop'),
+  html.includes('app.js?v=20261016-qc-single-image'),
   'index.html should cache-bust the canonical app.js asset'
 );
 
@@ -1126,6 +1126,28 @@ for (const name of ['applyQcOrientation','applyQcRotation','applyQcFineRotation'
   const source = js.match(new RegExp(`function ${name}\\([^)]*\\)\\s*\\{[\\s\\S]*?\\n  \\}`));
   assert(source && source[0].includes('invalidateQcCropForGeometryChange(state.sample.id,'), `${name} should invalidate a crop drawn in another rotated frame`);
 }
+const promoteSingleSource = js.match(/function promoteSingleImageForQc\(\)\s*\{[\s\S]*?\n  \}/);
+const singleLabelSource = js.match(/function singleImageQcSeriesLabel\(file\)\s*\{[\s\S]*?\n  \}/);
+const openSingleSource = js.match(/function openSingleImageAsQcSeries\(file\)\s*\{[\s\S]*?\n  \}/);
+assert(promoteSingleSource && singleLabelSource && openSingleSource, 'app.js should promote a single local image into a one-image QC series');
+{
+  const opened = [];
+  const sandbox = {
+    state:{appModule:'qc',singleLocalFile:{name:'W01.jpg'},sample:null,image:{},imageName:'W01.jpg'},
+    selectedGroupSamples:()=>[],
+    createCustomGroupFromFiles:(files,label)=>{opened.push([files.length,label]);return {};}
+  };
+  vm.runInNewContext(`${singleLabelSource[0]}; ${openSingleSource[0]}; ${promoteSingleSource[0]}; this.promote = promoteSingleImageForQc;`, sandbox);
+  assert.strictEqual(sandbox.promote(), true, 'A single local image should open as a QC series in the Image QC module');
+  assert.deepStrictEqual(opened, [[1,'W01']]);
+  assert.strictEqual(sandbox.state.singleLocalFile, null, 'Promotion should run once');
+  assert.strictEqual(sandbox.promote(), false);
+  sandbox.state.singleLocalFile={name:'W01.jpg'};
+  sandbox.state.appModule='analysis';
+  assert.strictEqual(sandbox.promote(), false, 'Single-image Analysis should stay single outside Image QC');
+}
+const renderImageQcPanelSource = js.match(/function renderImageQcPanel\(\)\s*\{[\s\S]*?\n  \}/);
+assert(renderImageQcPanelSource[0].includes('promoteSingleImageForQc()'), 'Image QC should offer controls for a single loaded image');
 const transformImageElementSource = js.match(/function transformImageElement\(img, settings\)\s*\{[\s\S]*?\n  \}/);
 assert(
   transformImageElementSource && transformImageElementSource[0].includes('if(settings.preparedQcInput) return Promise.resolve(img);'),
