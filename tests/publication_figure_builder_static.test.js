@@ -13,7 +13,7 @@ const specPath = path.join(root, 'docs/superpowers/specs/2026-06-16-publication-
 
 assert(fs.existsSync(specPath), 'Publication Figure Builder design spec should be saved as markdown');
 assert(
-  html.includes('app.js?v=20261016-qc-crop-mask'),
+  html.includes('app.js?v=20261016-qc-crop-clamp'),
   'index.html should cache-bust the canonical app.js asset'
 );
 
@@ -1197,6 +1197,17 @@ const renderImageQcPanelSource = js.match(/function renderImageQcPanel\(\)\s*\{[
 assert(renderImageQcPanelSource[0].includes('promoteSingleImageForQc()'), 'Image QC should offer controls for a single loaded image');
 const updateQcOverlayDragSource = js.match(/function updateQcOverlayDrag\(event\)\s*\{[\s\S]*?\n  \}/);
 assert(updateQcOverlayDragSource && updateQcOverlayDragSource[0].includes('scheduleQcCanvasDraw()'), 'Dragging the crop should redraw the dimmed area around it');
+{
+  const rectToCropSource=js.match(/function qcOverlayRectToCrop\(rect, metrics\)\s*\{[\s\S]*?\n  \}/);
+  const clampSource=js.match(/function clampCrop\(crop, img=state.imageOriginal\|\|state.image\)\s*\{[\s\S]*?\n  \}/);
+  assert(rectToCropSource&&clampSource,'app.js should expose qcOverlayRectToCrop and clampCrop');
+  const sb={state:{imageOriginal:{naturalWidth:1536,naturalHeight:2048}}};
+  vm.runInNewContext(`${clampSource[0]}; ${rectToCropSource[0]}; this.toCrop=qcOverlayRectToCrop;`,sb);
+  const metrics={canvasLeft:0,canvasTop:0,canvasWidth:470,canvasHeight:508,naturalWidth:2349,naturalHeight:2537};
+  const crop=sb.toCrop({left:300,top:350,width:100,height:100},metrics);
+  assert.strictEqual(crop.x,Math.round(300/470*2349),'The crop must be limited by the rotated frame, not the raw image');
+  assert.strictEqual(crop.y,Math.round(350/508*2537));
+}
 const transformImageElementSource = js.match(/function transformImageElement\(img, settings\)\s*\{[\s\S]*?\n  \}/);
 assert(
   transformImageElementSource && transformImageElementSource[0].includes('if(settings.preparedQcInput) return Promise.resolve(img);'),

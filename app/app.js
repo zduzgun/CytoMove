@@ -6610,7 +6610,7 @@
       w:(rect.width/metrics.canvasWidth)*metrics.naturalWidth,
       h:(rect.height/metrics.canvasHeight)*metrics.naturalHeight,
       active:true
-    },state.imageOriginal||state.image);
+    },{naturalWidth:metrics.naturalWidth,naturalHeight:metrics.naturalHeight});
   }
 
   function setQcCropOverlayRect(rect) {
