@@ -13,7 +13,7 @@ const specPath = path.join(root, 'docs/superpowers/specs/2026-06-16-publication-
 
 assert(fs.existsSync(specPath), 'Publication Figure Builder design spec should be saved as markdown');
 assert(
-  html.includes('app.js?v=20261016-qc-template-geometry'),
+  html.includes('app.js?v=20261016-qc-fov-anchor'),
   'index.html should cache-bust the canonical app.js asset'
 );
 
@@ -1019,7 +1019,7 @@ assert.deepStrictEqual(
   templateSandbox.state.lastQcCropTemplateByGroup['group-b'],
   'A group-specific crop template should take priority over the session template'
 );
-const templateHelperNames=['transformedImageSize','qcGeometryAngles','qcGeometrySize','qcTemplateBase','qcCropTemplateFromCrop','qcCropRatioFromTemplate'];
+const templateHelperNames=['transformedImageSize','qcGeometryAngles','qcGeometrySize','qcTemplateBase','fitFovCircle','detectFovCircle','qcFramePointFromRaw','qcFrameFovCircle','qcCropTemplateFromCrop','qcCropRatioFromTemplate'];
 const templateGeometrySandbox={};
 vm.runInNewContext(
   templateHelperNames.map(name=>{
@@ -1039,6 +1039,16 @@ vm.runInNewContext(
   const px={x:ratio.x*plain.w,y:ratio.y*plain.h,w:ratio.w*plain.w,h:ratio.h*plain.h};
   ['x','y','w','h'].forEach(key=>assert(Math.abs(px[key]-{x:plain.w/2+50,y:plain.h/2-200,w:300,h:250}[key])<1e-6,
     `A crop template should keep its size and centre offset across rotated frames (${key})`));
+  // Microscope field fit: a bright disc partly clipped by the frame edge.
+  const W=200, H=160, gray=new Float32Array(W*H);
+  const disc=(cx,cy,r)=>{ for(let y=0;y<H;y++) for(let x=0;x<W;x++) gray[y*W+x]=Math.hypot(x-cx,y-cy)<r?200+((x*7+y*3)%23):8; };
+  disc(70,90,75);
+  const circle=templateGeometrySandbox.fitFovCircle(gray,W,H);
+  assert(circle&&Math.abs(circle.x-70)<2&&Math.abs(circle.y-90)<2&&Math.abs(circle.r-75)<2,'The microscope field should be located even when clipped by the frame');
+  for(let i=0;i<gray.length;i++) gray[i]=180+(i%17);
+  assert.strictEqual(templateGeometrySandbox.fitFovCircle(gray,W,H),null,'A full-field image has no microscope circle to anchor to');
+  const mapped=templateGeometrySandbox.qcFramePointFromRaw({x:500,y:400},raw,rotated);
+  assert(Math.abs(mapped.x-rotated.w/2)<1e-6&&Math.abs(mapped.y-rotated.h/2)<1e-6,'The raw image centre should map to the rotated frame centre');
   const legacy={x:0.1,y:0.2,w:0.3,h:0.4};
   assert.strictEqual(templateGeometrySandbox.qcCropRatioFromTemplate(legacy,plain,raw),legacy,'Legacy ratio templates should still apply');
 }

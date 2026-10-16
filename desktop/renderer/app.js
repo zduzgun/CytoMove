@@ -4451,16 +4451,125 @@ const CALIBRATION = [
     };
   }
 
+  // Eyepiece photos place the bright microscope field at a different spot in every frame.
+  // fitFovCircle finds that field on a small grey image: the outermost bright pixel of each
+  // row and column (ignoring the image border) are fitted to a circle (Kasa least squares).
+  function fitFovCircle(gray, W, H) {
+    const N=W*H;
+    if(!gray||N<64) return null;
+    const hist=new Array(256).fill(0);
+    for(let i=0;i<N;i++) hist[Math.max(0,Math.min(255,Math.round(gray[i])))]++;
+    let sum=0; for(let t=0;t<256;t++) sum+=t*hist[t];
+    let sumB=0, wB=0, best=-1, threshold=128;
+    for(let t=0;t<256;t++) {
+      wB+=hist[t]; if(!wB) continue;
+      const wF=N-wB; if(!wF) break;
+      sumB+=t*hist[t];
+      const mB=sumB/wB, mF=(sum-sumB)/wF;
+      const between=wB*wF*(mB-mF)*(mB-mF);
+      if(between>best) { best=between; threshold=t; }
+    }
+    let fg=0;
+    const mask=new Uint8Array(N);
+    for(let i=0;i<N;i++) if(gray[i]>threshold) { mask[i]=1; fg++; }
+    if(fg<N*0.08||fg>N*0.97) return null;
+    const run=3, margin=2, points=[];
+    const on=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&mask[y*W+x]===1;
+    const solid=(x,y,dx,dy)=>{ for(let k=0;k<run;k++) if(!on(x+dx*k,y+dy*k)) return false; return true; };
+    const keep=(x,y)=>{ if(x>=margin&&y>=margin&&x<W-margin&&y<H-margin) points.push([x,y]); };
+    for(let y=0;y<H;y++) {
+      for(let x=0;x<W;x++) if(solid(x,y,1,0)) { keep(x,y); break; }
+      for(let x=W-1;x>=0;x--) if(solid(x,y,-1,0)) { keep(x,y); break; }
+    }
+    for(let x=0;x<W;x++) {
+      for(let y=0;y<H;y++) if(solid(x,y,0,1)) { keep(x,y); break; }
+      for(let y=H-1;y>=0;y--) if(solid(x,y,0,-1)) { keep(x,y); break; }
+    }
+    const fit=pts=>{
+      if(pts.length<24) return null;
+      let sx=0,sy=0,sxx=0,syy=0,sxy=0,sz=0,sxz=0,syz=0;
+      for(const [x,y] of pts) {
+        const z=x*x+y*y;
+        sx+=x; sy+=y; sxx+=x*x; syy+=y*y; sxy+=x*y; sz+=z; sxz+=x*z; syz+=y*z;
+      }
+      const n=pts.length;
+      const A=[[sxx,sxy,sx],[sxy,syy,sy],[sx,sy,n]], b=[-sxz,-syz,-sz];
+      const det=m=>m[0][0]*(m[1][1]*m[2][2]-m[1][2]*m[2][1])-m[0][1]*(m[1][0]*m[2][2]-m[1][2]*m[2][0])+m[0][2]*(m[1][0]*m[2][1]-m[1][1]*m[2][0]);
+      const d=det(A);
+      if(!Number.isFinite(d)||Math.abs(d)<1e-9) return null;
+      const col=(i)=>A.map((row,r)=>row.map((v,c)=>c===i?b[r]:v));
+      const D=det(col(0))/d, E=det(col(1))/d, F=det(col(2))/d;
+      const cx=-D/2, cy=-E/2, r2=cx*cx+cy*cy-F;
+      return r2>0?{x:cx,y:cy,r:Math.sqrt(r2)}:null;
+    };
+    let circle=fit(points);
+    if(!circle) return null;
+    const inliers=points.filter(([x,y])=>Math.abs(Math.hypot(x-circle.x,y-circle.y)-circle.r)<circle.r*0.08);
+    if(inliers.length<points.length*0.6) return null;
+    circle=fit(inliers);
+    if(!circle||circle.r<Math.min(W,H)*0.15||circle.r>Math.max(W,H)*1.2) return null;
+    return circle;
+  }
+
+  function detectFovCircle(rawImage) {
+    try {
+      if(!rawImage?.naturalWidth||!rawImage?.naturalHeight) return null;
+      const cache=state.qcFovCircleCache||(state.qcFovCircleCache=new WeakMap());
+      if(cache.has(rawImage)) return cache.get(rawImage);
+      const scale=Math.min(1,360/Math.max(rawImage.naturalWidth,rawImage.naturalHeight));
+      const W=Math.max(8,Math.round(rawImage.naturalWidth*scale));
+      const H=Math.max(8,Math.round(rawImage.naturalHeight*scale));
+      const canvas=document.createElement('canvas');
+      canvas.width=W; canvas.height=H;
+      const ctx=canvas.getContext('2d',{willReadFrequently:true});
+      ctx.drawImage(rawImage,0,0,W,H);
+      const data=ctx.getImageData(0,0,W,H).data;
+      const gray=new Float32Array(W*H);
+      for(let i=0,j=0;i<gray.length;i++,j+=4) gray[i]=0.299*data[j]+0.587*data[j+1]+0.114*data[j+2];
+      const fitted=fitFovCircle(gray,W,H);
+      const circle=fitted?{x:fitted.x/scale,y:fitted.y/scale,r:fitted.r/scale}:null;
+      cache.set(rawImage,circle);
+      return circle;
+    } catch(_) {
+      return null;
+    }
+  }
+
+  function qcFramePointFromRaw(point, rawImage, geometry) {
+    const angle=geometry.rad+geometry.quarter*Math.PI/180;
+    const x=point.x-rawImage.naturalWidth/2, y=point.y-rawImage.naturalHeight/2;
+    return {
+      x:geometry.w/2+x*Math.cos(angle)-y*Math.sin(angle),
+      y:geometry.h/2+x*Math.sin(angle)+y*Math.cos(angle)
+    };
+  }
+
+  function qcFrameFovCircle(rawImage, geometry) {
+    const circle=detectFovCircle(rawImage);
+    if(!circle||!geometry) return null;
+    return {...qcFramePointFromRaw(circle,rawImage,geometry),r:circle.r};
+  }
+
   function qcCropTemplateFromCrop(crop, geometry, rawImage) {
     const base=qcTemplateBase(geometry,rawImage);
     if(!crop||!base) return null;
-    return {
+    const template={
       centered:true,
       dx:(crop.x+crop.w/2-geometry.w/2)/base.w,
       dy:(crop.y+crop.h/2-geometry.h/2)/base.h,
       w:crop.w/base.w,
       h:crop.h/base.h
     };
+    const fov=qcFrameFovCircle(rawImage,geometry);
+    if(fov) {
+      template.fov={
+        dx:(crop.x+crop.w/2-fov.x)/fov.r,
+        dy:(crop.y+crop.h/2-fov.y)/fov.r,
+        w:crop.w/fov.r,
+        h:crop.h/fov.r
+      };
+    }
+    return template;
   }
 
   function qcCropRatioFromTemplate(template, geometry, rawImage) {
@@ -4468,10 +4577,15 @@ const CALIBRATION = [
     if(!template.centered) return template;
     const base=qcTemplateBase(geometry,rawImage);
     if(!base) return null;
-    const w=Math.min(geometry.w,template.w*base.w);
-    const h=Math.min(geometry.h,template.h*base.h);
-    const x=Math.max(0,Math.min(geometry.w-w,geometry.w/2+template.dx*base.w-w/2));
-    const y=Math.max(0,Math.min(geometry.h-h,geometry.h/2+template.dy*base.h-h/2));
+    // Prefer the microscope field as the anchor; fall back to the frame centre.
+    const fov=template.fov?qcFrameFovCircle(rawImage,geometry):null;
+    const place=fov
+      ? {cx:fov.x+template.fov.dx*fov.r,cy:fov.y+template.fov.dy*fov.r,w:template.fov.w*fov.r,h:template.fov.h*fov.r}
+      : {cx:geometry.w/2+template.dx*base.w,cy:geometry.h/2+template.dy*base.h,w:template.w*base.w,h:template.h*base.h};
+    const w=Math.min(geometry.w,place.w);
+    const h=Math.min(geometry.h,place.h);
+    const x=Math.max(0,Math.min(geometry.w-w,place.cx-w/2));
+    const y=Math.max(0,Math.min(geometry.h-h,place.cy-h/2));
     return {x:x/geometry.w,y:y/geometry.h,w:w/geometry.w,h:h/geometry.h};
   }
 
